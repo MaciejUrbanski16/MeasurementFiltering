@@ -3,6 +3,7 @@
 #include <utility>
 #include <optional>
 #include <optional>
+#include <Eigen/Dense>
 
 #define M_PI 3.14159265358979323846
 
@@ -36,6 +37,8 @@ private:
 
     std::optional<std::pair<double, double>> calculateAcoefficient(const float degree);
     double invalidAzimutDegree{ 65535.0 };
+
+    //Eigen::MatrixXd A, C, Q, R, P, K, P0;
 };
 
 
