@@ -25,6 +25,7 @@
 #include "AppLogger.h"
 #include "RawMeasurements.h"
 #include "VelocityCalculator.h"
+#include "DeltaTimeCalculator.h"
 
 
 //int main() {
@@ -205,14 +206,18 @@ private:
             appLogger.logReceivedDataOnMainThread(measurements);
             if (measurements.size() == 7)
             {
+                const auto deltaTimeMs = deltaTimeCalculator.getDurationInMs();
                 MeasurementsController rawMeasurement(appLogger);
-                if (rawMeasurement.assign(measurements))
+                if (rawMeasurement.assign(measurements, deltaTimeMs))
                 {
+                    
+                    //rawMeasurement.setDeltaTimeMs(deltaTimeMs);
                     rawMeasurementsSet.push_back(rawMeasurement);
 
                     updateMagnChart(rawMeasurement.getMagn());
                     updateAccChart(rawMeasurement.getXaccMPerS2());
-                    VelocityCalculator velocityCalculator;
+
+                    //VelocityCalculator velocityCalculator;
                 }
             }
         }
@@ -281,7 +286,8 @@ private:
 
         accChartPanel->SetChart(chart);
     }
-
+    
+    DeltaTimeCalculator deltaTimeCalculator;
     std::vector<MeasurementsController> rawMeasurementsSet{};
 
     bool isDataReceptionStarted{ false };

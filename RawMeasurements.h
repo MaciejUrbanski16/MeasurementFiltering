@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <chrono>
 
 #include "AppLogger.h"
 
@@ -13,7 +14,7 @@ public:
 		//assign(measurements);
 	}
 
-	bool assign(const std::vector<std::string>& measurements)
+	bool assign(const std::vector<std::string>& measurements, const uint32_t deltaTimeMs)
 	{
 		if (measurements.size() == 7)
 		{
@@ -33,9 +34,12 @@ public:
 				//
 				magn = std::stoi(measurements[6]);
 
+				this->deltaTimeMs = deltaTimeMs;
+
 				calculateAccInMPerS2();
 
-				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, magn);
+				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, magn, deltaTimeMs);
+
 				return true;
 			}
 		}
@@ -43,6 +47,11 @@ public:
 		appLogger.logErrMeasurementConversion(errMeasConversion);
 		return false;
 	}
+
+	//void setDeltaTimeMs(const uint32_t deltaTimeMs)
+	//{
+	//	this->deltaTimeMs = deltaTimeMs; 
+	//}
 
 	double getXaccMPerS2() const { return xAccMPerS2; }
 	double getYaccMPerS2() const { return yAccMPerS2; }
@@ -102,9 +111,13 @@ private:
 	float xAccMPerS2{ 0.f };
 	float yAccMPerS2{ 0.f };
 	float zAccMPerS2{ 0.f };
+
+	uint32_t deltaTimeMs{ 0 };
 	
 	static constexpr double gPhysConst = 9.803;
 	static constexpr double rawGrawity = 5430;
+
+
 
 	AppLogger& appLogger;
 };
