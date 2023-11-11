@@ -38,9 +38,11 @@ public:
 
 				calculateAccInMPerS2();
 				calculateXYvelocity();
+				calculateDistance();
 
 				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, magn,
-					xAccMPerS2, yAccMPerS2, zAccMPerS2, xVelocity, yVelocity, deltaTimeMs);
+					xAccMPerS2, yAccMPerS2, zAccMPerS2, xVelocity, yVelocity,
+					xDistance, yDistance, deltaTimeMs);
 
 				return true;
 			}
@@ -57,6 +59,9 @@ public:
 
 	double getXvelocityMperS() const { return xVelocity; }
 	double getYvelocityMperS() const { return yVelocity; }
+
+	double getXDistance() const { return xDistance; }
+	double getYDistance() const { return yDistance; }
 
 private:
 
@@ -79,6 +84,13 @@ private:
 		previousYvelocity = yVelocity;
 		// v=a*t  1m/s*s * 0.3s = 
 		//const auto actualSample{ timeIntervalSec * (xAcc + previousxAcc) };
+	}
+
+	void calculateDistance()
+	{
+		const double timeIntervalSec = static_cast<double>(deltaTimeMs) / 1000.0;
+		xDistance = xDistance + xVelocity * timeIntervalSec;
+		yDistance = yDistance + yVelocity * timeIntervalSec;
 	}
 
 	bool isNumber(const std::string& meas)
@@ -129,6 +141,9 @@ private:
 	double previousYvelocity{ 0.0 };
 	double xVelocity{ 0.0 };
 	double yVelocity{ 0.0 };
+
+	double xDistance{ 0.0 };
+	double yDistance{ 0.0 };
 
 	uint32_t deltaTimeMs{ 0 };
 	

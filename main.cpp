@@ -26,6 +26,7 @@
 #include "RawMeasurements.h"
 #include "VelocityCalculator.h"
 #include "DeltaTimeCalculator.h"
+#include "RelativePositionCalculator.h"
 
 
 //int main() {
@@ -217,6 +218,9 @@ private:
                     updateMagnChart(rawMeasurement.getMagn());
                     updateAccChart(rawMeasurement.getXaccMPerS2());
                     updateVelChart(rawMeasurement.getXvelocityMperS());
+                    updatePositionChart(rawMeasurement.getXDistance(), rawMeasurement.getYDistance());
+
+                    relativePositionCalculator.calculateActualRelativePosition(rawMeasurement.getXvelocityMperS(), deltaTimeMs, rawMeasurement.getMagn());
 
                     //VelocityCalculator velocityCalculator;
                 }
@@ -307,8 +311,28 @@ private:
 
         velChartPanel->SetChart(chart);
     }
+
+    void updatePositionChart(const double xDistance, const double yDistance)
+    {
+        positionPoints.push_back(wxRealPoint(xDistance, yDistance));
+
+        XYPlot* plot = new XYPlot();
+        XYSimpleDataset* dataset = new XYSimpleDataset();
+        dataset->AddSerie(new XYSerie(positionPoints));
+        dataset->SetRenderer(new XYLineRenderer());
+        NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
+        NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
+        leftAxis->SetTitle(wxT("Y position [m]"));
+        bottomAxis->SetTitle(wxT("X position [m]"));
+        plot->AddObjects(dataset, leftAxis, bottomAxis);
+
+        Chart* chart = new Chart(plot, "Position");
+
+        positionChartPanel->SetChart(chart);
+    }
     
     DeltaTimeCalculator deltaTimeCalculator;
+    RelativePositionCalculator relativePositionCalculator{};
     std::vector<MeasurementsController> rawMeasurementsSet{};
 
     bool isDataReceptionStarted{ false };
@@ -323,6 +347,7 @@ private:
     wxChartPanel* chartPanel = nullptr;
     wxChartPanel* accChartPanel = nullptr;
     wxChartPanel* velChartPanel = nullptr;
+    wxChartPanel* positionChartPanel = nullptr;
 
     XYPlot* plot = nullptr;
     XYSimpleDataset* dataset = nullptr;
@@ -338,6 +363,7 @@ private:
     Chart* accChart = nullptr;
 
     wxVector <wxRealPoint> velPoints;
+    wxVector <wxRealPoint> positionPoints;
 
     SerialComThread* serialComThread = nullptr;
 
@@ -348,6 +374,7 @@ private:
     void prepareGui();
     void prepareAccChart();
     void prepareVelChart();
+    void preparePositionChart();
     void createDataReceptionThread();
     AppLogger appLogger;
 
@@ -402,6 +429,12 @@ void MyFrame::prepareVelChart()
     m_notebook->AddPage(velChartPanel, "Vel chart");
 }
 
+void MyFrame::preparePositionChart()
+{
+    positionChartPanel = new wxChartPanel(m_notebook);
+    m_notebook->AddPage(positionChartPanel, "Pos chart");
+}
+
 void MyFrame::prepareGui()
 {
     m_notebook = new wxNotebook(this, 1);
@@ -418,6 +451,7 @@ void MyFrame::prepareGui()
 
     prepareAccChart();
     prepareVelChart();
+    preparePositionChart();
 
     // Create a notebook for outer tabs
     //wxNotebook* outerNotebook = new wxNotebook(this, wxID_ANY);
