@@ -38,7 +38,8 @@ public:
 
 				calculateAccInMPerS2();
 
-				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, magn, deltaTimeMs);
+				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, magn,
+					xAccMPerS2, yAccMPerS2, zAccMPerS2, deltaTimeMs);
 
 				return true;
 			}
@@ -63,8 +64,9 @@ private:
 	void calculateAccInMPerS2()
 	{
 		//in order to correctly calculate the calibration is required
-		xAccMPerS2 = static_cast<double>(xAcc) * gPhysConst / rawGrawity;
-		yAccMPerS2 = static_cast<double>(yAcc) * gPhysConst / rawGrawity;
+		// 800 bias
+		xAccMPerS2 = static_cast<double>(xAcc + xBias) * gPhysConst / rawGrawity;
+		yAccMPerS2 = static_cast<double>(yAcc + yBias) * gPhysConst / rawGrawity;
 		zAccMPerS2 = static_cast<double>(zAcc) * gPhysConst / rawGrawity;
 	}
 
@@ -115,7 +117,9 @@ private:
 	uint32_t deltaTimeMs{ 0 };
 	
 	static constexpr double gPhysConst = 9.803;
-	static constexpr double rawGrawity = 5430;
+	static constexpr double rawGrawity = 16000.0;
+	static constexpr double xBias = 880.0;
+	static constexpr double yBias = 800.0;
 
 
 
