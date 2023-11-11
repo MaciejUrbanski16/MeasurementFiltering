@@ -5,10 +5,10 @@
 
 #include "AppLogger.h"
 
-class RawMeasurements
+class MeasurementsController
 {
 public:
-	RawMeasurements(AppLogger& appLogger): appLogger(appLogger)
+	MeasurementsController(AppLogger& appLogger): appLogger(appLogger)
 	{
 		//assign(measurements);
 	}
@@ -33,6 +33,8 @@ public:
 				//
 				magn = std::stoi(measurements[6]);
 
+				calculateAccInMPerS2();
+
 				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, magn);
 				return true;
 			}
@@ -42,9 +44,20 @@ public:
 		return false;
 	}
 
+	double getXaccMPerS2() const { return xAccMPerS2; }
+	double getYaccMPerS2() const { return yAccMPerS2; }
+	double getZaccMPerS2() const { return zAccMPerS2; }
 	int16_t getMagn() const { return magn; }
 
 private:
+
+	void calculateAccInMPerS2()
+	{
+		//in order to correctly calculate the calibration is required
+		xAccMPerS2 = static_cast<double>(xAcc) * gPhysConst / rawGrawity;
+		yAccMPerS2 = static_cast<double>(yAcc) * gPhysConst / rawGrawity;
+		zAccMPerS2 = static_cast<double>(zAcc) * gPhysConst / rawGrawity;
+	}
 
 	bool isNumber(const std::string& meas)
 	{
@@ -85,6 +98,13 @@ private:
 	int16_t yGyro{ 0xFF };
 	int16_t zGyro{ 0xFF };
 	int16_t magn{ 0xFF };
+
+	float xAccMPerS2{ 0.f };
+	float yAccMPerS2{ 0.f };
+	float zAccMPerS2{ 0.f };
+	
+	static constexpr double gPhysConst = 9.803;
+	static constexpr double rawGrawity = 5430;
 
 	AppLogger& appLogger;
 };

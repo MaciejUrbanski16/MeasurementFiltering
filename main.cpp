@@ -53,6 +53,43 @@ using namespace std;
 //wxDECLARE_EVENT(wxEVT_MY_THREAD_EVENT, wxThreadEvent);
 //wxDEFINE_EVENT(wxEVT_MY_THREAD_EVENT, wxThreadEvent);
 
+
+class InnerTab : public wxPanel {
+public:
+    InnerTab(wxWindow* parent, const wxString& label)
+        : wxPanel(parent, wxID_ANY)
+    {
+        // Add controls or content for the inner tab
+        wxStaticText* text = new wxStaticText(this, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE);
+
+        wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+        sizer->Add(text, 1, wxEXPAND | wxALL, 10);
+        SetSizerAndFit(sizer);
+    }
+};
+
+class OuterTab : public wxPanel {
+public:
+    OuterTab(wxWindow* parent, const wxString& label)
+        : wxPanel(parent, wxID_ANY)
+    {
+        // Create a notebook for inner tabs
+        wxNotebook* innerNotebook = new wxNotebook(this, wxID_ANY);
+
+        // Add inner tabs to the notebook
+        innerNotebook->AddPage(new InnerTab(innerNotebook, "Inner Tab 1"), "Inner Tab 1");
+        innerNotebook->AddPage(new InnerTab(innerNotebook, "Inner Tab 2"), "Inner Tab 2");
+
+        // Add more inner tabs as needed
+
+        wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+        sizer->Add(innerNotebook, 1, wxEXPAND | wxALL, 10);
+        SetSizerAndFit(sizer);
+    }
+};
+
+
+
 class SerialComThread : public wxThread
 {
 public:
@@ -168,12 +205,13 @@ private:
             appLogger.logReceivedDataOnMainThread(measurements);
             if (measurements.size() == 7)
             {
-                RawMeasurements rawMeasurement(appLogger);
+                MeasurementsController rawMeasurement(appLogger);
                 if (rawMeasurement.assign(measurements))
                 {
                     rawMeasurementsSet.push_back(rawMeasurement);
 
                     updateMagnChart(rawMeasurement.getMagn());
+                    updateAccChart(rawMeasurement.getXaccMPerS2());
                     VelocityCalculator velocityCalculator;
                 }
             }
@@ -224,23 +262,52 @@ private:
         chartPanel->SetChart(chart);
     }
 
-    std::vector<RawMeasurements> rawMeasurementsSet{};
+    void updateAccChart(const double xAccMPerS2)
+    {
+        accPoints.push_back(wxRealPoint(xNewPoint, xAccMPerS2));
+        xNewPoint += 1;
+        yNewPoint = static_cast<double>(xAccMPerS2);
+        XYPlot* plot = new XYPlot();
+        XYSimpleDataset* dataset = new XYSimpleDataset();
+        dataset->AddSerie(new XYSerie(accPoints));
+        dataset->SetRenderer(new XYLineRenderer());
+        NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
+        NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
+        leftAxis->SetTitle(wxT("X acceleration [m/s2]"));
+        bottomAxis->SetTitle(wxT("time [ms]"));
+        plot->AddObjects(dataset, leftAxis, bottomAxis);
+
+        Chart* chart = new Chart(plot, "X Acceleration");
+
+        accChartPanel->SetChart(chart);
+    }
+
+    std::vector<MeasurementsController> rawMeasurementsSet{};
 
     bool isDataReceptionStarted{ false };
     wxVector <wxRealPoint> points;
 
     //frame
     wxNotebook* m_notebook = nullptr;
+    wxNotebook* innerNotebook = nullptr;
     wxPanel* comSetupPanel = nullptr;
     wxPanel* dataReceptionPanel = nullptr;
     wxPanel* kalmanParamsSetupPanel = nullptr;
     wxChartPanel* chartPanel = nullptr;
+    wxChartPanel* accChartPanel = nullptr;
 
     XYPlot* plot = nullptr;
     XYSimpleDataset* dataset = nullptr;
     NumberAxis* leftAxis = nullptr;
     NumberAxis* bottomAxis = nullptr;
     Chart* chart = nullptr;
+
+    wxVector <wxRealPoint> accPoints;
+    XYPlot* accPlot = nullptr;
+    XYSimpleDataset* accDataset = nullptr;
+    NumberAxis* accLeftAxis = nullptr;
+    NumberAxis* accBottomAxis = nullptr;
+    Chart* accChart = nullptr;
 
     SerialComThread* serialComThread = nullptr;
 
@@ -249,6 +316,7 @@ private:
     double yNewPoint = 36.0;
 
     void prepareGui();
+    void prepareAccChart();
     void createDataReceptionThread();
     AppLogger appLogger;
 
@@ -291,6 +359,31 @@ void MyFrame::createDataReceptionThread()
     }
 }
 
+void MyFrame::prepareAccChart()
+{
+    accChartPanel = new wxChartPanel(m_notebook);
+
+    //accPoints.push_back(wxRealPoint(3.2, 23.2));
+    //accPoints.push_back(wxRealPoint(4.2, 23.2));
+    //accPoints.push_back(wxRealPoint(6.2, 28.2));
+    //accPoints.push_back(wxRealPoint(9.2, 35.2));
+    accPlot = new XYPlot();
+    accDataset = new XYSimpleDataset();
+    accDataset->AddSerie(new XYSerie(accPoints));
+    accDataset->SetRenderer(new XYLineRenderer());
+    accLeftAxis = new NumberAxis(AXIS_LEFT);
+    accBottomAxis = new NumberAxis(AXIS_BOTTOM);
+    accLeftAxis->SetTitle(wxT("X acceleration [m/s2]"));
+    accBottomAxis->SetTitle(wxT("time[ms]"));
+    accPlot->AddObjects(accDataset, accLeftAxis, accBottomAxis);
+
+    accChart = new Chart(accPlot, "Acceleration");
+
+    accChartPanel->SetChart(accChart);
+    //m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
+    m_notebook->AddPage(accChartPanel, "Acc chart");
+}
+
 void MyFrame::prepareGui()
 {
     m_notebook = new wxNotebook(this, 1);
@@ -299,8 +392,25 @@ void MyFrame::prepareGui()
     dataReceptionPanel = new wxPanel(m_notebook);
     m_notebook->AddPage(dataReceptionPanel, "Data reception");
     kalmanParamsSetupPanel = new wxPanel(m_notebook);
+    innerNotebook = new wxNotebook(kalmanParamsSetupPanel, 2);
+    wxPanel* innerPanel = new wxPanel(innerNotebook);
+    innerNotebook->AddPage(innerPanel, "Inner");
     m_notebook->AddPage(kalmanParamsSetupPanel, "KF setup");
     chartPanel = new wxChartPanel(m_notebook);
+
+    prepareAccChart();
+
+    // Create a notebook for outer tabs
+    //wxNotebook* outerNotebook = new wxNotebook(this, wxID_ANY);
+
+    // Add outer tabs to the notebook
+    m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 1"), "Outer Tab 1");
+    m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
+    //m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
+
+
+    //OuterNotebook* outerNotebook = new OuterNotebook(this, 2);
+    //m_notebook->AddPage(outerNotebook, "CHARTS");
 
     points.push_back(wxRealPoint(3.2, 23.2));
     points.push_back(wxRealPoint(4.2, 23.2));
@@ -319,6 +429,7 @@ void MyFrame::prepareGui()
     chart = new Chart(plot, "DATA SET");
 
     chartPanel->SetChart(chart);
+    //m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
     m_notebook->AddPage(chartPanel, "Chart");
 
     wxSize size(100, 20);
