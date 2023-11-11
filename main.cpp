@@ -216,6 +216,7 @@ private:
 
                     updateMagnChart(rawMeasurement.getMagn());
                     updateAccChart(rawMeasurement.getXaccMPerS2());
+                    updateVelChart(rawMeasurement.getXvelocityMperS());
 
                     //VelocityCalculator velocityCalculator;
                 }
@@ -286,6 +287,26 @@ private:
 
         accChartPanel->SetChart(chart);
     }
+
+    void updateVelChart(const double xVelocity)
+    {
+        velPoints.push_back(wxRealPoint(xNewPoint, xVelocity));
+        xNewPoint += 1;
+        yNewPoint = static_cast<double>(xVelocity);
+        XYPlot* plot = new XYPlot();
+        XYSimpleDataset* dataset = new XYSimpleDataset();
+        dataset->AddSerie(new XYSerie(velPoints));
+        dataset->SetRenderer(new XYLineRenderer());
+        NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
+        NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
+        leftAxis->SetTitle(wxT("X velocity [m/s]"));
+        bottomAxis->SetTitle(wxT("time [ms]"));
+        plot->AddObjects(dataset, leftAxis, bottomAxis);
+
+        Chart* chart = new Chart(plot, "X Velocity");
+
+        velChartPanel->SetChart(chart);
+    }
     
     DeltaTimeCalculator deltaTimeCalculator;
     std::vector<MeasurementsController> rawMeasurementsSet{};
@@ -301,6 +322,7 @@ private:
     wxPanel* kalmanParamsSetupPanel = nullptr;
     wxChartPanel* chartPanel = nullptr;
     wxChartPanel* accChartPanel = nullptr;
+    wxChartPanel* velChartPanel = nullptr;
 
     XYPlot* plot = nullptr;
     XYSimpleDataset* dataset = nullptr;
@@ -315,6 +337,8 @@ private:
     NumberAxis* accBottomAxis = nullptr;
     Chart* accChart = nullptr;
 
+    wxVector <wxRealPoint> velPoints;
+
     SerialComThread* serialComThread = nullptr;
 
     wxTimer m_timer;
@@ -323,6 +347,7 @@ private:
 
     void prepareGui();
     void prepareAccChart();
+    void prepareVelChart();
     void createDataReceptionThread();
     AppLogger appLogger;
 
@@ -368,26 +393,13 @@ void MyFrame::createDataReceptionThread()
 void MyFrame::prepareAccChart()
 {
     accChartPanel = new wxChartPanel(m_notebook);
-
-    //accPoints.push_back(wxRealPoint(3.2, 23.2));
-    //accPoints.push_back(wxRealPoint(4.2, 23.2));
-    //accPoints.push_back(wxRealPoint(6.2, 28.2));
-    //accPoints.push_back(wxRealPoint(9.2, 35.2));
-    accPlot = new XYPlot();
-    accDataset = new XYSimpleDataset();
-    accDataset->AddSerie(new XYSerie(accPoints));
-    accDataset->SetRenderer(new XYLineRenderer());
-    accLeftAxis = new NumberAxis(AXIS_LEFT);
-    accBottomAxis = new NumberAxis(AXIS_BOTTOM);
-    accLeftAxis->SetTitle(wxT("X acceleration [m/s2]"));
-    accBottomAxis->SetTitle(wxT("time[ms]"));
-    accPlot->AddObjects(accDataset, accLeftAxis, accBottomAxis);
-
-    accChart = new Chart(accPlot, "Acceleration");
-
-    accChartPanel->SetChart(accChart);
-    //m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
     m_notebook->AddPage(accChartPanel, "Acc chart");
+}
+
+void MyFrame::prepareVelChart()
+{
+    velChartPanel = new wxChartPanel(m_notebook);
+    m_notebook->AddPage(velChartPanel, "Vel chart");
 }
 
 void MyFrame::prepareGui()
@@ -405,6 +417,7 @@ void MyFrame::prepareGui()
     chartPanel = new wxChartPanel(m_notebook);
 
     prepareAccChart();
+    prepareVelChart();
 
     // Create a notebook for outer tabs
     //wxNotebook* outerNotebook = new wxNotebook(this, wxID_ANY);

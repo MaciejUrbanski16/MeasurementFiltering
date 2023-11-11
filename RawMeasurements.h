@@ -37,9 +37,10 @@ public:
 				this->deltaTimeMs = deltaTimeMs;
 
 				calculateAccInMPerS2();
+				calculateXYvelocity();
 
 				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, magn,
-					xAccMPerS2, yAccMPerS2, zAccMPerS2, deltaTimeMs);
+					xAccMPerS2, yAccMPerS2, zAccMPerS2, xVelocity, yVelocity, deltaTimeMs);
 
 				return true;
 			}
@@ -49,25 +50,35 @@ public:
 		return false;
 	}
 
-	//void setDeltaTimeMs(const uint32_t deltaTimeMs)
-	//{
-	//	this->deltaTimeMs = deltaTimeMs; 
-	//}
-
 	double getXaccMPerS2() const { return xAccMPerS2; }
 	double getYaccMPerS2() const { return yAccMPerS2; }
 	double getZaccMPerS2() const { return zAccMPerS2; }
 	int16_t getMagn() const { return magn; }
+
+	double getXvelocityMperS() const { return xVelocity; }
+	double getYvelocityMperS() const { return yVelocity; }
 
 private:
 
 	void calculateAccInMPerS2()
 	{
 		//in order to correctly calculate the calibration is required
-		// 800 bias
+		
 		xAccMPerS2 = static_cast<double>(xAcc + xBias) * gPhysConst / rawGrawity;
 		yAccMPerS2 = static_cast<double>(yAcc + yBias) * gPhysConst / rawGrawity;
 		zAccMPerS2 = static_cast<double>(zAcc) * gPhysConst / rawGrawity;
+	}
+
+	void calculateXYvelocity()
+	{
+		const double timeIntervalSec = static_cast<double>(deltaTimeMs) / 1000.0;
+		xVelocity = previousXvelocity + xAccMPerS2 * timeIntervalSec;
+		yVelocity = previousYvelocity + yAccMPerS2 * timeIntervalSec;
+
+		previousXvelocity = xVelocity;
+		previousYvelocity = yVelocity;
+		// v=a*t  1m/s*s * 0.3s = 
+		//const auto actualSample{ timeIntervalSec * (xAcc + previousxAcc) };
 	}
 
 	bool isNumber(const std::string& meas)
@@ -113,6 +124,11 @@ private:
 	float xAccMPerS2{ 0.f };
 	float yAccMPerS2{ 0.f };
 	float zAccMPerS2{ 0.f };
+
+	double previousXvelocity{ 0.0 };
+	double previousYvelocity{ 0.0 };
+	double xVelocity{ 0.0 };
+	double yVelocity{ 0.0 };
 
 	uint32_t deltaTimeMs{ 0 };
 	
