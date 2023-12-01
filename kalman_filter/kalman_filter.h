@@ -23,7 +23,12 @@ namespace kf
 
         KalmanFilter()
         {
+            vecX() << 0.0F, 0.0F, 0.0F, 0.0F; // macierz stanu
 
+            matP() << 0.1F, 0.0F, 0.0F, 0.0F, // macierz 
+                      0.0F, 0.1F, 0.0F, 0.0F,
+                      0.0F, 0.0F, 0.1F, 0.0F,
+                      0.0F, 0.0F, 0.0F, 0.1F;
         }
 
         ~KalmanFilter()
@@ -39,8 +44,8 @@ namespace kf
 
         ///
         /// @brief predict state with a linear process model.
-        /// @param matF state transition matrix
-        /// @param matQ process noise covariance matrix
+        /// @param matF state transition matrix A - macierz przejscia
+        /// @param matQ process noise covariance matrix Q macierz szumu procesowego
         ///
         void predictLKF(const Matrix<DIM_X, DIM_X> & matF, const Matrix<DIM_X, DIM_X> & matQ)
         {

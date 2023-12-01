@@ -98,7 +98,7 @@ private:
             const std::vector<std::string> exctractedMeasurements = exctractMeasurements(remoteDataAsString);
 
             //wxThreadEvent* event = new wxThreadEvent(wxEVT_MY_THREAD_EVENT);
-            std::string strToSendToMainThread = exctractedMeasurements[0];
+            //std::string strToSendToMainThread = exctractedMeasurements[0];
 
             // Create a custom thread event
             MeasurementCustomizator* event = new MeasurementCustomizator(wxEVT_MY_THREAD_EVENT);

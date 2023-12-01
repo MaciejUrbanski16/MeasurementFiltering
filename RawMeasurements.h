@@ -37,6 +37,7 @@ public:
 				this->deltaTimeMs = deltaTimeMs;
 
 				calculateAccInMPerS2();
+				calculateAngleVelocity();
 				calculateXYvelocity();
 				calculateDistance();
 
@@ -55,6 +56,9 @@ public:
 	double getXaccMPerS2() const { return xAccMPerS2; }
 	double getYaccMPerS2() const { return yAccMPerS2; }
 	double getZaccMPerS2() const { return zAccMPerS2; }
+	double getXangleVelocityDegreePerS() const { return xAngleVelocityDegPerS; }
+	double getYangleVelocityDegreePerS() const { return yAngleVelocityDegPerS; }
+	double getZangleVelocityDegreePerS() const { return zAngleVelocityDegPerS; }
 	int16_t getMagn() const { return magn; }
 
 	double getXvelocityMperS() const { return xVelocity; }
@@ -72,6 +76,13 @@ private:
 		xAccMPerS2 = static_cast<double>(xAcc + xBias) * gPhysConst / rawGrawity;
 		yAccMPerS2 = static_cast<double>(yAcc + yBias) * gPhysConst / rawGrawity;
 		zAccMPerS2 = static_cast<double>(zAcc) * gPhysConst / rawGrawity;
+	}
+
+	void calculateAngleVelocity()
+	{
+		xAngleVelocityDegPerS = static_cast<double>(xGyro - 18000) * 250.0f / 32768.0f; //the bias has to be set correctly
+		yAngleVelocityDegPerS = static_cast<double>(yGyro + 12900) * 250.0f / 32768.0f;
+		zAngleVelocityDegPerS = static_cast<double>(zGyro + 15000) * 250.0f / 32768.0f;
 	}
 
 	void calculateXYvelocity()
@@ -133,9 +144,13 @@ private:
 	int16_t zGyro{ 0xFF };
 	int16_t magn{ 0xFF };
 
-	float xAccMPerS2{ 0.f };
-	float yAccMPerS2{ 0.f };
-	float zAccMPerS2{ 0.f };
+	double xAccMPerS2{ 0.0 };
+	double yAccMPerS2{ 0.0 };
+	double zAccMPerS2{ 0.0 };
+
+	double xAngleVelocityDegPerS{ 0.0 };
+	double yAngleVelocityDegPerS{ 0.0 };
+	double zAngleVelocityDegPerS{ 0.0 };
 
 	double previousXvelocity{ 0.0 };
 	double previousYvelocity{ 0.0 };

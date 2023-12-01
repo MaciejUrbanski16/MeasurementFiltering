@@ -7,17 +7,24 @@
 #include <chrono>
 #include <vector>
 
+#include "kalman_filter/kalman_filter.h"
+
 class AppLogger
 {
 public:
 	AppLogger() {
 		outputFile.open(filePath, std::ios::app);
+		kalmanOutputFile.open(kalmanFilePath, std::ios::app);
 	}
 	~AppLogger()
 	{
 		if (outputFile.is_open())
 		{
 			outputFile.close();
+		}
+		if (kalmanOutputFile.is_open())
+		{
+			kalmanOutputFile.close();
 		}
 	}
 	void logSerialCommStartThread(const std::string& msg)
@@ -69,6 +76,24 @@ public:
 		ss << currentTime << " " << msg << '\n';
 		outputFile << ss.str();
 	}
+
+	template <size_t DIM_X, size_t DIM_Z>
+	void logKalmanFilterPredictionStep(const kf::KalmanFilter<DIM_X, DIM_Z>& kalmanFilter)
+	{
+		std::stringstream ss;
+		auto currentTime = getCurrentTimeWithMilliSeconds();
+		ss << currentTime << "\nKALMAN FILTER: Predicted state vector = \n" << kalmanFilter.vecX() << "\n Predicted state covariance = \n" << kalmanFilter.matP() << "  END\n";
+		kalmanOutputFile << ss.str();
+	}
+
+	template <size_t DIM_X, size_t DIM_Z>
+	void logKalmanFilterCorrectionStep(const kf::KalmanFilter<DIM_X, DIM_Z>& kalmanFilter)
+	{
+		std::stringstream ss;
+		auto currentTime = getCurrentTimeWithMilliSeconds();
+		ss << currentTime << "\nKALMAN FILTER: Corrected state vector = \n" << kalmanFilter.vecX() << "\nCorrected state covariance = \n" << kalmanFilter.matP() << "  END\n";
+		kalmanOutputFile << ss.str();
+	}
 private:
 	std::string getCurrentTimeWithMilliSeconds()
 	{
@@ -94,6 +119,9 @@ private:
 
 	std::ofstream outputFile;
 	std::string filePath = "appLogs.txt";
+
+	std::ofstream kalmanOutputFile;
+	std::string kalmanFilePath = "kalmanFilterLogs.txt";
 };
 //std::string AppLogger::path = "appLogs.txt";
 //std::ofstream AppLogger::outputFile;// = path;

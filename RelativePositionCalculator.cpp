@@ -7,7 +7,7 @@
 
 void RelativePositionCalculator::calculateActualRelativePosition(const float velocity, const int timeIntervalMs,
     const float azimutDegree) {
-    kf::KalmanFilter<2, 2> kf;
+    //kf::KalmanFilter<2, 2> kf;
     //y = tg(alpha) * x
     //x^2 + y^2 = r^2
     //x^2 + tg^2(alpha) * x - r^2 = 0
