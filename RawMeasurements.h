@@ -38,6 +38,7 @@ public:
 
 				calculateAccInMPerS2();
 				calculateAngleVelocity();
+
 				calculateXYvelocity();
 				calculateDistance();
 
@@ -87,9 +88,9 @@ private:
 
 	void calculateXYvelocity()
 	{
-		const double timeIntervalSec = static_cast<double>(deltaTimeMs) / 1000.0;
-		xVelocity = previousXvelocity + xAccMPerS2 * timeIntervalSec;
-		yVelocity = previousYvelocity + yAccMPerS2 * timeIntervalSec;
+		const double timeIntervalSec = static_cast<double>(deltaTimeMs)/105;
+		xVelocity =  xAccMPerS2 * timeIntervalSec;
+		yVelocity =  yAccMPerS2 * timeIntervalSec;
 
 		previousXvelocity = xVelocity;
 		previousYvelocity = yVelocity;
@@ -99,9 +100,9 @@ private:
 
 	void calculateDistance()
 	{
-		const double timeIntervalSec = static_cast<double>(deltaTimeMs) / 1000.0;
-		xDistance = xDistance + xVelocity * timeIntervalSec;
-		yDistance = yDistance + yVelocity * timeIntervalSec;
+		const double timeIntervalSec = static_cast<double>(deltaTimeMs)/105;
+		xDistance = xVelocity * timeIntervalSec;
+		yDistance = yVelocity * timeIntervalSec;
 	}
 
 	bool isNumber(const std::string& meas)

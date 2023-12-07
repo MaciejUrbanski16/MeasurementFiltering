@@ -23,12 +23,36 @@ namespace kf
 
         KalmanFilter()
         {
-            vecX() << 0.0F, 0.0F, 0.0F, 0.0F; // macierz stanu
+            vecX() << 0.1F,
+                      0.0F,
+                      0.0F,
+                      0.0F,
+                      0.0F,
+                      0.0F; // macierz stanu
 
-            matP() << 0.1F, 0.0F, 0.0F, 0.0F, // macierz 
-                      0.0F, 0.1F, 0.0F, 0.0F,
-                      0.0F, 0.0F, 0.1F, 0.0F,
-                      0.0F, 0.0F, 0.0F, 0.1F;
+            matP() = Matrix<DIM_X, DIM_X>::Identity();
+                //<< 0.1F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, // macierz 
+                //      0.0F, 0.1F, 0.0F, 0.0F, 0.0F, 0.0F,
+                //      0.0F, 0.0F, 0.1F, 0.0F, 0.0F, 0.0F,
+                //      0.0F, 0.0F, 0.0F, 0.1F; 0.0F, 0.0F,
+                //      0.0F, 0.0F, 0.0F, 0.0F; 0.1F, 0.0F,
+                //      0.0F, 0.0F, 0.0F, 0.0F; 0.0F, 0.1F;
+        }
+
+        void setInitialState(const double xDist, const double xVel, const double xAcc,
+                             const double yDist, const double yVel, const double yAcc)
+        {
+            if (not isInitialized)
+            {
+                vecX() << xDist,
+                          xVel,
+                          xAcc,
+                          yDist,
+                          yVel,
+                          yAcc; // macierz stanu
+
+                isInitialized = true;
+            }
         }
 
         ~KalmanFilter()
@@ -103,6 +127,10 @@ namespace kf
     protected:
         Vector<DIM_X> m_vecX{ Vector<DIM_X>::Zero() }; /// @brief estimated state vector
         Matrix<DIM_X, DIM_X> m_matP{ Matrix<DIM_X, DIM_X>::Zero() }; /// @brief state covariance matrix
+
+
+
+        bool isInitialized{ false };
     };
 }
 
