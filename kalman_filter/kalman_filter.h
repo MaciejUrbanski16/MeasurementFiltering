@@ -23,7 +23,7 @@ namespace kf
 
         KalmanFilter()
         {
-            vecX() << 0.1F,
+            vecX() << 0.0F,
                       0.0F,
                       0.0F,
                       0.0F,
@@ -52,6 +52,22 @@ namespace kf
                           yAcc; // macierz stanu
 
                 isInitialized = true;
+            }
+        }
+
+        void setInitialStateForGyro(const double xAngleVel, const double yAngleVel, const double zAngleVel
+            /*const double xAngle, const double yAngle, const double zAngle*/)
+        {
+            if (not isInitializedGyro)
+            {
+                vecX() << xAngleVel,
+                          0.0F,
+                          yAngleVel,
+                          0.0F,
+                          zAngleVel,
+                          0.0F; // macierz stanu
+
+                isInitializedGyro = true;
             }
         }
 
@@ -131,6 +147,7 @@ namespace kf
 
 
         bool isInitialized{ false };
+        bool isInitializedGyro{ false };
     };
 }
 

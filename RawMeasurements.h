@@ -164,9 +164,9 @@ private:
 	uint32_t deltaTimeMs{ 0 };
 	
 	static constexpr double gPhysConst = 9.803;
-	static constexpr double rawGrawity = 16000.0;
-	static constexpr double xBias = 880.0;
-	static constexpr double yBias = 800.0;
+	static constexpr double rawGrawity = 2000.0;
+	static constexpr double xBias = 80.0;
+	static constexpr double yBias = 40.0;
 
 
 

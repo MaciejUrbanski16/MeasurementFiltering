@@ -217,7 +217,7 @@ private:
                     const uint32_t totalTimeMs = deltaTimeCalculator.getTotalTimeMs();
                     
                     //rawMeasurement.setDeltaTimeMs(deltaTimeMs);
-                    rawMeasurementsSet.push_back(rawMeasurement);
+                    //rawMeasurementsSet.push_back(rawMeasurement);
 
                     updateMagnChart(rawMeasurement.getMagn());
                     updateAccChart(rawMeasurement.getXaccMPerS2(),
@@ -235,17 +235,31 @@ private:
                                                  rawMeasurement.getYDistance(), rawMeasurement.getYvelocityMperS(), rawMeasurement.getYaccMPerS2());
 
                     experimentKf(rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
+
+                    kalmanFilterGyro.setInitialStateForGyro(rawMeasurement.getXangleVelocityDegreePerS(),
+                                                            rawMeasurement.getYangleVelocityDegreePerS(), 
+                                                            rawMeasurement.getZangleVelocityDegreePerS());
+
+                    experimentGyroKf(rawMeasurement.getXangleVelocityDegreePerS(),
+                                     rawMeasurement.getYangleVelocityDegreePerS(),
+                                     rawMeasurement.getZangleVelocityDegreePerS(),
+                                     deltaTimeMs);
                     
                     const double calculatedPositionX = rawMeasurement.getXDistance();
                     const double calculatedPositionY = rawMeasurement.getYDistance();
 
                     const double filteredPositionX = kalmanFilter.vecX()(0);//PosX
                     const double filteredVelocityX = kalmanFilter.vecX()(1);
+                    const double filteredAccX = kalmanFilter.vecX()(1);
                     const double filteredPositionY = kalmanFilter.vecX()(3);//PosY
                     const double filteredVelocityY = kalmanFilter.vecX()(3);
 
                     updateFilteredPositionChart(filteredPositionX, filteredPositionY);
                     updateFilteredVelocityChart(filteredVelocityX, filteredVelocityY);
+
+                    const double filteredXangle = kalmanFilterGyro.vecX()(0);
+
+                    updateFilteredAngleXVelocityChart(filteredXangle, rawMeasurement.getXangleVelocityDegreePerS(), deltaTimeMs);
 
                     //
 
@@ -267,7 +281,7 @@ private:
         //wxMessageBox("Received data in the main thread: " + data, "Thread Event");
     }
 
-    void experimentKf(const double Xacc, const double Yacc, const uint32_t deltaTimeMs)
+    void experimentKf(const double Xacc, const double Yacc, uint32_t deltaTimeMs)
     {
 
         static constexpr kf::float32_t T{ 1.0F };
@@ -318,21 +332,21 @@ private:
         //kalmanFilter.vecX() << 0.0F, 2.0F;
         //kalmanFilter.matP() << 0.1F, 0.0F, 0.0F, 0.1F;
 
-        kf::Matrix<DIM_X, DIM_X> F; // macierz stanu
+        kf::Matrix<DIM_X, DIM_X> A; // macierz stanu
         //F << 1.0F, deltaT, 0.5F*cos(teta)*deltaT*deltaT, 0.0F,
         //    0, 1, 0.5F * sin(teta) * deltaT * deltaT, 0.0F,
         //    0, 0, 1, deltaT,
         //    0, 0, 0, 1;
 
-        F << 1.0F, deltaTimeMs, (deltaTimeMs * deltaTimeMs) / 2, 0.0F, 0.0F, 0.0F,
+        A << 1.0F, deltaTimeMs, (deltaTimeMs * deltaTimeMs) / 2, 0.0F, 0.0F, 0.0F,
             0.0F, 1.0F, deltaTimeMs, 0.0F, 0.0F, 0.0F,
             0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F,
             0.0F, 0.0F, 0.0F, 1.0F, deltaTimeMs, (deltaTimeMs * deltaTimeMs) / 2,
             0.0F, 0.0F, 0.0F, 0.0F, 1.0F, deltaTimeMs,
             0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
-        double process_variance = 0.1;
-
+        double process_variance = 0.01;
+        deltaTimeMs = deltaTimeMs / 1000;
         kf::Matrix<DIM_X, DIM_X> Q; // kowariancja szumu procesowego
         Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
             pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
@@ -344,7 +358,7 @@ private:
         Q *= process_variance;
 
         ////PREDICTION STEP
-        kalmanFilter.predictLKF(F, Q);
+        kalmanFilter.predictLKF(A, Q);
         appLogger.logKalmanFilterPredictionStep(kalmanFilter);
         ////
 
@@ -365,6 +379,51 @@ private:
         kalmanFilter.correctLKF(vecZ, matR, matH);
 
         appLogger.logKalmanFilterCorrectionStep(kalmanFilter);
+    }
+
+    void experimentGyroKf(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, uint32_t deltaTimeMs)
+    {
+        kf::Matrix<DIM_X_gyro, DIM_X_gyro> A;
+        A << 1.0F, deltaTimeMs, 0.0F, 0.0F, 0.0F, 0.0F,
+            0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 1.0F, deltaTimeMs, 0.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 0.0F, 1.0F, deltaTimeMs,
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
+
+        double sigma_theta_x_sq = 1;  // Wariancja b³êdu k¹ta w osi x
+        double sigma_theta_dot_x_sq = 10;  // Wariancja b³êdu prêdkoœci k¹towej w osi x
+        double sigma_theta_y_sq = 1;  // Wariancja b³êdu k¹ta w osi y
+        double sigma_theta_dot_y_sq = 10;  // Wariancja b³êdu prêdkoœci k¹towej w osi y
+        double sigma_theta_z_sq = 1;  // Wariancja b³êdu k¹ta w osi z
+        double sigma_theta_dot_z_sq = 10;
+
+        kf::Matrix<DIM_X_gyro, DIM_X_gyro> Q;
+        //deltaTimeMs = deltaTimeMs / 1000;
+       
+        Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
+            pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
+            pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
+            0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
+            0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
+            0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
+
+        kalmanFilterGyro.predictLKF(A, Q);
+
+        kf::Vector<DIM_Z_gyro> vecZ;
+
+        vecZ << xAngleVelocityDegPerSec, yAngleVelocityDegPerSec, zAngleVelocityDegPerSec;
+
+        kf::Matrix<DIM_Z_gyro, DIM_Z_gyro> matR;
+        matR << 0.1F, 0, 0,
+                0, 0.1F, 0,
+                0, 0, 0.1F;
+        kf::Matrix<DIM_Z_gyro, DIM_X_gyro> matH;
+        matH << 1, 0, 0, 0, 0, 0,
+                0, 0, 1, 0, 0, 0,
+                0, 0, 0, 0, 1, 0;
+
+        kalmanFilterGyro.correctLKF(vecZ, matR, matH);
     }
 
     float newMeasurement{ 2.25f };
@@ -542,6 +601,39 @@ private:
     {
 
     }
+
+    void updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const uint32_t time)
+    {
+        currentXangleFiltered += filteredXangle;
+        currentXangleMeasured += measuredXangle;
+
+        filteredXangleVelocity.push_back(wxRealPoint(xNewPoint, filteredXangle));
+        measuredXangleVelocity.push_back(wxRealPoint(xNewPoint, measuredXangle));
+
+        XYPlot* plot = new XYPlot();
+        XYSimpleDataset* dataset = new XYSimpleDataset();
+        dataset->AddSerie(new XYSerie(measuredXangleVelocity));
+        dataset->AddSerie(new XYSerie(filteredXangleVelocity));
+
+        //dataset->AddSerie(new XYSerie(yAngleVelocityPoints));
+        //dataset->AddSerie(new XYSerie(zAngleVelocityPoints));
+        dataset->SetRenderer(new XYLineRenderer());
+        NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
+        NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
+        leftAxis->SetTitle(wxT("X angle velocity [degree/s]"));
+        bottomAxis->SetTitle(wxT("Time [ms]"));
+        DatasetArray datasetArray();
+        //datasetArray
+        Legend* lengend = new Legend(10, 10);
+        wxRect rect(wxSize(10, 10));
+        //lengend.Draw(this, rect, datasetArray);
+
+        plot->AddObjects(dataset, leftAxis, bottomAxis);
+        //plot->SetLegend(lengend);
+        Chart* chart = new Chart(plot, "Filtered/measured angle velocity");
+
+        filteredAngleXVelocity->SetChart(chart);
+    }
     
     DeltaTimeCalculator deltaTimeCalculator;
     RelativePositionCalculator relativePositionCalculator{};
@@ -553,6 +645,10 @@ private:
     static constexpr size_t DIM_X{ 6 };
     static constexpr size_t DIM_Z{ 2 };
     kf::KalmanFilter<DIM_X, DIM_Z> kalmanFilter;
+
+    static constexpr size_t DIM_X_gyro{ 6 };
+    static constexpr size_t DIM_Z_gyro{ 3 };
+    kf::KalmanFilter<DIM_X_gyro, DIM_Z_gyro> kalmanFilterGyro;
 
 
     //frame
@@ -569,6 +665,8 @@ private:
 
     wxChartPanel* filteredPositionChartPanel = nullptr;
     wxChartPanel* filteredVelocityChartPanel = nullptr;
+
+    wxChartPanel* filteredAngleXVelocity = nullptr;
 
 
 
@@ -599,11 +697,18 @@ private:
     wxVector <wxRealPoint> filteredVelocityPoints;
     wxVector <wxRealPoint> filteredPositionPoints;
 
+    wxVector <wxRealPoint> filteredXangleVelocity;
+    wxVector <wxRealPoint> measuredXangleVelocity;
+
+
     double currentXPos{ 0.0 };
     double currentYPos{ 0.0 };
 
     double currentFilteredXPosition{ 0.0 };
     double currentFilteredYPosition{ 0.0 };
+
+    double currentXangleFiltered{ 0.0 };
+    double currentXangleMeasured{ 0.0 };
 
     SerialComThread* serialComThread = nullptr;
 
@@ -619,6 +724,7 @@ private:
     void prepareAngleVelocityChart();
     void prepareFilteredPositionChart();
     void prepareFilteredVelocityChart();
+    void prepareFilteredAngleXVelocityChart();
 
     void createDataReceptionThread();
     AppLogger appLogger;
@@ -693,6 +799,12 @@ void MyFrame::prepareFilteredVelocityChart()
     m_notebook->AddPage(filteredVelocityChartPanel, "Filtered velocity");
 }
 
+void MyFrame::prepareFilteredAngleXVelocityChart()
+{
+    filteredAngleXVelocity = new wxChartPanel(m_notebook);
+    m_notebook->AddPage(filteredAngleXVelocity, "Filtered X angle velocity");
+}
+
 void MyFrame::prepareFilteredPositionChart()
 {
     filteredPositionChartPanel = new wxChartPanel(m_notebook);
@@ -719,6 +831,7 @@ void MyFrame::prepareGui()
     prepareAngleVelocityChart();
     prepareFilteredPositionChart();
     prepareFilteredVelocityChart();
+    prepareFilteredAngleXVelocityChart();
 
     // Create a notebook for outer tabs
     //wxNotebook* outerNotebook = new wxNotebook(this, wxID_ANY);
