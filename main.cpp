@@ -20,6 +20,9 @@
 #include <wx/xy/xysimpledataset.h>
 #include <wx/xy/vectordataset.h>
 #include "wx/chartpanel.h"
+#include <wx/splitter.h>
+#include <wx/spinctrl.h> 
+#include <wx/grid.h>
 
 #include "SerialComm.h"
 //#include "KalmanFilter.h"
@@ -281,7 +284,7 @@ private:
         //wxMessageBox("Received data in the main thread: " + data, "Thread Event");
     }
 
-    void experimentKf(const double Xacc, const double Yacc, uint32_t deltaTimeMs)
+    void experimentKf(const double Xacc, const double Yacc, uint32_t deltaTimeUint)
     {
 
         static constexpr kf::float32_t T{ 1.0F };
@@ -337,7 +340,7 @@ private:
         //    0, 1, 0.5F * sin(teta) * deltaT * deltaT, 0.0F,
         //    0, 0, 1, deltaT,
         //    0, 0, 0, 1;
-
+        double deltaTimeMs = static_cast<double>(deltaTimeUint);
         A << 1.0F, deltaTimeMs, (deltaTimeMs * deltaTimeMs) / 2, 0.0F, 0.0F, 0.0F,
             0.0F, 1.0F, deltaTimeMs, 0.0F, 0.0F, 0.0F,
             0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F,
@@ -345,8 +348,9 @@ private:
             0.0F, 0.0F, 0.0F, 0.0F, 1.0F, deltaTimeMs,
             0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
-        double process_variance = 0.01;
-        deltaTimeMs = deltaTimeMs / 1000;
+        double process_variance = 0.00002F;
+        deltaTimeMs = deltaTimeMs / 100000000.0F;
+
         kf::Matrix<DIM_X, DIM_X> Q; // kowariancja szumu procesowego
         Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
             pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
@@ -354,6 +358,21 @@ private:
             0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
             0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
             0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
+
+        //Q << 1000, 2000, 25, 0, 0, 0,
+        //    2000, 25, 20, 0, 0, 0,
+        //    25, 20, 5, 0, 0, 0,
+        //    0, 0, 0, 5, 20, 25,
+        //    0, 0, 0, 20, 25, 2000,
+        //    0, 0, 0, 25, 2000, 1000;
+
+        //Q << 1, 1, 1, 0, 0, 0,
+        //    1, 1, 1, 0, 0, 0,
+        //    1, 1, 1, 0, 0, 0,
+        //    0, 0, 0, 1, 1, 1,
+        //    0, 0, 0, 1, 1, 1,
+        //    0, 0, 0, 1, 1, 1;
+        
 
         Q *= process_variance;
 
@@ -383,6 +402,8 @@ private:
 
     void experimentGyroKf(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, uint32_t deltaTimeMs)
     {
+        //double deltaTimeMs = static_cast<double>(deltaTimeUint) * 10.0F;
+
         kf::Matrix<DIM_X_gyro, DIM_X_gyro> A;
         A << 1.0F, deltaTimeMs, 0.0F, 0.0F, 0.0F, 0.0F,
             0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F,
@@ -399,15 +420,19 @@ private:
         double sigma_theta_dot_z_sq = 10;
 
         kf::Matrix<DIM_X_gyro, DIM_X_gyro> Q;
-        //deltaTimeMs = deltaTimeMs / 1000;
-       
+        
+        double process_variance = 0.02F;
+        deltaTimeMs = deltaTimeMs / 1000.0F;
         Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
             pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
             pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
             0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
             0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
             0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
-
+        
+        //double process_variance = 0.01;
+        Q *= process_variance;
+        
         kalmanFilterGyro.predictLKF(A, Q);
 
         kf::Vector<DIM_Z_gyro> vecZ;
@@ -415,9 +440,9 @@ private:
         vecZ << xAngleVelocityDegPerSec, yAngleVelocityDegPerSec, zAngleVelocityDegPerSec;
 
         kf::Matrix<DIM_Z_gyro, DIM_Z_gyro> matR;
-        matR << 0.1F, 0, 0,
-                0, 0.1F, 0,
-                0, 0, 0.1F;
+        matR << 0.01F, 0, 0,
+                0, 0.01F, 0,
+                0, 0, 0.01F;
         kf::Matrix<DIM_Z_gyro, DIM_X_gyro> matH;
         matH << 1, 0, 0, 0, 0, 0,
                 0, 0, 1, 0, 0, 0,
@@ -594,6 +619,18 @@ private:
         //plot->SetLegend(lengend);
         Chart* chart = new Chart(plot, "Filtered position");
 
+        //wxButton* button = new wxButton(filteredPositionChartPanel, wxID_ANY, "Click me");
+        //splitter = new wxSplitterWindow(filteredPositionChartPanel, wxID_ANY);
+
+        //wxPanel* panel1 = new wxPanel(splitter, wxID_ANY);
+        //wxPanel* panel2 = new wxPanel(splitter, wxID_ANY);
+        //panel1->SetMinSize(wxSize(100, 100));
+        //splitter->SplitVertically(filteredPositionChartPanel, panel2);
+        //sizerPositionPlot->Add(splitter, 1, wxEXPAND | wxALL, 5);
+        //sizerPositionPlot->Add(button, 0, wxALIGN_RIGHT | wxALL, 5);
+        
+        //filteredPositionChartPanel->SetSizer(sizerPositionPlot);
+
         filteredPositionChartPanel->SetChart(chart);
     }
 
@@ -699,6 +736,13 @@ private:
 
     wxVector <wxRealPoint> filteredXangleVelocity;
     wxVector <wxRealPoint> measuredXangleVelocity;
+
+    wxSplitterWindow* splitter = nullptr;
+    wxBoxSizer* sizerPositionPlot = nullptr;
+
+    wxGrid* matrixGrid;
+    wxGrid* matrixRCovariance;
+
 
 
     double currentXPos{ 0.0 };
@@ -807,8 +851,82 @@ void MyFrame::prepareFilteredAngleXVelocityChart()
 
 void MyFrame::prepareFilteredPositionChart()
 {
-    filteredPositionChartPanel = new wxChartPanel(m_notebook);
-    m_notebook->AddPage(filteredPositionChartPanel, "Filtered position");
+    wxPanel* panel = new wxPanel(m_notebook, wxID_ANY);
+    splitter = new wxSplitterWindow(panel, wxID_ANY);
+    
+
+    // Create two panels to be placed in the splitter window
+    //wxPanel* panel1 = new wxPanel(splitter, wxID_ANY);
+    wxPanel* controlPanel = new wxPanel(splitter, wxID_ANY);
+
+    filteredPositionChartPanel = new wxChartPanel(splitter);
+    sizerPositionPlot = new wxBoxSizer(wxVERTICAL);
+    filteredPositionChartPanel->SetMinSize(wxSize(600, 600));
+    //filteredVelocityChartPanel->SetSize(200, 200);
+    //sizer->Add(filteredPositionChartPanel, 1, wxEXPAND | wxALL, 5);
+    wxButton* button = new wxButton(controlPanel, wxID_ANY, "Click me");
+    //sizerPositionPlot->Add(button, 0, wxALIGN_RIGHT | wxALL, 5);
+    wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
+    wxSpinCtrl* spinCtrlPCoefficient = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 0);
+    wxStaticText* pCoefficientText = new wxStaticText(controlPanel, wxID_ANY, "Spin Control for p coefficient:");
+
+    wxSpinCtrl* spinCtrlSCoefficient = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 6);
+    wxStaticText* sCoefficientText = new wxStaticText(controlPanel, wxID_ANY, "Spin Control for s coefficient:");
+
+    matrixGrid = new wxGrid(controlPanel, wxID_ANY);
+    matrixGrid->CreateGrid(6, 6);
+
+    matrixGrid->HideRowLabels();
+    matrixGrid->HideColLabels();
+    //matrixGrid->SetSize(100, 100);
+
+    for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < 6; ++j) {
+            matrixGrid->SetCellValue(i, j, wxString::Format("%d", i * 6 + j));
+        }
+    }
+
+    for (int i = 0; i < 6; ++i) {
+        matrixGrid->SetRowSize(i, 30);  // Set the height of each row
+        matrixGrid->SetColSize(i, 50);  // Set the width of each column
+    }
+
+    matrixRCovariance = new wxGrid(controlPanel, wxID_ANY);
+    matrixRCovariance->CreateGrid(2, 2);
+
+    matrixRCovariance->HideRowLabels();
+    matrixRCovariance->HideColLabels();
+    //matrixGrid->SetSize(100, 100);
+
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            matrixRCovariance->SetCellValue(i, j, wxString::Format("%d", i * 6 + j));
+        }
+    }
+
+    for (int i = 0; i < 2; ++i) {
+        matrixRCovariance->SetRowSize(i, 30);  // Set the height of each row
+        matrixRCovariance->SetColSize(i, 50);  // Set the width of each column
+    }
+
+    controlPanelSizer->Add(pCoefficientText, 0, wxALL, 5);
+    controlPanelSizer->Add(spinCtrlPCoefficient, 0, wxALL | wxALIGN_RIGHT, 5);
+    controlPanelSizer->Add(sCoefficientText, 0, wxALL, 5);
+    controlPanelSizer->Add(spinCtrlSCoefficient, 0, wxALL | wxALIGN_RIGHT, 5);
+    controlPanelSizer->Add(button, 0, wxALL, 5);
+    controlPanelSizer->Add(matrixGrid, 1, wxEXPAND | wxALL, 5);
+    controlPanelSizer->Add(matrixRCovariance, 1, wxALIGN_CENTER | wxALL, 5);
+    controlPanel->SetSizer(controlPanelSizer);
+
+
+    splitter->SplitVertically(filteredPositionChartPanel, controlPanel);
+    sizerPositionPlot->Add(splitter, 1, wxEXPAND | wxALL, 5);
+
+
+    //CreateStatusBar();
+    //SetStatusText("wxWidgets Splitter Example");
+    panel->SetSizer(sizerPositionPlot);
+    m_notebook->AddPage(panel, "Filtered position");
 }
 
 void MyFrame::prepareGui()
@@ -824,6 +942,8 @@ void MyFrame::prepareGui()
     innerNotebook->AddPage(innerPanel, "Inner");
     m_notebook->AddPage(kalmanParamsSetupPanel, "KF setup");
     chartPanel = new wxChartPanel(m_notebook);
+
+    //splitter = new wxSplitterWindow(, wxID_ANY);
 
     prepareAccChart();
     prepareVelChart();
