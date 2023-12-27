@@ -82,6 +82,15 @@ void MyWindow::OnStartReceptionClick(wxCommandEvent& event)
     //createAndStartDataReceptionThread();
 }
 
+void MyWindow::OnResetAccChart(wxCommandEvent& event)
+{
+    wxLogMessage("Reset acceleration chart!");
+    xAccPoints.clear();
+    yAccPoints.clear();
+    zAccPoints.clear();
+    timeNewAccPoint = 0;
+}
+
 /// <summary>
 
 void MyWindow::OnThreadEvent(wxThreadEvent& event) {
@@ -205,10 +214,10 @@ void MyWindow::updateMagnChart(const int16_t magn)
 
 void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const uint32_t totalTimeMs)
 {
-    xAccPoints.push_back(wxRealPoint(xNewPoint, xAccMPerS2));
-    yAccPoints.push_back(wxRealPoint(xNewPoint, yAccMPerS2));
-    zAccPoints.push_back(wxRealPoint(xNewPoint, zAccMPerS2));
-    xNewPoint += totalTimeMs;
+    xAccPoints.push_back(wxRealPoint(timeNewAccPoint, xAccMPerS2));
+    yAccPoints.push_back(wxRealPoint(timeNewAccPoint, yAccMPerS2));
+    zAccPoints.push_back(wxRealPoint(timeNewAccPoint, zAccMPerS2));
+    timeNewAccPoint += totalTimeMs;
     yNewPoint = static_cast<double>(xAccMPerS2);
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
@@ -412,8 +421,62 @@ void MyWindow::createDataReceptionThread()
 
 void MyWindow::prepareAccChart()
 {
-    accChartPanel = new wxChartPanel(m_notebook);
-    m_notebook->AddPage(accChartPanel, "Acc chart");
+    
+
+    wxPanel* panel = new wxPanel(m_notebook, wxID_ANY);
+    accPanelSplitter = new wxSplitterWindow(panel, wxID_ANY);
+    wxPanel* controlPanel = new wxPanel(accPanelSplitter, wxID_ANY);
+
+    accChartPanel = new wxChartPanel(accPanelSplitter);
+
+    sizerAccPlot = new wxBoxSizer(wxVERTICAL);
+    accChartPanel->SetMinSize(wxSize(600, 600));
+
+    wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxSpinCtrl* spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 0);
+    wxStaticText* xAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X acc");
+
+    wxSpinCtrl* spinCtrlYacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 6);
+    wxStaticText* yAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y acc");
+
+    wxSpinCtrl* spinCtrlZacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 6);
+    wxStaticText* zAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Z acc");
+
+    controlPanelSizer->Add(xAccText, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(spinCtrlXacc, 0, wxALL| wxALIGN_CENTER, 5);
+
+    controlPanelSizer->Add(yAccText, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(spinCtrlYacc, 0, wxALL| wxALIGN_CENTER, 5);
+
+    controlPanelSizer->Add(zAccText, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(spinCtrlZacc, 0, wxALL| wxALIGN_CENTER, 5);
+
+
+    wxBoxSizer* hboxSizer = new wxBoxSizer(wxHORIZONTAL);
+
+    wxButton* resetButton = new wxButton(controlPanel, wxID_ANY, "Reset chart");
+    hboxSizer->Add(resetButton, 0, wxALL|wxALIGN_LEFT, 5);
+    resetButton->Bind(wxEVT_BUTTON, &MyWindow::OnResetAccChart, this);
+
+    wxButton* submitButton = new wxButton(controlPanel, wxID_ANY, "Submit adjustments");
+    hboxSizer->Add(submitButton, 0, wxALL | wxALIGN_LEFT, 5);
+
+    controlPanelSizer->Add(hboxSizer, 0, wxALL, 5);
+
+    controlPanel->SetSizer(controlPanelSizer);
+
+
+    accPanelSplitter->SplitVertically(accChartPanel, controlPanel);
+    sizerAccPlot->Add(accPanelSplitter, 1, wxEXPAND | wxALL, 5);
+
+
+    //CreateStatusBar();
+    //SetStatusText("wxWidgets Splitter Example");
+    panel->SetSizer(sizerAccPlot);
+   // m_notebook->AddPage(panel, "Filtered position");
+
+    m_notebook->AddPage(panel, "Acc chart");
 }
 
 void MyWindow::prepareVelChart()

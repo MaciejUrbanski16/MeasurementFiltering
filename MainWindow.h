@@ -111,6 +111,7 @@ private:
     void OnStopBitsChoice(wxCommandEvent& event);
     void OnParityChoice(wxCommandEvent& event);
     void OnStartReceptionClick(wxCommandEvent& event);
+    void OnResetAccChart(wxCommandEvent& event);
 
     void OnThreadEvent(wxThreadEvent& event);
 
@@ -362,6 +363,9 @@ private:
     wxGrid* matrixGrid;
     wxGrid* matrixRCovariance;
 
+    wxSplitterWindow* accPanelSplitter = nullptr;
+    wxBoxSizer* sizerAccPlot = nullptr;
+
 
 
     double currentXPos{ 0.0 };
@@ -378,6 +382,9 @@ private:
     wxTimer m_timer;
     double xNewPoint = 0.0;
     double yNewPoint = 36.0;
+
+    double timeNewAccPoint{ 0.0 };
+
     double xAngleVelNewPoint{ 0.0 };
 
     void prepareGui();
