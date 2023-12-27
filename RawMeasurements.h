@@ -9,11 +9,17 @@
 class MeasurementsController
 {
 public:
-	MeasurementsController(AppLogger& appLogger, const double newRawGrawity, const double newXBias, const double newYBias): appLogger(appLogger)
+	MeasurementsController(AppLogger& appLogger, const double newRawGrawity, const double newXBias, const double newYBias,
+		const double newXGyroBias, const double newYGyroBias, const double newZGyroBias): appLogger(appLogger)
 	{
 		setRawGrawity(newRawGrawity);
 		setXBias(newXBias);
 		setYBias(newYBias);
+
+		setXGyroBias(newXGyroBias);
+		setYGyroBias(newYGyroBias);
+		setZGyroBias(newZGyroBias);
+
 		//assign(measurements);
 	}
 
@@ -78,6 +84,10 @@ private:
 	void setXBias(const double newXBias) { xBias = newXBias; }
 	void setYBias(const double newYBias) { yBias = newYBias; }
 
+	void setXGyroBias(const double newXBias) { xAngleVelBias = newXBias; }
+	void setYGyroBias(const double newYBias) { yAngleVelBias = newYBias; }
+	void setZGyroBias(const double newZBias) { zAngleVelBias = newZBias; }
+
 	void calculateAccInMPerS2()
 	{
 		//in order to correctly calculate the calibration is required
@@ -89,9 +99,9 @@ private:
 
 	void calculateAngleVelocity()
 	{
-		xAngleVelocityDegPerS = static_cast<double>(xGyro - 18000) * 250.0f / 32768.0f; //the bias has to be set correctly
-		yAngleVelocityDegPerS = static_cast<double>(yGyro + 12900) * 250.0f / 32768.0f;
-		zAngleVelocityDegPerS = static_cast<double>(zGyro + 15000) * 250.0f / 32768.0f;
+		xAngleVelocityDegPerS = static_cast<double>(xGyro + xAngleVelBias) * 250.0f / 32768.0f; //the bias has to be set correctly
+		yAngleVelocityDegPerS = static_cast<double>(yGyro + yAngleVelBias) * 250.0f / 32768.0f;
+		zAngleVelocityDegPerS = static_cast<double>(zGyro + zAngleVelBias) * 250.0f / 32768.0f;
 	}
 
 	void calculateXYvelocity()
@@ -175,6 +185,10 @@ private:
 	double rawGrawity = 2000.0;
 	double xBias = 80.0;
 	double yBias = 40.0;
+
+	double xAngleVelBias{ -18000.0};
+	double yAngleVelBias{ 12900.0};
+	double zAngleVelBias{15000.0};
 
 
 

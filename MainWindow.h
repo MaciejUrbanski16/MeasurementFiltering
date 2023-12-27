@@ -113,6 +113,8 @@ private:
     void OnStartReceptionClick(wxCommandEvent& event);
     void OnResetAccChart(wxCommandEvent& event);
     void OnSubmitAccAdjustments(wxCommandEvent& event);
+    void OnResetAngleVelChart(wxCommandEvent& event);
+    void OnSubmitAngleVelAdjustments(wxCommandEvent& event);
 
     void OnThreadEvent(wxThreadEvent& event);
 
@@ -378,6 +380,20 @@ private:
     double xBias{ 80.0 };
     double yBias{ 40.0 };
 
+
+    wxSplitterWindow* angleVelPanelSplitter = nullptr;
+    wxBoxSizer* sizerAngleVelPlot = nullptr;
+    wxSpinCtrl* spinCtrlXangleVel = nullptr;
+    wxSpinCtrl* spinCtrlYangleVel = nullptr;
+    wxSpinCtrl* spinCtrlZangleVel = nullptr;
+
+    wxStaticText* xAngleVelValue = nullptr;
+    wxStaticText* yAngleVelValue = nullptr;
+    wxStaticText* zAngleVelValue = nullptr;
+
+    double xGyroBias{ -18000.0 };
+    double yGyroBias{ 12900.0 };
+    double zGyroBias{ 15000.0 };
 
 
     double currentXPos{ 0.0 };
