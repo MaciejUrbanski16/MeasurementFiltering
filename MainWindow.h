@@ -112,6 +112,7 @@ private:
     void OnParityChoice(wxCommandEvent& event);
     void OnStartReceptionClick(wxCommandEvent& event);
     void OnResetAccChart(wxCommandEvent& event);
+    void OnSubmitAccAdjustments(wxCommandEvent& event);
 
     void OnThreadEvent(wxThreadEvent& event);
 
@@ -365,6 +366,17 @@ private:
 
     wxSplitterWindow* accPanelSplitter = nullptr;
     wxBoxSizer* sizerAccPlot = nullptr;
+    wxSpinCtrl* spinCtrlXacc = nullptr;
+    wxSpinCtrl* spinCtrlYacc = nullptr;
+    wxSpinCtrl* spinCtrlZacc = nullptr;
+
+    wxStaticText* xAccValue = nullptr;
+    wxStaticText* yAccValue = nullptr;
+    wxStaticText* zAccValue = nullptr;
+
+    double rawGrawity{ 2000.0 };
+    double xBias{ 80.0 };
+    double yBias{ 40.0 };
 
 
 

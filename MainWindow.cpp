@@ -91,6 +91,18 @@ void MyWindow::OnResetAccChart(wxCommandEvent& event)
     timeNewAccPoint = 0;
 }
 
+void MyWindow::OnSubmitAccAdjustments(wxCommandEvent& event)
+{
+    const int xAccCtrlValue = spinCtrlXacc->GetValue();
+    const int yAccCtrlValue = spinCtrlYacc->GetValue();
+    const int zAccCtrlValue = spinCtrlZacc->GetValue();
+
+    rawGrawity = zAccCtrlValue;
+    xBias = xAccCtrlValue;
+    yBias = yAccCtrlValue;
+    wxLogMessage("New acc adj X:%d Y:%d Z:%d!", xAccCtrlValue, yAccCtrlValue, zAccCtrlValue);
+}
+
 /// <summary>
 
 void MyWindow::OnThreadEvent(wxThreadEvent& event) {
@@ -103,7 +115,7 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
         if (measurements.size() == 7)
         {
             const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
-            MeasurementsController rawMeasurement(appLogger);
+            MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias);
             if (rawMeasurement.assign(measurements, deltaTimeMs))
             {
 
@@ -214,6 +226,10 @@ void MyWindow::updateMagnChart(const int16_t magn)
 
 void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const uint32_t totalTimeMs)
 {
+    xAccValue->SetLabel(std::to_string(xAccMPerS2));
+    yAccValue->SetLabel(std::to_string(yAccMPerS2));
+    zAccValue->SetLabel(std::to_string(zAccMPerS2));
+
     xAccPoints.push_back(wxRealPoint(timeNewAccPoint, xAccMPerS2));
     yAccPoints.push_back(wxRealPoint(timeNewAccPoint, yAccMPerS2));
     zAccPoints.push_back(wxRealPoint(timeNewAccPoint, zAccMPerS2));
@@ -434,13 +450,13 @@ void MyWindow::prepareAccChart()
 
     wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
 
-    wxSpinCtrl* spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 0);
+    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 80);
     wxStaticText* xAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X acc");
 
-    wxSpinCtrl* spinCtrlYacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 6);
+    spinCtrlYacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 40);
     wxStaticText* yAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y acc");
 
-    wxSpinCtrl* spinCtrlZacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 6);
+    spinCtrlZacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 2000);
     wxStaticText* zAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Z acc");
 
     controlPanelSizer->Add(xAccText, 0, wxALL | wxALIGN_CENTER, 5);
@@ -461,6 +477,31 @@ void MyWindow::prepareAccChart()
 
     wxButton* submitButton = new wxButton(controlPanel, wxID_ANY, "Submit adjustments");
     hboxSizer->Add(submitButton, 0, wxALL | wxALIGN_LEFT, 5);
+    submitButton->Bind(wxEVT_BUTTON, &MyWindow::OnSubmitAccAdjustments, this);
+
+
+    wxBoxSizer* xAccLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* yAccLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* zAccLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+
+    wxStaticText* xAccName = new wxStaticText(controlPanel, wxID_ANY, "Current X acc[ms/s^2]: ");
+    wxStaticText* yAccName = new wxStaticText(controlPanel, wxID_ANY, "Current Y acc[ms/s^2]");
+    wxStaticText* zAccName = new wxStaticText(controlPanel, wxID_ANY, "Current Z acc[ms/s^2]");
+    xAccValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+    yAccValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+    zAccValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+
+    xAccLabelsSizer->Add(xAccName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    xAccLabelsSizer->Add(xAccValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    controlPanelSizer->Add(xAccLabelsSizer, 0, wxALL, 5);
+
+    yAccLabelsSizer->Add(yAccName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    yAccLabelsSizer->Add(yAccValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    controlPanelSizer->Add(yAccLabelsSizer, 0, wxALL, 5);
+
+    zAccLabelsSizer->Add(zAccName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    zAccLabelsSizer->Add(zAccValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    controlPanelSizer->Add(zAccLabelsSizer, 0, wxALL, 5);
 
     controlPanelSizer->Add(hboxSizer, 0, wxALL, 5);
 

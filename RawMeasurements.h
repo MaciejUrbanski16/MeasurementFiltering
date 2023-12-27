@@ -9,8 +9,11 @@
 class MeasurementsController
 {
 public:
-	MeasurementsController(AppLogger& appLogger): appLogger(appLogger)
+	MeasurementsController(AppLogger& appLogger, const double newRawGrawity, const double newXBias, const double newYBias): appLogger(appLogger)
 	{
+		setRawGrawity(newRawGrawity);
+		setXBias(newXBias);
+		setYBias(newYBias);
 		//assign(measurements);
 	}
 
@@ -68,7 +71,12 @@ public:
 	double getXDistance() const { return xDistance; }
 	double getYDistance() const { return yDistance; }
 
+
+
 private:
+	void setRawGrawity(const double newRawGrawity) { rawGrawity = newRawGrawity; }
+	void setXBias(const double newXBias) { xBias = newXBias; }
+	void setYBias(const double newYBias) { yBias = newYBias; }
 
 	void calculateAccInMPerS2()
 	{
@@ -164,9 +172,9 @@ private:
 	uint32_t deltaTimeMs{ 0 };
 	
 	static constexpr double gPhysConst = 9.803;
-	static constexpr double rawGrawity = 2000.0;
-	static constexpr double xBias = 80.0;
-	static constexpr double yBias = 40.0;
+	double rawGrawity = 2000.0;
+	double xBias = 80.0;
+	double yBias = 40.0;
 
 
 
