@@ -3,6 +3,8 @@
 #include <string>
 #include <utility>
 #include <chrono>
+#include <cmath>
+#include <math.h>
 
 #include "AppLogger.h"
 
@@ -25,11 +27,12 @@ public:
 
 	bool assign(const std::vector<std::string>& measurements, const uint32_t deltaTimeMs)
 	{
-		if (measurements.size() == 7)
+		if (measurements.size() == 8)
 		{
-			const auto isMagnetometr = isMagn(measurements[6]);
+			//const auto isMagnetometr = isMagn(measurements[6]);
 			if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) &&
-				isNumber(measurements[3]) && isNumber(measurements[4]) && isNumber(measurements[5]))
+				isNumber(measurements[3]) && isNumber(measurements[4]) && isNumber(measurements[5]) &&
+				isNumber(measurements[6]) && isNumber(measurements[7]))
 
 			{
 				xAcc = std::stoi(measurements[0]);
@@ -41,7 +44,9 @@ public:
 				zGyro = std::stoi(measurements[5]);
 
 				//
-				magn = std::stoi(measurements[6]);
+				//magn = std::stoi(measurements[6]);
+				xMagn = std::stoi(measurements[6]);
+				yMagn = std::stoi(measurements[7]);
 
 				this->deltaTimeMs = deltaTimeMs;
 
@@ -51,9 +56,11 @@ public:
 				calculateXYvelocity();
 				calculateDistance();
 
-				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, magn,
+				calculateOrientationDegree();
+
+				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, xMagn, yMagn,
 					xAccMPerS2, yAccMPerS2, zAccMPerS2, xVelocity, yVelocity,
-					xDistance, yDistance, deltaTimeMs);
+					xDistance, yDistance, orientationDegree, deltaTimeMs);
 
 				return true;
 			}
@@ -69,7 +76,7 @@ public:
 	double getXangleVelocityDegreePerS() const { return xAngleVelocityDegPerS; }
 	double getYangleVelocityDegreePerS() const { return yAngleVelocityDegPerS; }
 	double getZangleVelocityDegreePerS() const { return zAngleVelocityDegPerS; }
-	int16_t getMagn() const { return magn; }
+	double getAzimuth() const { return orientationDegree; }
 
 	double getXvelocityMperS() const { return xVelocity; }
 	double getYvelocityMperS() const { return yVelocity; }
@@ -123,6 +130,12 @@ private:
 		yDistance = yVelocity * timeIntervalSec;
 	}
 
+	void calculateOrientationDegree()
+	{
+		orientationDegree = atan2(static_cast<double>(yMagn),
+			static_cast<double>(xMagn)) * (180.0f / M_PI);
+	}
+
 	bool isNumber(const std::string& meas)
 	{
 		for (const char c : meas)
@@ -161,6 +174,9 @@ private:
 	int16_t xGyro{ 0xFF };
 	int16_t yGyro{ 0xFF };
 	int16_t zGyro{ 0xFF };
+	int16_t xMagn{ 0xFF };
+	int16_t yMagn{ 0xFF };
+
 	int16_t magn{ 0xFF };
 
 	double xAccMPerS2{ 0.0 };
@@ -171,6 +187,11 @@ private:
 	double yAngleVelocityDegPerS{ 0.0 };
 	double zAngleVelocityDegPerS{ 0.0 };
 
+	double orientationDegree{ 0.0 };
+	
+	/// <summary>
+	/// 
+	/// </summary>
 	double previousXvelocity{ 0.0 };
 	double previousYvelocity{ 0.0 };
 	double xVelocity{ 0.0 };

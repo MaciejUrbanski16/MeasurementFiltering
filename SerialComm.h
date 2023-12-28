@@ -83,7 +83,9 @@ private:
             //               Xgyr 6 elements
             //               Ygyr 6 elements 
             //               Zgyr 6 elements 
-            //               magn 3 elements
+            //               Xmagn 6 elements
+            //               Ymagn 6 elements
+
 
             if (sizeof(remoteSensorData) != 40)
             {

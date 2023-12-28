@@ -286,7 +286,7 @@ private:
     }
 
     void OnTimer(wxTimerEvent& event);
-    void updateMagnChart(const int16_t magn);
+    void updateMagnChart(const double magn);
     void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const uint32_t totalTimeMs);
     void updateVelChart(const double xVelocity);
     void updatePositionChart(const double xDistance, const double yDistance);

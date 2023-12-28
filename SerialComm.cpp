@@ -8,12 +8,29 @@ std::vector<std::string> SerialComm::exctractMeasurements(const std::string& fra
     std::string token;
     int nr = 0;
     while (std::getline(ss, token, measumrementsDelimiter)) {
-        if (nr < 7)
+        if (nr < 8)
         {
             nr++;
-            //token.append("++");
-            //token.append(std::to_string(nr));
-            tokens.push_back(token);
+            //if (nr == 8)
+            //{
+            //    std::string tempToken{};
+            //    for (const auto c : token)
+            //    {
+            //        if (c == '\r')
+            //        {
+            //            tokens.push_back(tempToken);
+            //            break;
+            //        }
+            //        tempToken += c;
+            //    }
+            //}
+            //else 
+            {
+                //token.append("++");
+                //token.append(std::to_string(nr));
+                tokens.push_back(token);
+            }
+
         }
     }
 

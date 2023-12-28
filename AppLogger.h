@@ -56,17 +56,17 @@ public:
 
 	void logHandledMeas(const int16_t xAcc, const int16_t yAcc,
 		const int16_t zAcc, const int16_t xGyro, const int16_t yGyro, const int16_t zGyro,
-		const int16_t magn, const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
-		const double xVelocity, const double yVelocity, const double xDistance, const double yDistance,
+		const int16_t xMagn, const int16_t yMagn, const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
+		const double xVelocity, const double yVelocity, const double xDistance, const double yDistance, const double orientationDegree,
 		const uint32_t deltaTimeMs)
 	{
 		std::stringstream ss;
 		auto currentTime = getCurrentTimeWithMilliSeconds();
 		ss << currentTime << " HANDLED MEASUREMENT DATA: " << "xAcc:" << xAcc << " yAcc:" << yAcc << " zAcc:"
-			<< zAcc << " xGyro:" << xGyro << " yGyro:" << yGyro << " zGyro:" << zGyro << " magn:" << magn << " || " << "xAcc: " << xAccMPerS2
+			<< zAcc << " xGyro:" << xGyro << " yGyro:" << yGyro << " zGyro:" << zGyro << " xMagn:" << xMagn << " yMagn:"<< yMagn <<" || " << "xAcc: " << xAccMPerS2
 			<< "[m/s2]" << " yAcc: " << yAccMPerS2 << "[m/s2]" << " zAcc: " << zAccMPerS2 << "[m/s2] || xVelocity: " << xVelocity << "[m/s]"
-			<< " yVelocity: " << yVelocity << "[m/s] || xDistance: " << xDistance << "[m] yDistance: " << yDistance << "[m] || Delta time : "
-			<< deltaTimeMs<< "[ms]" << '\n';
+			<< " yVelocity: " << yVelocity << "[m/s] || xDistance: " << xDistance << "[m] yDistance: " << yDistance << "[m] || orientationDegree: " 
+			<< orientationDegree << " [deg] || Delta time : " << deltaTimeMs<< "[ms]" << '\n';
 		outputFile << ss.str();
 	}
 	void logErrMeasurementConversion(const std::string& msg)

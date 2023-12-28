@@ -133,7 +133,7 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
     {
         const std::vector<std::string>& measurements = myEvent->GetStringVector();
         appLogger.logReceivedDataOnMainThread(measurements);
-        if (measurements.size() == 7)
+        if (measurements.size() == 8)
         {
             const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
             MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias, xGyroBias, yGyroBias, zGyroBias);
@@ -145,7 +145,7 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
                 //rawMeasurement.setDeltaTimeMs(deltaTimeMs);
                 //rawMeasurementsSet.push_back(rawMeasurement);
 
-                updateMagnChart(rawMeasurement.getMagn());
+                updateMagnChart(rawMeasurement.getAzimuth());
                 updateAccChart(rawMeasurement.getXaccMPerS2(),
                     rawMeasurement.getYaccMPerS2(),
                     rawMeasurement.getZaccMPerS2(),
@@ -189,7 +189,7 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
 
                 //
 
-                relativePositionCalculator.calculateActualRelativePosition(rawMeasurement.getXvelocityMperS(), deltaTimeMs, rawMeasurement.getMagn());
+                relativePositionCalculator.calculateActualRelativePosition(rawMeasurement.getXvelocityMperS(), deltaTimeMs, rawMeasurement.getAzimuth());
 
                 //VelocityCalculator velocityCalculator;
             }
@@ -224,11 +224,11 @@ void MyWindow::OnTimer(wxTimerEvent& event)
     outputFile.close();
 }
 
-void MyWindow::updateMagnChart(const int16_t magn)
+void MyWindow::updateMagnChart(const double azimuth)
 {
-    magnPoints.push_back(wxRealPoint(xNewPoint, magn));
+    magnPoints.push_back(wxRealPoint(xNewPoint, azimuth));
     xNewPoint += 1;
-    yNewPoint = static_cast<double>(magn);
+    yNewPoint = static_cast<double>(azimuth);
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
     dataset->AddSerie(new XYSerie(magnPoints));
@@ -236,8 +236,8 @@ void MyWindow::updateMagnChart(const int16_t magn)
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
-    leftAxis->SetTitle(wxT("NR"));
-    bottomAxis->SetTitle(wxT("magn"));
+    leftAxis->SetTitle(wxT("Azimuth [deg]"));
+    bottomAxis->SetTitle(wxT("Time [ms]"));
     plot->AddObjects(dataset, leftAxis, bottomAxis);
 
     Chart* chart = new Chart(plot, "Magnetometr");
@@ -745,6 +745,7 @@ void MyWindow::prepareGui()
     prepareFilteredPositionChart();
     prepareFilteredVelocityChart();
     prepareFilteredAngleXVelocityChart();
+   // prepareAzimuthChart();
 
     // Create a notebook for outer tabs
     //wxNotebook* outerNotebook = new wxNotebook(this, wxID_ANY);
@@ -758,10 +759,10 @@ void MyWindow::prepareGui()
     //OuterNotebook* outerNotebook = new OuterNotebook(this, 2);
     //m_notebook->AddPage(outerNotebook, "CHARTS");
 
-    magnPoints.push_back(wxRealPoint(3.2, 23.2));
-    magnPoints.push_back(wxRealPoint(4.2, 23.2));
-    magnPoints.push_back(wxRealPoint(6.2, 28.2));
-    magnPoints.push_back(wxRealPoint(9.2, 35.2));
+    //magnPoints.push_back(wxRealPoint(3.2, 23.2));
+    //magnPoints.push_back(wxRealPoint(4.2, 23.2));
+    //magnPoints.push_back(wxRealPoint(6.2, 28.2));
+    //magnPoints.push_back(wxRealPoint(9.2, 35.2));
     plot = new XYPlot();
     dataset = new XYSimpleDataset();
     dataset->AddSerie(new XYSerie(magnPoints));
