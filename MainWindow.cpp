@@ -124,6 +124,20 @@ void MyWindow::OnSubmitAngleVelAdjustments(wxCommandEvent& event)
     wxLogMessage("New acc adj X:%d Y:%d Z:%d!", xAngleVelCtrlValue, yAngleVelCtrlValue, zAngleVelCtrlValue);
 }
 
+void MyWindow::OnResetMagnChart(wxCommandEvent& event)
+{
+    magnPoints.clear();
+    //yAngleVelocityPoints.clear();
+    //zAngleVelocityPoints.clear();
+    azimuthXPoint = 0;
+    wxLogMessage("Reset angle velocity chart!");
+}
+
+void MyWindow::OnSubmitMagnAdjustments(wxCommandEvent& event)
+{
+
+}
+
 /// <summary>
 
 void MyWindow::OnThreadEvent(wxThreadEvent& event) {
@@ -145,7 +159,7 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
                 //rawMeasurement.setDeltaTimeMs(deltaTimeMs);
                 //rawMeasurementsSet.push_back(rawMeasurement);
 
-                updateMagnChart(rawMeasurement.getAzimuth());
+                updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth());
                 updateAccChart(rawMeasurement.getXaccMPerS2(),
                     rawMeasurement.getYaccMPerS2(),
                     rawMeasurement.getZaccMPerS2(),
@@ -224,10 +238,14 @@ void MyWindow::OnTimer(wxTimerEvent& event)
     outputFile.close();
 }
 
-void MyWindow::updateMagnChart(const double azimuth)
+void MyWindow::updateMagnChart(const int16_t xMagn, const int16_t yMagn, const double azimuth)
 {
-    magnPoints.push_back(wxRealPoint(xNewPoint, azimuth));
-    xNewPoint += 1;
+    xMagnValue->SetLabel(std::to_string(xMagn));
+    yMagnValue->SetLabel(std::to_string(yMagn));
+    orientationValue->SetLabel(std::to_string(azimuth));
+
+    magnPoints.push_back(wxRealPoint(azimuthXPoint, azimuth));
+    azimuthXPoint += 1;
     yNewPoint = static_cast<double>(azimuth);
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
@@ -242,7 +260,7 @@ void MyWindow::updateMagnChart(const double azimuth)
 
     Chart* chart = new Chart(plot, "Magnetometr");
 
-    chartPanel->SetChart(chart);
+    azimuthChartPanel->SetChart(chart);
 }
 
 void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const uint32_t totalTimeMs)
@@ -617,6 +635,93 @@ void MyWindow::prepareAngleVelocityChart()
     m_notebook->AddPage(panel, "Angle velocity");
 }
 
+
+void MyWindow::prepareAzimuthChart()
+{
+    plot = new XYPlot();
+    dataset = new XYSimpleDataset();
+    dataset->AddSerie(new XYSerie(magnPoints));
+    dataset->SetRenderer(new XYLineRenderer());
+    leftAxis = new NumberAxis(AXIS_LEFT);
+    bottomAxis = new NumberAxis(AXIS_BOTTOM);
+    leftAxis->SetTitle(wxT("X"));
+    bottomAxis->SetTitle(wxT("Y"));
+    plot->AddObjects(dataset, leftAxis, bottomAxis);
+
+    azimuthChart = new Chart(plot, "DATA SET");
+
+    wxPanel* panel = new wxPanel(m_notebook, wxID_ANY);
+    azimuthPanelSplitter = new wxSplitterWindow(panel, wxID_ANY);
+    wxPanel* controlPanel = new wxPanel(azimuthPanelSplitter, wxID_ANY);
+
+    azimuthChartPanel = new wxChartPanel(azimuthPanelSplitter);
+
+    sizerAzimuthPlot = new wxBoxSizer(wxVERTICAL);
+    azimuthChartPanel->SetMinSize(wxSize(600, 600));
+
+    wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
+
+    spinCtrlXmagn = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 1);
+    wxStaticText* xMagnText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X magn");
+
+    spinCtrlYmagn = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 2);
+    wxStaticText* yMagnText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y magn");
+
+    controlPanelSizer->Add(xMagnText, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(spinCtrlXmagn, 0, wxALL | wxALIGN_CENTER, 5);
+
+    controlPanelSizer->Add(yMagnText, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(spinCtrlYmagn, 0, wxALL | wxALIGN_CENTER, 5);
+
+    wxBoxSizer* azimuthSetupButtonsSizer = new wxBoxSizer(wxHORIZONTAL);
+
+    wxButton* resetButton = new wxButton(controlPanel, wxID_ANY, "Reset chart");
+    azimuthSetupButtonsSizer->Add(resetButton, 0, wxALL | wxALIGN_LEFT, 5);
+    resetButton->Bind(wxEVT_BUTTON, &MyWindow::OnResetMagnChart, this);
+
+    wxButton* submitButton = new wxButton(controlPanel, wxID_ANY, "Submit adjustments");
+    azimuthSetupButtonsSizer->Add(submitButton, 0, wxALL | wxALIGN_LEFT, 5);
+    submitButton->Bind(wxEVT_BUTTON, &MyWindow::OnSubmitMagnAdjustments, this);
+
+    wxBoxSizer* xMagnLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* yMagnLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* orientationSizer = new wxBoxSizer(wxHORIZONTAL);
+
+    wxStaticText* xMagnName = new wxStaticText(controlPanel, wxID_ANY, "Current X magn: ");
+    wxStaticText* yMagnName = new wxStaticText(controlPanel, wxID_ANY, "Current Y magn: ");
+    wxStaticText* orientationName = new wxStaticText(controlPanel, wxID_ANY, "Orientation [deg]: ");
+    xMagnValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+    yMagnValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+    orientationValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+
+    xMagnLabelsSizer->Add(xMagnName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    xMagnLabelsSizer->Add(xMagnValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    controlPanelSizer->Add(xMagnLabelsSizer, 0, wxALL, 5);
+
+    yMagnLabelsSizer->Add(yMagnName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    yMagnLabelsSizer->Add(yMagnValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    controlPanelSizer->Add(yMagnLabelsSizer, 0, wxALL, 5);
+
+    orientationSizer->Add(orientationName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    orientationSizer->Add(orientationValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    controlPanelSizer->Add(orientationSizer, 0, wxALL, 5);
+
+    controlPanelSizer->Add(azimuthSetupButtonsSizer, 0, wxALL, 5);
+
+    controlPanel->SetSizer(controlPanelSizer);
+
+    azimuthPanelSplitter->SplitVertically(azimuthChartPanel, controlPanel);
+    sizerAzimuthPlot->Add(azimuthPanelSplitter, 1, wxEXPAND | wxALL, 5);
+    panel->SetSizer(sizerAzimuthPlot);
+
+    m_notebook->AddPage(panel, "Azimuth");
+
+    //azimuthChartPanel->SetChart(azimuthChart);
+    ////m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
+    //m_notebook->AddPage(azimuthChartPanel, "Chart");
+}
+
+
 void MyWindow::preparePositionChart()
 {
     positionChartPanel = new wxChartPanel(m_notebook);
@@ -635,6 +740,7 @@ void MyWindow::prepareFilteredVelocityChart()
     filteredVelocityChartPanel = new wxChartPanel(m_notebook);
     m_notebook->AddPage(filteredVelocityChartPanel, "Filtered velocity");
 }
+
 
 void MyWindow::prepareFilteredAngleXVelocityChart()
 {
@@ -734,7 +840,7 @@ void MyWindow::prepareGui()
     wxPanel* innerPanel = new wxPanel(innerNotebook);
     innerNotebook->AddPage(innerPanel, "Inner");
     m_notebook->AddPage(kalmanParamsSetupPanel, "KF setup");
-    chartPanel = new wxChartPanel(m_notebook);
+    
 
     //splitter = new wxSplitterWindow(, wxID_ANY);
 
@@ -745,7 +851,7 @@ void MyWindow::prepareGui()
     prepareFilteredPositionChart();
     prepareFilteredVelocityChart();
     prepareFilteredAngleXVelocityChart();
-   // prepareAzimuthChart();
+    prepareAzimuthChart();
 
     // Create a notebook for outer tabs
     //wxNotebook* outerNotebook = new wxNotebook(this, wxID_ANY);
@@ -763,21 +869,7 @@ void MyWindow::prepareGui()
     //magnPoints.push_back(wxRealPoint(4.2, 23.2));
     //magnPoints.push_back(wxRealPoint(6.2, 28.2));
     //magnPoints.push_back(wxRealPoint(9.2, 35.2));
-    plot = new XYPlot();
-    dataset = new XYSimpleDataset();
-    dataset->AddSerie(new XYSerie(magnPoints));
-    dataset->SetRenderer(new XYLineRenderer());
-    leftAxis = new NumberAxis(AXIS_LEFT);
-    bottomAxis = new NumberAxis(AXIS_BOTTOM);
-    leftAxis->SetTitle(wxT("X"));
-    bottomAxis->SetTitle(wxT("Y"));
-    plot->AddObjects(dataset, leftAxis, bottomAxis);
 
-    chart = new Chart(plot, "DATA SET");
-
-    chartPanel->SetChart(chart);
-    //m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
-    m_notebook->AddPage(chartPanel, "Chart");
 
     wxSize size(100, 20);
 

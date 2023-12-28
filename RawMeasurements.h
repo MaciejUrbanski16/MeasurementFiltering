@@ -77,6 +77,8 @@ public:
 	double getYangleVelocityDegreePerS() const { return yAngleVelocityDegPerS; }
 	double getZangleVelocityDegreePerS() const { return zAngleVelocityDegPerS; }
 	double getAzimuth() const { return orientationDegree; }
+	int16_t getRawXMagn() const { return xMagn; }
+	int16_t getRawYMagn() const { return yMagn; }
 
 	double getXvelocityMperS() const { return xVelocity; }
 	double getYvelocityMperS() const { return yVelocity; }

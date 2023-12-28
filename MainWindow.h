@@ -115,6 +115,8 @@ private:
     void OnSubmitAccAdjustments(wxCommandEvent& event);
     void OnResetAngleVelChart(wxCommandEvent& event);
     void OnSubmitAngleVelAdjustments(wxCommandEvent& event);
+    void OnResetMagnChart(wxCommandEvent& event);
+    void OnSubmitMagnAdjustments(wxCommandEvent& event);
 
     void OnThreadEvent(wxThreadEvent& event);
 
@@ -286,7 +288,7 @@ private:
     }
 
     void OnTimer(wxTimerEvent& event);
-    void updateMagnChart(const double magn);
+    void updateMagnChart(const int16_t rawXMagn, const int16_t rawYMagn, const double magn);
     void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const uint32_t totalTimeMs);
     void updateVelChart(const double xVelocity);
     void updatePositionChart(const double xDistance, const double yDistance);
@@ -317,7 +319,7 @@ private:
     wxPanel* comSetupPanel = nullptr;
     wxPanel* dataReceptionPanel = nullptr;
     wxPanel* kalmanParamsSetupPanel = nullptr;
-    wxChartPanel* chartPanel = nullptr;
+    wxChartPanel* azimuthChartPanel = nullptr;
     wxChartPanel* accChartPanel = nullptr;
     wxChartPanel* velChartPanel = nullptr;
     wxChartPanel* positionChartPanel = nullptr;
@@ -334,7 +336,7 @@ private:
     XYSimpleDataset* dataset = nullptr;
     NumberAxis* leftAxis = nullptr;
     NumberAxis* bottomAxis = nullptr;
-    Chart* chart = nullptr;
+    Chart* azimuthChart = nullptr;
 
 
     XYPlot* accPlot = nullptr;
@@ -395,6 +397,15 @@ private:
     double yGyroBias{ 12900.0 };
     double zGyroBias{ 15000.0 };
 
+    wxSplitterWindow* azimuthPanelSplitter = nullptr;
+    wxBoxSizer* sizerAzimuthPlot = nullptr;
+    wxSpinCtrl* spinCtrlXmagn = nullptr;
+    wxSpinCtrl* spinCtrlYmagn = nullptr;
+
+    wxStaticText* xMagnValue = nullptr;
+    wxStaticText* yMagnValue = nullptr;
+    wxStaticText* orientationValue = nullptr;
+    double azimuthXPoint{ 0.0 };
 
     double currentXPos{ 0.0 };
     double currentYPos{ 0.0 };
@@ -415,6 +426,7 @@ private:
 
     double xAngleVelNewPoint{ 0.0 };
 
+   
     void prepareGui();
     void prepareAccChart();
     void prepareVelChart();
@@ -422,6 +434,7 @@ private:
     void prepareAngleVelocityChart();
     void prepareFilteredPositionChart();
     void prepareFilteredVelocityChart();
+    void prepareAzimuthChart();
     void prepareFilteredAngleXVelocityChart();
 
     void createDataReceptionThread();
