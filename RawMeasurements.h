@@ -27,12 +27,13 @@ public:
 
 	bool assign(const std::vector<std::string>& measurements, const uint32_t deltaTimeMs)
 	{
-		if (measurements.size() == 8)
+		if (measurements.size() == 10)
 		{
 			//const auto isMagnetometr = isMagn(measurements[6]);
 			if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) &&
 				isNumber(measurements[3]) && isNumber(measurements[4]) && isNumber(measurements[5]) &&
-				isNumber(measurements[6]) && isNumber(measurements[7]))
+				isNumber(measurements[6]) && isNumber(measurements[7]) && 
+				isFloat(measurements[8]) && isFloat(measurements[9]))
 
 			{
 				xAcc = std::stoi(measurements[0]);
@@ -48,6 +49,22 @@ public:
 				xMagn = std::stoi(measurements[6]);
 				yMagn = std::stoi(measurements[7]);
 
+				try
+				{
+					longitude = std::stod(measurements[8]);
+				}
+				catch (...) {
+					longitude = 999.999;
+				}
+				try 
+				{
+					latitude = std::stod(measurements[9]);
+				}
+				catch (...)
+				{
+					latitude = 999.999;
+				}
+
 				this->deltaTimeMs = deltaTimeMs;
 
 				calculateAccInMPerS2();
@@ -60,7 +77,7 @@ public:
 
 				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, xMagn, yMagn,
 					xAccMPerS2, yAccMPerS2, zAccMPerS2, xVelocity, yVelocity,
-					xDistance, yDistance, orientationDegree, deltaTimeMs);
+					xDistance, yDistance, orientationDegree, longitude, latitude, deltaTimeMs);
 
 				return true;
 			}
@@ -151,6 +168,18 @@ private:
 		return true;
 	}
 
+	bool isFloat(const std::string& meas)
+	{
+		try {
+			size_t pos;
+			std::stod(meas, &pos);
+			return pos == meas.length(); // Sprawdzamy, czy ca³y string zosta³ przetworzony
+		}
+		catch (...) {
+			return false; // W przypadku b³êdu rzutowania, string nie jest liczb¹ zmiennoprzecinkow¹
+		}
+	}
+
 	std::pair<bool, std::string> isMagn(const std::string& amgnMeas)
 	{
 		std::string magnStr{};
@@ -178,6 +207,9 @@ private:
 	int16_t zGyro{ 0xFF };
 	int16_t xMagn{ 0xFF };
 	int16_t yMagn{ 0xFF };
+
+	double longitude{ 0.0 };
+	double latitude{ 0.0 };
 
 	int16_t magn{ 0xFF };
 

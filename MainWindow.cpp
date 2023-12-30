@@ -147,7 +147,7 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
     {
         const std::vector<std::string>& measurements = myEvent->GetStringVector();
         appLogger.logReceivedDataOnMainThread(measurements);
-        if (measurements.size() == 8)
+        if (measurements.size() == 10)
         {
             const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
             MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias, xGyroBias, yGyroBias, zGyroBias);

@@ -7,32 +7,17 @@ std::vector<std::string> SerialComm::exctractMeasurements(const std::string& fra
     std::vector<std::string> tokens;
     std::string token;
     int nr = 0;
-    while (std::getline(ss, token, measumrementsDelimiter)) {
+    while (std::getline(ss, token, measumrementsDelimiter)) 
+    {
+        //this will be extended for handling GPS data
         if (nr < 8)
         {
             nr++;
-            //if (nr == 8)
-            //{
-            //    std::string tempToken{};
-            //    for (const auto c : token)
-            //    {
-            //        if (c == '\r')
-            //        {
-            //            tokens.push_back(tempToken);
-            //            break;
-            //        }
-            //        tempToken += c;
-            //    }
-            //}
-            //else 
-            {
-                //token.append("++");
-                //token.append(std::to_string(nr));
-                tokens.push_back(token);
-            }
-
+            tokens.push_back(token);
         }
     }
+    tokens.push_back("70.234"); //Latitude
+    tokens.push_back("30.234"); //Longitude
 
     return tokens;
 }
