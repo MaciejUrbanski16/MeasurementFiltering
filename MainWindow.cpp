@@ -315,12 +315,13 @@ void MyWindow::updatePositionChart(const double xDistance, const double yDistanc
 {
     currentXPos = currentXPos + xDistance;
     currentYPos = currentYPos + yDistance;
-    positionPoints.push_back(wxRealPoint(currentXPos, currentYPos));
+    rawPositionPoints.push_back(wxRealPoint(currentXPos, currentYPos));
+    rawPositionBuffer.AddElement(wxRealPoint(currentXPos, currentYPos));
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
 
-    dataset->AddSerie(new XYSerie(positionPoints));
+    dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
@@ -378,11 +379,11 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
     currentFilteredYPosition += filteredPositionY;
 
     filteredPositionPoints.push_back(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
-
+    filteredPositionBuffer.AddElement(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
-    dataset->AddSerie(new XYSerie(positionPoints));
-    dataset->AddSerie(new XYSerie(filteredPositionPoints));
+    dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(filteredPositionBuffer.getBuffer()));
 
     //dataset->AddSerie(new XYSerie(yAngleVelocityPoints));
     //dataset->AddSerie(new XYSerie(zAngleVelocityPoints));

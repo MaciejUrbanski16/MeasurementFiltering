@@ -34,6 +34,7 @@
 #include "VelocityCalculator.h"
 #include "DeltaTimeCalculator.h"
 #include "RelativePositionCalculator.h"
+#include "PlotElementsBuffer.h"
 #include "kalman_filter/kalman_filter.h"
 
 #include <chrono>
@@ -346,7 +347,7 @@ private:
     Chart* accChart = nullptr;
 
     wxVector <wxRealPoint> velPoints;
-    wxVector <wxRealPoint> positionPoints;
+    wxVector <wxRealPoint> rawPositionPoints;
 
     wxVector <wxRealPoint> xAccPoints;
     wxVector <wxRealPoint> yAccPoints;
@@ -358,6 +359,9 @@ private:
 
     wxVector <wxRealPoint> filteredVelocityPoints;
     wxVector <wxRealPoint> filteredPositionPoints;
+    PlotElementsBuffer rawPositionBuffer;
+    PlotElementsBuffer filteredPositionBuffer;
+    
 
     wxVector <wxRealPoint> filteredXangleVelocity;
     wxVector <wxRealPoint> measuredXangleVelocity;
