@@ -151,24 +151,27 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
         {
             const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
             MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias, xGyroBias, yGyroBias, zGyroBias);
+            totalTimeMs += static_cast<double>(deltaTimeMs);
             if (rawMeasurement.assign(measurements, deltaTimeMs))
             {
 
                 const uint32_t totalTimeMs = deltaTimeCalculator.getTotalTimeMs();
 
+                const double distance = haversineConverter.calculateDistance(rawMeasurement.getLongitude(), 70.2, rawMeasurement.getLatitude(), 30.2);
+                const auto xyPoint = haversineConverter.convertToXY_({70.234, 30.234});
                 //rawMeasurement.setDeltaTimeMs(deltaTimeMs);
                 //rawMeasurementsSet.push_back(rawMeasurement);
 
-                updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth());
+                updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), totalTimeMs);
                 updateAccChart(rawMeasurement.getXaccMPerS2(),
                     rawMeasurement.getYaccMPerS2(),
                     rawMeasurement.getZaccMPerS2(),
                     totalTimeMs);
-                updateVelChart(rawMeasurement.getXvelocityMperS());
-                updatePositionChart(rawMeasurement.getXDistance(), rawMeasurement.getYDistance());
+                //updateVelChart(rawMeasurement.getXvelocityMperS());
+                updatePositionChart(rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
                 updateAngleVelocityChart(rawMeasurement.getXangleVelocityDegreePerS(),
                     rawMeasurement.getYangleVelocityDegreePerS(),
-                    rawMeasurement.getZangleVelocityDegreePerS());
+                    rawMeasurement.getZangleVelocityDegreePerS(), totalTimeMs);
 
                 //kalman filter experiment
                 kalmanFilter.setInitialState(rawMeasurement.getXDistance(), rawMeasurement.getXvelocityMperS(), rawMeasurement.getXaccMPerS2(),
@@ -194,12 +197,12 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
                 const double filteredPositionY = kalmanFilter.vecX()(3);//PosY
                 const double filteredVelocityY = kalmanFilter.vecX()(3);
 
-                updateFilteredPositionChart(filteredPositionX, filteredPositionY);
-                updateFilteredVelocityChart(filteredVelocityX, filteredVelocityY);
+                updateFilteredPositionChart(filteredPositionX, filteredPositionY, totalTimeMs);
+                updateFilteredVelocityChart(filteredVelocityX, filteredVelocityY, totalTimeMs);
 
                 const double filteredXangle = kalmanFilterGyro.vecX()(0);
 
-                updateFilteredAngleXVelocityChart(filteredXangle, rawMeasurement.getXangleVelocityDegreePerS(), deltaTimeMs);
+                updateFilteredAngleXVelocityChart(filteredXangle, rawMeasurement.getXangleVelocityDegreePerS(), totalTimeMs);
 
                 //
 
@@ -238,14 +241,14 @@ void MyWindow::OnTimer(wxTimerEvent& event)
     outputFile.close();
 }
 
-void MyWindow::updateMagnChart(const int16_t xMagn, const int16_t yMagn, const double azimuth)
+void MyWindow::updateMagnChart(const int16_t xMagn, const int16_t yMagn, const double azimuth, const double timeMs)
 {
     xMagnValue->SetLabel(std::to_string(xMagn));
     yMagnValue->SetLabel(std::to_string(yMagn));
     orientationValue->SetLabel(std::to_string(azimuth));
 
-    magnPoints.push_back(wxRealPoint(azimuthXPoint, azimuth));
-    azimuthXPoint += 1;
+    magnPoints.push_back(wxRealPoint(timeMs, azimuth));
+    //azimuthXPoint += 1;
     yNewPoint = static_cast<double>(azimuth);
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
@@ -263,16 +266,16 @@ void MyWindow::updateMagnChart(const int16_t xMagn, const int16_t yMagn, const d
     azimuthChartPanel->SetChart(chart);
 }
 
-void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const uint32_t totalTimeMs)
+void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs)
 {
     xAccValue->SetLabel(std::to_string(xAccMPerS2));
     yAccValue->SetLabel(std::to_string(yAccMPerS2));
     zAccValue->SetLabel(std::to_string(zAccMPerS2));
 
-    xAccPoints.push_back(wxRealPoint(timeNewAccPoint, xAccMPerS2));
-    yAccPoints.push_back(wxRealPoint(timeNewAccPoint, yAccMPerS2));
-    zAccPoints.push_back(wxRealPoint(timeNewAccPoint, zAccMPerS2));
-    timeNewAccPoint += totalTimeMs;
+    xAccPoints.push_back(wxRealPoint(timeMs, xAccMPerS2));
+    yAccPoints.push_back(wxRealPoint(timeMs, yAccMPerS2));
+    zAccPoints.push_back(wxRealPoint(timeMs, zAccMPerS2));
+    //timeNewAccPoint += totalTimeMs / 1000;
     yNewPoint = static_cast<double>(xAccMPerS2);
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
@@ -291,27 +294,27 @@ void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, 
     accChartPanel->SetChart(chart);
 }
 
-void MyWindow::updateVelChart(const double xVelocity)
-{
-    velPoints.push_back(wxRealPoint(xNewPoint, xVelocity));
-    xNewPoint += 1;
-    yNewPoint = static_cast<double>(xVelocity);
-    XYPlot* plot = new XYPlot();
-    XYSimpleDataset* dataset = new XYSimpleDataset();
-    dataset->AddSerie(new XYSerie(velPoints));
-    dataset->SetRenderer(new XYLineRenderer());
-    NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
-    NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
-    leftAxis->SetTitle(wxT("X velocity [m/s]"));
-    bottomAxis->SetTitle(wxT("time [ms]"));
-    plot->AddObjects(dataset, leftAxis, bottomAxis);
+//void MyWindow::updateVelChart(const double xVelocity)
+//{
+//    velPoints.push_back(wxRealPoint(xNewPoint, xVelocity));
+//    xNewPoint += 1;
+//    yNewPoint = static_cast<double>(xVelocity);
+//    XYPlot* plot = new XYPlot();
+//    XYSimpleDataset* dataset = new XYSimpleDataset();
+//    dataset->AddSerie(new XYSerie(velPoints));
+//    dataset->SetRenderer(new XYLineRenderer());
+//    NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
+//    NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
+//    leftAxis->SetTitle(wxT("X velocity [m/s]"));
+//    bottomAxis->SetTitle(wxT("time [ms]"));
+//    plot->AddObjects(dataset, leftAxis, bottomAxis);
+//
+//    Chart* chart = new Chart(plot, "X Velocity");
+//
+//    velChartPanel->SetChart(chart);
+//}
 
-    Chart* chart = new Chart(plot, "X Velocity");
-
-    velChartPanel->SetChart(chart);
-}
-
-void MyWindow::updatePositionChart(const double xDistance, const double yDistance)
+void MyWindow::updatePositionChart(const double xDistance, const double yDistance, const double timeMs)
 {
     currentXPos = currentXPos + xDistance;
     currentYPos = currentYPos + yDistance;
@@ -334,16 +337,16 @@ void MyWindow::updatePositionChart(const double xDistance, const double yDistanc
     positionChartPanel->SetChart(chart);
 }
 
-void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel)
+void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double timeMs)
 {
     xAngleVelValue->SetLabel(std::to_string(xAngleVel));
     yAngleVelValue->SetLabel(std::to_string(yAngleVel));
     zAngleVelValue->SetLabel(std::to_string(zAngleVel));
 
-    xAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, xAngleVel));
-    yAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, yAngleVel));
-    zAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, zAngleVel));
-    xAngleVelNewPoint += 1;
+    xAngleVelocityPoints.push_back(wxRealPoint(timeMs, xAngleVel));
+    yAngleVelocityPoints.push_back(wxRealPoint(timeMs, yAngleVel));
+    zAngleVelocityPoints.push_back(wxRealPoint(timeMs, zAngleVel));
+    //xAngleVelNewPoint += 1;
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
@@ -368,7 +371,7 @@ void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAn
     angleVelocityChartPanel->SetChart(chart);
 }
 
-void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY)
+void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY, const double timeMs)
 {
     //xAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, xAngleVel));
     //yAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, yAngleVel));
@@ -417,13 +420,14 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
     filteredPositionChartPanel->SetChart(chart);
 }
 
-void MyWindow::updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const uint32_t time)
+void MyWindow::updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const double time)
 {
     currentXangleFiltered += filteredXangle;
     currentXangleMeasured += measuredXangle;
+    //angleTimeMeasurementsMs += static_cast<double>(time);
 
-    filteredXangleVelocity.push_back(wxRealPoint(xNewPoint, filteredXangle));
-    measuredXangleVelocity.push_back(wxRealPoint(xNewPoint, measuredXangle));
+    filteredXangleVelocity.push_back(wxRealPoint(time, filteredXangle));
+    measuredXangleVelocity.push_back(wxRealPoint(time, measuredXangle));
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
@@ -450,7 +454,7 @@ void MyWindow::updateFilteredAngleXVelocityChart(const double filteredXangle, co
     filteredAngleXVelocity->SetChart(chart);
 }
 
-void MyWindow::updateFilteredVelocityChart(const double filteredVelocityX, const double filteredVelocityY)
+void MyWindow::updateFilteredVelocityChart(const double filteredVelocityX, const double filteredVelocityY, const double timeMs)
 {
 
 }
@@ -491,13 +495,13 @@ void MyWindow::prepareAccChart()
 
     wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
 
-    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 80);
+    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 15700);
     wxStaticText* xAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X acc");
 
-    spinCtrlYacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 40);
+    spinCtrlYacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 530);
     wxStaticText* yAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y acc");
 
-    spinCtrlZacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 2000);
+    spinCtrlZacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 16100);
     wxStaticText* zAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Z acc");
 
     controlPanelSizer->Add(xAccText, 0, wxALL | wxALIGN_CENTER, 5);
@@ -732,14 +736,14 @@ void MyWindow::preparePositionChart()
 
 void MyWindow::prepareVelChart()
 {
-    velChartPanel = new wxChartPanel(m_notebook);
-    m_notebook->AddPage(velChartPanel, "Vel chart");
+    //velChartPanel = new wxChartPanel(m_notebook);
+    //m_notebook->AddPage(velChartPanel, "Vel chart");
 }
 
 void MyWindow::prepareFilteredVelocityChart()
 {
-    filteredVelocityChartPanel = new wxChartPanel(m_notebook);
-    m_notebook->AddPage(filteredVelocityChartPanel, "Filtered velocity");
+    //filteredVelocityChartPanel = new wxChartPanel(m_notebook);
+    //m_notebook->AddPage(filteredVelocityChartPanel, "Filtered velocity");
 }
 
 

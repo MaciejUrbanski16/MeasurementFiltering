@@ -49,21 +49,9 @@ public:
 				xMagn = std::stoi(measurements[6]);
 				yMagn = std::stoi(measurements[7]);
 
-				try
-				{
-					longitude = std::stod(measurements[8]);
-				}
-				catch (...) {
-					longitude = 999.999;
-				}
-				try 
-				{
-					latitude = std::stod(measurements[9]);
-				}
-				catch (...)
-				{
-					latitude = 999.999;
-				}
+				convertGpsDataToDouble(measurements[8], measurements[9]);
+
+
 
 				this->deltaTimeMs = deltaTimeMs;
 
@@ -96,6 +84,8 @@ public:
 	double getAzimuth() const { return orientationDegree; }
 	int16_t getRawXMagn() const { return xMagn; }
 	int16_t getRawYMagn() const { return yMagn; }
+	double getLongitude() const { return longitude; }
+	double getLatitude() const { return latitude; }
 
 	double getXvelocityMperS() const { return xVelocity; }
 	double getYvelocityMperS() const { return yVelocity; }
@@ -153,6 +143,26 @@ private:
 	{
 		orientationDegree = atan2(static_cast<double>(yMagn),
 			static_cast<double>(xMagn)) * (180.0f / M_PI);
+	}
+
+	void convertGpsDataToDouble(const std::string& longitudeAsString, const std::string& latitudeAsString)
+	{
+		try
+		{
+			longitude = std::stod(longitudeAsString);
+		}
+		catch (...) 
+		{
+			longitude = 999.999;
+		}
+		try
+		{
+			latitude = std::stod(latitudeAsString);
+		}
+		catch (...)
+		{
+			latitude = 999.999;
+		}
 	}
 
 	bool isNumber(const std::string& meas)
@@ -237,7 +247,7 @@ private:
 	uint32_t deltaTimeMs{ 0 };
 	
 	static constexpr double gPhysConst = 9.803;
-	double rawGrawity = 2000.0;
+	double rawGrawity = 16000.0;
 	double xBias = 80.0;
 	double yBias = 40.0;
 

@@ -35,6 +35,7 @@
 #include "DeltaTimeCalculator.h"
 #include "RelativePositionCalculator.h"
 #include "PlotElementsBuffer.h"
+#include "HaversineConverter.h"
 #include "kalman_filter/kalman_filter.h"
 
 #include <chrono>
@@ -289,18 +290,19 @@ private:
     }
 
     void OnTimer(wxTimerEvent& event);
-    void updateMagnChart(const int16_t rawXMagn, const int16_t rawYMagn, const double magn);
-    void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const uint32_t totalTimeMs);
-    void updateVelChart(const double xVelocity);
-    void updatePositionChart(const double xDistance, const double yDistance);
-    void updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel);
-    void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY);
-    void updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const uint32_t time);
-    void updateFilteredVelocityChart(const double filteredVelocityX, const double filteredVelocityY);
+    void updateMagnChart(const int16_t rawXMagn, const int16_t rawYMagn, const double magn, const double timeMs);
+    void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs);
+    //void updateVelChart(const double xVelocity, const double timeMs);
+    void updatePositionChart(const double xDistance, const double yDistance, const double timeMs);
+    void updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double timeMs);
+    void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY, const double timeMs);
+    void updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const double timeMs);
+    void updateFilteredVelocityChart(const double filteredVelocityX, const double filteredVelocityY, const double timeMs);
 
     DeltaTimeCalculator deltaTimeCalculator;
     RelativePositionCalculator relativePositionCalculator{};
     std::vector<MeasurementsController> rawMeasurementsSet{};
+    HaversineConverter haversineConverter{};
 
     bool isDataReceptionStarted{ false };
     wxVector <wxRealPoint> magnPoints;
@@ -382,9 +384,9 @@ private:
     wxStaticText* yAccValue = nullptr;
     wxStaticText* zAccValue = nullptr;
 
-    double rawGrawity{ 2000.0 };
-    double xBias{ 80.0 };
-    double yBias{ 40.0 };
+    double rawGrawity{ 16100.0 };
+    double xBias{ 15700.0 };
+    double yBias{ 530.0 };
 
 
     wxSplitterWindow* angleVelPanelSplitter = nullptr;
@@ -409,6 +411,8 @@ private:
     wxStaticText* xMagnValue = nullptr;
     wxStaticText* yMagnValue = nullptr;
     wxStaticText* orientationValue = nullptr;
+
+    double totalTimeMs{ 0.0 };
     double azimuthXPoint{ 0.0 };
 
     double currentXPos{ 0.0 };
@@ -416,9 +420,11 @@ private:
 
     double currentFilteredXPosition{ 0.0 };
     double currentFilteredYPosition{ 0.0 };
+    
 
     double currentXangleFiltered{ 0.0 };
     double currentXangleMeasured{ 0.0 };
+    double angleTimeMeasurementsMs{ 0.0 };
 
     MeasReceptionThrea* serialComThread = nullptr;
 
