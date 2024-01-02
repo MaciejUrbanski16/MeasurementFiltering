@@ -118,6 +118,7 @@ private:
     void OnResetAngleVelChart(wxCommandEvent& event);
     void OnSubmitAngleVelAdjustments(wxCommandEvent& event);
     void OnResetMagnChart(wxCommandEvent& event);
+    void OnApplyKFTunning(wxCommandEvent& event);
     void OnSubmitMagnAdjustments(wxCommandEvent& event);
 
     void OnThreadEvent(wxThreadEvent& event);
@@ -189,8 +190,8 @@ private:
         double process_variance = 0.00002F;
         deltaTimeMs = deltaTimeMs / 100000000.0F;
 
-        kf::Matrix<DIM_X, DIM_X> Q; // kowariancja szumu procesowego
-        Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
+        //kowariancja szumu procesowego
+        matQ << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
             pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
             pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
             0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
@@ -212,10 +213,10 @@ private:
         //    0, 0, 0, 1, 1, 1;
 
 
-        Q *= process_variance;
+        matQ *= process_variance;
 
         ////PREDICTION STEP
-        kalmanFilter.predictLKF(A, Q);
+        kalmanFilter.predictLKF(A, matQ);
         appLogger.logKalmanFilterPredictionStep(kalmanFilter);
         ////
 
@@ -224,13 +225,13 @@ private:
         //float ay = newMeasurement + 2.1f;
         vecZ << Xacc, Yacc;
 
-        kf::Matrix<DIM_Z, DIM_Z> matR;
-        matR << 0.1F, 0.0F,
-            0.0F, 0.1F;
+        //kf::Matrix<DIM_Z, DIM_Z> matR;
+        //matR << 0.1F, 0.0F,
+        //        0.0F, 0.1F;
 
         kf::Matrix<DIM_Z, DIM_X> matH;
         matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F;
+                0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F;
 
         ////CORRECTION STEP
         kalmanFilter.correctLKF(vecZ, matR, matH);
@@ -304,11 +305,15 @@ private:
     std::vector<MeasurementsController> rawMeasurementsSet{};
     HaversineConverter haversineConverter{};
 
+    static constexpr size_t DIM_X{ 6 };
+    static constexpr size_t DIM_Z{ 2 };
+    kf::Matrix<DIM_X, DIM_X> matQ;
+    kf::Matrix<DIM_Z, DIM_Z> matR;
+
     bool isDataReceptionStarted{ false };
     wxVector <wxRealPoint> magnPoints;
 
-    static constexpr size_t DIM_X{ 6 };
-    static constexpr size_t DIM_Z{ 2 };
+
     kf::KalmanFilter<DIM_X, DIM_Z> kalmanFilter;
 
     static constexpr size_t DIM_X_gyro{ 6 };

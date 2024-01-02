@@ -133,6 +133,43 @@ void MyWindow::OnResetMagnChart(wxCommandEvent& event)
     wxLogMessage("Reset angle velocity chart!");
 }
 
+void MyWindow::OnApplyKFTunning(wxCommandEvent& event)
+{
+    bool conversionOK = true;
+   
+    for (int i = 0; i < DIM_Z; i++)
+    {
+        for (int j = 0; j < DIM_Z; j++)
+        {
+            wxString cellValue = matrixRCovariance->GetCellValue(i, j);
+            double cellValueAsDouble{ 0.0 };
+            if (cellValue.ToDouble(&cellValueAsDouble)) 
+            {
+                //wxPrintf("Double value: %lf\n", cellValueAsDouble);
+                matR(i * DIM_Z + j) = cellValueAsDouble;    
+            }
+            else 
+            {
+                conversionOK = false;
+                wxLogError("Wiersz %d kolumna %d z wartoscia: %s nie moze zostac przekonwertowana na liczbe zmiennoprzecinkowa!", i, j, cellValue);
+            }
+            
+        }
+    }
+    if (conversionOK)
+    {
+        std::stringstream msgToLog;
+        msgToLog << "Apply KF tunning";
+
+        for (int i = 0; i < DIM_Z * DIM_Z; i++)
+        {
+            msgToLog << " matR[" << i << "]: " << matR(i);
+        }
+        wxString wxStringValue(msgToLog.str());
+        wxLogMessage(wxStringValue);
+    }
+}
+
 void MyWindow::OnSubmitMagnAdjustments(wxCommandEvent& event)
 {
 
@@ -618,7 +655,7 @@ void MyWindow::prepareAngleVelocityChart()
     zAngleVelValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 
     xAngleVelLabelsSizer->Add(xAngleVelName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
-    yAngleVelLabelsSizer->Add(xAngleVelValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    xAngleVelLabelsSizer->Add(xAngleVelValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
     controlPanelSizer->Add(xAngleVelLabelsSizer, 0, wxALL, 5);
 
     yAngleVelLabelsSizer->Add(yAngleVelName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
@@ -758,6 +795,8 @@ void MyWindow::prepareFilteredPositionChart()
     wxPanel* panel = new wxPanel(m_notebook, wxID_ANY);
     splitter = new wxSplitterWindow(panel, wxID_ANY);
 
+    matR << 0.1F, 0.0F,
+            0.0F, 0.1F;
 
     // Create two panels to be placed in the splitter window
     //wxPanel* panel1 = new wxPanel(splitter, wxID_ANY);
@@ -768,7 +807,7 @@ void MyWindow::prepareFilteredPositionChart()
     filteredPositionChartPanel->SetMinSize(wxSize(600, 600));
     //filteredVelocityChartPanel->SetSize(200, 200);
     //sizer->Add(filteredPositionChartPanel, 1, wxEXPAND | wxALL, 5);
-    wxButton* button = new wxButton(controlPanel, wxID_ANY, "Click me");
+    wxButton* applyKFtunningChangesButton = new wxButton(controlPanel, wxID_ANY, "Apply changes!");
     //sizerPositionPlot->Add(button, 0, wxALIGN_RIGHT | wxALL, 5);
     wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
     wxSpinCtrl* spinCtrlPCoefficient = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 0);
@@ -777,12 +816,16 @@ void MyWindow::prepareFilteredPositionChart()
     wxSpinCtrl* spinCtrlSCoefficient = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 6);
     wxStaticText* sCoefficientText = new wxStaticText(controlPanel, wxID_ANY, "Spin Control for s coefficient:");
 
+
+    wxStaticText* qMatrixText = new wxStaticText(controlPanel, wxID_ANY, "Matrix Q");
+    wxStaticText* rMatrixText = new wxStaticText(controlPanel, wxID_ANY, "Matrix R");
+
     matrixGrid = new wxGrid(controlPanel, wxID_ANY);
     matrixGrid->CreateGrid(6, 6);
 
     matrixGrid->HideRowLabels();
     matrixGrid->HideColLabels();
-    //matrixGrid->SetSize(100, 100);
+    matrixGrid->SetSize(100, 100);
 
     for (int i = 0; i < 6; ++i) {
         for (int j = 0; j < 6; ++j) {
@@ -791,35 +834,39 @@ void MyWindow::prepareFilteredPositionChart()
     }
 
     for (int i = 0; i < 6; ++i) {
-        matrixGrid->SetRowSize(i, 30);  // Set the height of each row
-        matrixGrid->SetColSize(i, 50);  // Set the width of each column
+        matrixGrid->SetRowSize(i, 20);  // Set the height of each row
+        matrixGrid->SetColSize(i, 40);  // Set the width of each column
     }
 
     matrixRCovariance = new wxGrid(controlPanel, wxID_ANY);
-    matrixRCovariance->CreateGrid(2, 2);
+    matrixRCovariance->CreateGrid(DIM_Z, DIM_Z);
 
     matrixRCovariance->HideRowLabels();
     matrixRCovariance->HideColLabels();
-    //matrixGrid->SetSize(100, 100);
+    matrixGrid->SetSize(100, 100);
 
-    for (int i = 0; i < 2; ++i) {
-        for (int j = 0; j < 2; ++j) {
-            matrixRCovariance->SetCellValue(i, j, wxString::Format("%d", i * 6 + j));
+    for (int i = 0; i < DIM_Z; ++i) {
+        for (int j = 0; j < DIM_Z; ++j) {
+            matrixRCovariance->SetCellValue(i, j, wxString::Format("%f", matR(i*DIM_Z+j)));
         }
     }
 
-    for (int i = 0; i < 2; ++i) {
-        matrixRCovariance->SetRowSize(i, 30);  // Set the height of each row
+    for (int i = 0; i < DIM_Z; ++i) {
+        matrixRCovariance->SetRowSize(i, 20);  // Set the height of each row
         matrixRCovariance->SetColSize(i, 50);  // Set the width of each column
     }
+
+    applyKFtunningChangesButton->Bind(wxEVT_BUTTON, &MyWindow::OnApplyKFTunning, this);
 
     controlPanelSizer->Add(pCoefficientText, 0, wxALL, 5);
     controlPanelSizer->Add(spinCtrlPCoefficient, 0, wxALL | wxALIGN_RIGHT, 5);
     controlPanelSizer->Add(sCoefficientText, 0, wxALL, 5);
     controlPanelSizer->Add(spinCtrlSCoefficient, 0, wxALL | wxALIGN_RIGHT, 5);
-    controlPanelSizer->Add(button, 0, wxALL, 5);
-    controlPanelSizer->Add(matrixGrid, 1, wxEXPAND | wxALL, 5);
-    controlPanelSizer->Add(matrixRCovariance, 1, wxALIGN_CENTER | wxALL, 5);
+    controlPanelSizer->Add(qMatrixText, 0, wxALIGN_CENTER|wxALL, 5);
+    controlPanelSizer->Add(matrixGrid, 0, wxEXPAND | wxALL, 5);
+    controlPanelSizer->Add(rMatrixText, 0, wxALIGN_CENTER|wxALL, 5);
+    controlPanelSizer->Add(matrixRCovariance, 0, wxALIGN_CENTER | wxALL, 5);
+    controlPanelSizer->Add(applyKFtunningChangesButton, 0, wxALIGN_CENTER|wxALL, 3);
     controlPanel->SetSizer(controlPanelSizer);
 
 
