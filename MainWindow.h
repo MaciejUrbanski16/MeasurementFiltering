@@ -36,6 +36,7 @@
 #include "RelativePositionCalculator.h"
 #include "PlotElementsBuffer.h"
 #include "HaversineConverter.h"
+#include "KalmanFilterSetupGui.h"
 #include "kalman_filter/kalman_filter.h"
 
 #include <chrono>
@@ -229,9 +230,9 @@ private:
         //matR << 0.1F, 0.0F,
         //        0.0F, 0.1F;
 
-        kf::Matrix<DIM_Z, DIM_X> matH;
-        matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-                0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F;
+        //kf::Matrix<DIM_Z, DIM_X> matH;
+        //matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
+        //        0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F;
 
         ////CORRECTION STEP
         kalmanFilter.correctLKF(vecZ, matR, matH);
@@ -300,15 +301,20 @@ private:
     void updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const double timeMs);
     void updateFilteredVelocityChart(const double filteredVelocityX, const double filteredVelocityY, const double timeMs);
 
+    void updateMatQGrid();
+
     DeltaTimeCalculator deltaTimeCalculator;
     RelativePositionCalculator relativePositionCalculator{};
     std::vector<MeasurementsController> rawMeasurementsSet{};
     HaversineConverter haversineConverter{};
 
+    KalmanFilterSetupGui kalmanFilterSetupGui;
+
     static constexpr size_t DIM_X{ 6 };
     static constexpr size_t DIM_Z{ 2 };
     kf::Matrix<DIM_X, DIM_X> matQ;
     kf::Matrix<DIM_Z, DIM_Z> matR;
+    kf::Matrix<DIM_Z, DIM_X> matH;
 
     bool isDataReceptionStarted{ false };
     wxVector <wxRealPoint> magnPoints;
@@ -378,6 +384,7 @@ private:
 
     wxGrid* matrixGrid;
     wxGrid* matrixRCovariance;
+    wxGrid* matrixH;
 
     wxSplitterWindow* accPanelSplitter = nullptr;
     wxBoxSizer* sizerAccPlot = nullptr;

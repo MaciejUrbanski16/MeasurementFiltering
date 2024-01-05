@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+
 MeasReceptionThrea::MeasReceptionThrea(AppLogger& appLogger, wxEvtHandler* parent) : wxThread(), appLogger(appLogger), m_parent(parent)
 {
     //this->appLogger = appLogger;
@@ -31,7 +32,7 @@ wxThread::ExitCode MeasReceptionThrea::Entry()
 
 
 MyWindow::MyWindow(const wxString& title)
-    : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(900, 600))
+    : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(1080, 600))
 {
     Centre();
     prepareGui();
@@ -151,7 +152,7 @@ void MyWindow::OnApplyKFTunning(wxCommandEvent& event)
             else 
             {
                 conversionOK = false;
-                wxLogError("Wiersz %d kolumna %d z wartoscia: %s nie moze zostac przekonwertowana na liczbe zmiennoprzecinkowa!", i, j, cellValue);
+                wxLogError("Wiersz %d kolumna %d z wartoscia: %s dla macierzy R nie moze zostac przekonwertowana na liczbe zmiennoprzecinkowa!", i, j, cellValue);
             }
             
         }
@@ -159,11 +160,45 @@ void MyWindow::OnApplyKFTunning(wxCommandEvent& event)
     if (conversionOK)
     {
         std::stringstream msgToLog;
-        msgToLog << "Apply KF tunning";
+        msgToLog << "Apply KF tunning for R matrix";
 
         for (int i = 0; i < DIM_Z * DIM_Z; i++)
         {
             msgToLog << " matR[" << i << "]: " << matR(i);
+        }
+        wxString wxStringValue(msgToLog.str());
+        wxLogMessage(wxStringValue);
+    }
+
+    bool conversionHOK = true;
+
+    for (int i = 0; i < DIM_Z; i++)
+    {
+        for (int j = 0; j < DIM_X; j++)
+        {
+            wxString cellValue = matrixH->GetCellValue(i, j);
+            double cellValueAsDouble{ 0.0 };
+            if (cellValue.ToDouble(&cellValueAsDouble))
+            {
+                //wxPrintf("Double value: %lf\n", cellValueAsDouble);
+                matH(i * DIM_Z + j) = cellValueAsDouble;
+            }
+            else
+            {
+                conversionHOK = false;
+                wxLogError("Wiersz %d kolumna %d dla macierzy H z wartoscia: %s nie moze zostac przekonwertowana na liczbe zmiennoprzecinkowa!", i, j, cellValue);
+            }
+
+        }
+    }
+    if (conversionHOK)
+    {
+        std::stringstream msgToLog;
+        msgToLog << "Apply KF tunning for H matrix";
+
+        for (int i = 0; i < DIM_X * DIM_Z; i++)
+        {
+            msgToLog << " matH[" << i << "]: " << matH(i);
         }
         wxString wxStringValue(msgToLog.str());
         wxLogMessage(wxStringValue);
@@ -420,6 +455,9 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
 
     filteredPositionPoints.push_back(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
     filteredPositionBuffer.AddElement(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
+
+    updateMatQGrid();
+
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
     dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
@@ -798,6 +836,9 @@ void MyWindow::prepareFilteredPositionChart()
     matR << 0.1F, 0.0F,
             0.0F, 0.1F;
 
+    matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F;
+
     // Create two panels to be placed in the splitter window
     //wxPanel* panel1 = new wxPanel(splitter, wxID_ANY);
     wxPanel* controlPanel = new wxPanel(splitter, wxID_ANY);
@@ -819,23 +860,22 @@ void MyWindow::prepareFilteredPositionChart()
 
     wxStaticText* qMatrixText = new wxStaticText(controlPanel, wxID_ANY, "Matrix Q");
     wxStaticText* rMatrixText = new wxStaticText(controlPanel, wxID_ANY, "Matrix R");
+    wxStaticText* hMatrixText = new wxStaticText(controlPanel, wxID_ANY, "Matrix H");
 
     matrixGrid = new wxGrid(controlPanel, wxID_ANY);
-    matrixGrid->CreateGrid(6, 6);
+    matrixGrid->CreateGrid(DIM_X, DIM_X);
 
     matrixGrid->HideRowLabels();
     matrixGrid->HideColLabels();
     matrixGrid->SetSize(100, 100);
 
-    for (int i = 0; i < 6; ++i) {
-        for (int j = 0; j < 6; ++j) {
-            matrixGrid->SetCellValue(i, j, wxString::Format("%d", i * 6 + j));
-        }
-    }
 
-    for (int i = 0; i < 6; ++i) {
+    updateMatQGrid();
+
+
+    for (int i = 0; i < DIM_X; ++i) {
         matrixGrid->SetRowSize(i, 20);  // Set the height of each row
-        matrixGrid->SetColSize(i, 40);  // Set the width of each column
+        matrixGrid->SetColSize(i, 50);  // Set the width of each column
     }
 
     matrixRCovariance = new wxGrid(controlPanel, wxID_ANY);
@@ -856,6 +896,28 @@ void MyWindow::prepareFilteredPositionChart()
         matrixRCovariance->SetColSize(i, 50);  // Set the width of each column
     }
 
+
+
+    matrixH = new wxGrid(controlPanel, wxID_ANY);
+    matrixH->CreateGrid(DIM_Z, DIM_X);
+
+    matrixH->HideRowLabels();
+    matrixH->HideColLabels();
+    matrixH->SetSize(100, 100);
+
+    for (int i = 0; i < DIM_Z; ++i) {
+        for (int j = 0; j < DIM_X; ++j) {
+            matrixH->SetCellValue(i, j, wxString::Format("%f", matH(j * DIM_Z + i)));
+        }
+    }
+
+    for (int i = 0; i < DIM_Z; ++i) {
+        matrixH->SetRowSize(i, 20);  // Set the height of each row
+        matrixH->SetColSize(i, 50);  // Set the width of each column
+    }
+
+
+
     applyKFtunningChangesButton->Bind(wxEVT_BUTTON, &MyWindow::OnApplyKFTunning, this);
 
     controlPanelSizer->Add(pCoefficientText, 0, wxALL, 5);
@@ -863,9 +925,11 @@ void MyWindow::prepareFilteredPositionChart()
     controlPanelSizer->Add(sCoefficientText, 0, wxALL, 5);
     controlPanelSizer->Add(spinCtrlSCoefficient, 0, wxALL | wxALIGN_RIGHT, 5);
     controlPanelSizer->Add(qMatrixText, 0, wxALIGN_CENTER|wxALL, 5);
-    controlPanelSizer->Add(matrixGrid, 0, wxEXPAND | wxALL, 5);
+    controlPanelSizer->Add(matrixGrid, 0, wxALIGN_CENTER | wxALL, 5);
     controlPanelSizer->Add(rMatrixText, 0, wxALIGN_CENTER|wxALL, 5);
     controlPanelSizer->Add(matrixRCovariance, 0, wxALIGN_CENTER | wxALL, 5);
+    controlPanelSizer->Add(hMatrixText, 0, wxALIGN_CENTER | wxALL, 5);
+    controlPanelSizer->Add(matrixH, 0, wxALIGN_CENTER | wxALL, 5);
     controlPanelSizer->Add(applyKFtunningChangesButton, 0, wxALIGN_CENTER|wxALL, 3);
     controlPanel->SetSizer(controlPanelSizer);
 
@@ -891,7 +955,11 @@ void MyWindow::prepareGui()
     innerNotebook = new wxNotebook(kalmanParamsSetupPanel, 2);
     wxPanel* innerPanel = new wxPanel(innerNotebook);
     innerNotebook->AddPage(innerPanel, "Inner");
+
     m_notebook->AddPage(kalmanParamsSetupPanel, "KF setup");
+    
+    kalmanFilterSetupGui.setup(kalmanParamsSetupPanel);
+    
     
 
     //splitter = new wxSplitterWindow(, wxID_ANY);
@@ -982,4 +1050,13 @@ void MyWindow::prepareGui()
     BTconfirmSetupAndStartReception->Bind(wxEVT_BUTTON, &MyWindow::OnStartReceptionClick, this);
 
     m_timer.Bind(wxEVT_TIMER, &MyWindow::OnTimer, this);
+}
+
+void MyWindow::updateMatQGrid()
+{
+    for (int i = 0; i < DIM_X; ++i) {
+        for (int j = 0; j < DIM_X; ++j) {
+            matrixGrid->SetCellValue(i, j, wxString::Format("%f", matQ(i * DIM_X + j)));
+        }
+    }
 }
