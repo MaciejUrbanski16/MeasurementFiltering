@@ -21,7 +21,8 @@ wxThread::ExitCode MeasReceptionThrea::Entry()
     //event->SetString("Data from thread");
     //wxQueueEvent(m_parent, event);
 
-    SerialComm serialComm(io, com, m_parent);
+    //SerialComm serialComm(io, com, m_parent);
+    Server server(io, 8081, appLogger, m_parent);
     io.run();
 
     const std::string threadFinished{ "SerialComm Thread finished successfully.\n" };
@@ -221,6 +222,12 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
         appLogger.logReceivedDataOnMainThread(measurements);
         if (measurements.size() == 10)
         {
+            if (isFirstMeasurement)
+            {
+                deltaTimeCalculator.startTimer();
+                isFirstMeasurement = false;
+                return;
+            }
             const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
             MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias, xGyroBias, yGyroBias, zGyroBias);
             totalTimeMs += static_cast<double>(deltaTimeMs);
@@ -319,18 +326,24 @@ void MyWindow::updateMagnChart(const int16_t xMagn, const int16_t yMagn, const d
     yMagnValue->SetLabel(std::to_string(yMagn));
     orientationValue->SetLabel(std::to_string(azimuth));
 
-    magnPoints.push_back(wxRealPoint(timeMs, azimuth));
+    magnPointsBuffer.AddElement(wxRealPoint(timeMs, azimuth));
+
+    //magnPoints.push_back(wxRealPoint(timeMs, azimuth));
     //azimuthXPoint += 1;
     yNewPoint = static_cast<double>(azimuth);
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
-    dataset->AddSerie(new XYSerie(magnPoints));
+    dataset->AddSerie(new XYSerie(magnPointsBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(accPoints));
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Azimuth [deg]"));
     bottomAxis->SetTitle(wxT("Time [ms]"));
+    if (magnPointsBuffer.getBuffer().size() >= 99)
+    {
+        bottomAxis->SetFixedBounds(magnPointsBuffer.getBuffer()[0].x, magnPointsBuffer.getBuffer()[99].x);
+    }
     plot->AddObjects(dataset, leftAxis, bottomAxis);
 
     Chart* chart = new Chart(plot, "Magnetometr");
@@ -344,21 +357,28 @@ void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, 
     yAccValue->SetLabel(std::to_string(yAccMPerS2));
     zAccValue->SetLabel(std::to_string(zAccMPerS2));
 
-    xAccPoints.push_back(wxRealPoint(timeMs, xAccMPerS2));
-    yAccPoints.push_back(wxRealPoint(timeMs, yAccMPerS2));
-    zAccPoints.push_back(wxRealPoint(timeMs, zAccMPerS2));
+    //xAccPoints.push_back(wxRealPoint(timeMs, xAccMPerS2));
+    //yAccPoints.push_back(wxRealPoint(timeMs, yAccMPerS2));
+    //zAccPoints.push_back(wxRealPoint(timeMs, zAccMPerS2));
+    xAccBuffer.AddElement(wxRealPoint(timeMs, xAccMPerS2));
+    yAccBuffer.AddElement(wxRealPoint(timeMs, yAccMPerS2));
+    zAccBuffer.AddElement(wxRealPoint(timeMs, zAccMPerS2));
     //timeNewAccPoint += totalTimeMs / 1000;
-    yNewPoint = static_cast<double>(xAccMPerS2);
+    //yNewPoint = static_cast<double>(xAccMPerS2);
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
-    dataset->AddSerie(new XYSerie(xAccPoints));
-    dataset->AddSerie(new XYSerie(yAccPoints));
-    dataset->AddSerie(new XYSerie(zAccPoints));
+    dataset->AddSerie(new XYSerie(xAccBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(yAccBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(zAccBuffer.getBuffer()));
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Acceleration [m/s2]"));
     bottomAxis->SetTitle(wxT("time [ms]"));
+    if (xAccBuffer.getBuffer().size() >= 99)
+    {
+        bottomAxis->SetFixedBounds(xAccBuffer.getBuffer()[0].x, xAccBuffer.getBuffer()[99].x);
+    }
     plot->AddObjects(dataset, leftAxis, bottomAxis);
 
     Chart* chart = new Chart(plot, "X Acceleration");
@@ -390,7 +410,7 @@ void MyWindow::updatePositionChart(const double xDistance, const double yDistanc
 {
     currentXPos = currentXPos + xDistance;
     currentYPos = currentYPos + yDistance;
-    rawPositionPoints.push_back(wxRealPoint(currentXPos, currentYPos));
+    //rawPositionPoints.push_back(wxRealPoint(currentXPos, currentYPos));
     rawPositionBuffer.AddElement(wxRealPoint(currentXPos, currentYPos));
 
     XYPlot* plot = new XYPlot();
@@ -402,6 +422,10 @@ void MyWindow::updatePositionChart(const double xDistance, const double yDistanc
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Y position [m]"));
     bottomAxis->SetTitle(wxT("X position [m]"));
+    if (rawPositionBuffer.getBuffer().size() >= 99)
+    {
+        bottomAxis->SetFixedBounds(rawPositionBuffer.getBuffer()[0].x, rawPositionBuffer.getBuffer()[99].x);
+    }
     plot->AddObjects(dataset, leftAxis, bottomAxis);
 
     Chart* chart = new Chart(plot, "Position");
@@ -415,21 +439,28 @@ void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAn
     yAngleVelValue->SetLabel(std::to_string(yAngleVel));
     zAngleVelValue->SetLabel(std::to_string(zAngleVel));
 
-    xAngleVelocityPoints.push_back(wxRealPoint(timeMs, xAngleVel));
-    yAngleVelocityPoints.push_back(wxRealPoint(timeMs, yAngleVel));
-    zAngleVelocityPoints.push_back(wxRealPoint(timeMs, zAngleVel));
+    //xAngleVelocityPoints.push_back(wxRealPoint(timeMs, xAngleVel));
+    //yAngleVelocityPoints.push_back(wxRealPoint(timeMs, yAngleVel));
+    //zAngleVelocityPoints.push_back(wxRealPoint(timeMs, zAngleVel));
     //xAngleVelNewPoint += 1;
+    xAngleVelocityBuffer.AddElement(wxRealPoint(timeMs, xAngleVel));
+    yAngleVelocityBuffer.AddElement(wxRealPoint(timeMs, yAngleVel));
+    zAngleVelocityBuffer.AddElement(wxRealPoint(timeMs, zAngleVel));
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
-    dataset->AddSerie(new XYSerie(xAngleVelocityPoints));
-    dataset->AddSerie(new XYSerie(yAngleVelocityPoints));
-    dataset->AddSerie(new XYSerie(zAngleVelocityPoints));
+    dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Angle velocity [deg/s]"));
     bottomAxis->SetTitle(wxT("time [ms]"));
+    if (xAngleVelocityBuffer.getBuffer().size() >= 99)
+    {
+        bottomAxis->SetFixedBounds(xAngleVelocityBuffer.getBuffer()[0].x, xAngleVelocityBuffer.getBuffer()[99].x);
+    }
     DatasetArray datasetArray();
     //datasetArray
     Legend* lengend = new Legend(10, 10);
@@ -453,7 +484,7 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
     currentFilteredXPosition += filteredPositionX;
     currentFilteredYPosition += filteredPositionY;
 
-    filteredPositionPoints.push_back(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
+    //filteredPositionPoints.push_back(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
     filteredPositionBuffer.AddElement(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
 
     updateMatQGrid();
@@ -470,6 +501,16 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Filtered X position [m]"));
     bottomAxis->SetTitle(wxT("Filtered Y position [m]"));
+    if (rawPositionBuffer.getBuffer()[0].x < filteredPositionBuffer.getBuffer()[0].x && rawPositionBuffer.getBuffer().size() >= 99)
+    {
+        bottomAxis->SetFixedBounds(rawPositionBuffer.getBuffer()[0].x, rawPositionBuffer.getBuffer()[99].x);
+    }
+    else if(filteredPositionBuffer.getBuffer().size() >= 99)
+    {
+        bottomAxis->SetFixedBounds(filteredPositionBuffer.getBuffer()[0].x, filteredPositionBuffer.getBuffer()[99].x);
+    }
+    
+
     DatasetArray datasetArray();
     //datasetArray
     Legend* lengend = new Legend(10, 10);
@@ -501,13 +542,15 @@ void MyWindow::updateFilteredAngleXVelocityChart(const double filteredXangle, co
     currentXangleMeasured += measuredXangle;
     //angleTimeMeasurementsMs += static_cast<double>(time);
 
-    filteredXangleVelocity.push_back(wxRealPoint(time, filteredXangle));
-    measuredXangleVelocity.push_back(wxRealPoint(time, measuredXangle));
+    //filteredXangleVelocity.push_back(wxRealPoint(time, filteredXangle));
+    //measuredXangleVelocity.push_back(wxRealPoint(time, measuredXangle));
+
+    filteredXAngleVelocityBuffer.AddElement(wxRealPoint(time, filteredXangle));
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
-    dataset->AddSerie(new XYSerie(measuredXangleVelocity));
-    dataset->AddSerie(new XYSerie(filteredXangleVelocity));
+    dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(filteredXAngleVelocityBuffer.getBuffer()));
 
     //dataset->AddSerie(new XYSerie(yAngleVelocityPoints));
     //dataset->AddSerie(new XYSerie(zAngleVelocityPoints));
@@ -516,6 +559,10 @@ void MyWindow::updateFilteredAngleXVelocityChart(const double filteredXangle, co
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("X angle velocity [degree/s]"));
     bottomAxis->SetTitle(wxT("Time [ms]"));
+    if (filteredXAngleVelocityBuffer.getBuffer().size() >= 99)
+    {
+        bottomAxis->SetFixedBounds(filteredXAngleVelocityBuffer.getBuffer()[0].x, filteredXAngleVelocityBuffer.getBuffer()[99].x);
+    }
     DatasetArray datasetArray();
     //datasetArray
     Legend* lengend = new Legend(10, 10);

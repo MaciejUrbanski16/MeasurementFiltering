@@ -23,7 +23,8 @@
 #include "MeasurementCustomizator.h"
 
 //wxDECLARE_EVENT(wxEVT_MY_THREAD_EVENT, wxThreadEvent);
-wxDEFINE_EVENT(wxEVT_MY_THREAD_EVENT, wxThreadEvent);
+
+wxDEFINE_EVENT(wxEVT_MY_THREAD_EVENT_1, wxThreadEvent);
 
 class SerialComm
 {
@@ -99,7 +100,7 @@ private:
 
             const std::vector<std::string> exctractedMeasurements = exctractMeasurements(remoteDataAsString);
 
-            MeasurementCustomizator* event = new MeasurementCustomizator(wxEVT_MY_THREAD_EVENT);
+            MeasurementCustomizator* event = new MeasurementCustomizator(wxEVT_MY_THREAD_EVENT_1);
             event->SetStringVector(exctractedMeasurements);
         
             //event->SetString(strToSendToMainThread);

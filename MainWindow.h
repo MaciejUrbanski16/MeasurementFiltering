@@ -28,6 +28,7 @@
 
 #include "MeasurementReceptionThread.h"
 #include "SerialComm.h"
+#include "WifiDataReceiver.h"
 //#include "KalmanFilter.h"
 #include "AppLogger.h"
 #include "RawMeasurements.h"
@@ -327,6 +328,8 @@ private:
     kf::KalmanFilter<DIM_X_gyro, DIM_Z_gyro> kalmanFilterGyro;
 
 
+    bool isFirstMeasurement{ true };
+
     //frame
     wxNotebook* m_notebook = nullptr;
     wxNotebook* innerNotebook = nullptr;
@@ -374,6 +377,17 @@ private:
     wxVector <wxRealPoint> filteredPositionPoints;
     PlotElementsBuffer rawPositionBuffer;
     PlotElementsBuffer filteredPositionBuffer;
+    PlotElementsBuffer magnPointsBuffer;
+
+    PlotElementsBuffer xAccBuffer;
+    PlotElementsBuffer yAccBuffer;
+    PlotElementsBuffer zAccBuffer;
+
+    PlotElementsBuffer xAngleVelocityBuffer;
+    PlotElementsBuffer yAngleVelocityBuffer;
+    PlotElementsBuffer zAngleVelocityBuffer;
+
+    PlotElementsBuffer filteredXAngleVelocityBuffer;
     
 
     wxVector <wxRealPoint> filteredXangleVelocity;

@@ -94,6 +94,14 @@ public:
 		ss << currentTime << "\nKALMAN FILTER: Corrected state vector = \n" << kalmanFilter.vecX() << "\nCorrected state covariance = \n" << kalmanFilter.matP() << "  END\n";
 		kalmanOutputFile << ss.str();
 	}
+
+	void logReceivedDataOnTcpPort(const std::string& msg)
+	{
+		std::stringstream ss;
+		auto currentTime = getCurrentTimeWithMilliSeconds();
+		ss << currentTime << " " << msg << '\n';
+		outputFile << ss.str();
+	}
 private:
 	std::string getCurrentTimeWithMilliSeconds()
 	{

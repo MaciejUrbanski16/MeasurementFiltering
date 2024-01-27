@@ -6,6 +6,9 @@ class DeltaTimeCalculator
 public:
 	DeltaTimeCalculator()
 	{
+	}
+	void startTimer()
+	{
 		start = std::chrono::high_resolution_clock::now();
 	}
 
