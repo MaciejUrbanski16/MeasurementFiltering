@@ -71,6 +71,22 @@ namespace kf
             }
         }
 
+        void setInitialStateForAzimuth(const double xAzimuthFromMagn)
+        /*const double xAngle, const double yAngle, const double zAngle*/
+        {
+            if (not isInitializedAzimuth)
+            {
+                vecX() << xAzimuthFromMagn, // k¹t rotacji na osi X
+                    0.0F,       // k¹t rotacji na osi Y
+                    0.0F,       // k¹t roatcji na osi Z
+                    0.0F,
+                    0.0F,
+                    0.0F; 
+
+                isInitializedAzimuth = true;
+            }
+        }
+
         ~KalmanFilter()
         {
 
@@ -148,6 +164,7 @@ namespace kf
 
         bool isInitialized{ false };
         bool isInitializedGyro{ false };
+        bool isInitializedAzimuth{ false };
     };
 }
 

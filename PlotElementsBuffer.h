@@ -17,6 +17,11 @@ public:
         }
     }
 
+    void Clear()
+    {
+        buffer_.clear();
+    }
+
     wxVector <wxRealPoint> getBuffer() { return buffer_; }
 
 private:

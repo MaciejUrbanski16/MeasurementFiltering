@@ -5,6 +5,14 @@
 #include <wx/grid.h>
 #include <wx/sizer.h>
 
+enum class MovementModel
+{
+    PEDESTRIAN = 0,
+    RC_CAR,
+    CAR,
+    NONE
+};
+
 class KalmanFilterSetupGui
 {
 public:
@@ -15,11 +23,24 @@ public:
 		startFilteringButton->Bind(wxEVT_BUTTON, &KalmanFilterSetupGui::OnStartFiltrationClick, this);
 
 
+        wxStaticText* label = new wxStaticText(kalmanParamsSetupPanel, wxID_ANY, "KALIBRACJA CZUJNIKÓW");
+        wxStaticText* chooseModel = new wxStaticText(kalmanParamsSetupPanel, wxID_ANY, "Model ruchu:");
+        
+
         // Utwórz przyciski
         addButton = new wxButton(kalmanParamsSetupPanel, wxID_ANY, wxT("Dodaj wiersz"));
         removeButton = new wxButton(kalmanParamsSetupPanel, wxID_ANY, wxT("Usuñ wiersz"));
         addColumnButton = new wxButton(kalmanParamsSetupPanel, wxID_ANY, wxT("Dodaj kolumnê"));
         removeColumnButton = new wxButton(kalmanParamsSetupPanel, wxID_ANY, wxT("Usuñ kolumnê"));
+
+        confirmCallibrationButton = new wxButton(kalmanParamsSetupPanel, wxID_ANY, wxT("ZatwierdŸ kalibracjê"));
+        confirmCallibrationButton->SetSize({30,50});
+        confirmCallibrationButton->SetBackgroundColour(wxColour(255, 0, 0)); // Ustaw czerwony kolor t³a
+
+        pedestrianModelButton = new wxRadioButton(kalmanParamsSetupPanel, wxID_ANY, wxT("Pedestrian model"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
+        rcCarModelButton = new wxRadioButton(kalmanParamsSetupPanel, wxID_ANY, wxT("RC car model"));
+        carModelButton = new wxRadioButton(kalmanParamsSetupPanel, wxID_ANY, wxT("Car model"));
+
 
         // Utwórz siatkê (tabelê)
         grid = new wxGrid(kalmanParamsSetupPanel, wxID_ANY);
@@ -27,6 +48,13 @@ public:
 
         // Ustaw layout
         sizer = new wxBoxSizer(wxVERTICAL);
+        sizer->Add(label, 0, wxALL | wxALIGN_CENTER, 5);
+        sizer->Add(chooseModel, 0, wxALL | wxALIGN_LEFT, 5);
+        sizer->Add(pedestrianModelButton, 0, wxALL | wxALIGN_LEFT, 5);
+        sizer->Add(rcCarModelButton, 0, wxALL | wxALIGN_LEFT, 5);
+        sizer->Add(carModelButton, 0, wxALL | wxALIGN_LEFT, 5);
+        sizer->Add(confirmCallibrationButton, 0, wxALL | wxALIGN_CENTER, 5);
+
         sizer->Add(addButton, 0, wxALL, 5);
         sizer->Add(removeButton, 0, wxALL, 5);
         sizer->Add(addColumnButton, 0, wxALL, 5);
@@ -41,8 +69,47 @@ public:
         removeButton->Bind(wxEVT_BUTTON, &KalmanFilterSetupGui::OnRemoveRow, this);
         addColumnButton->Bind(wxEVT_BUTTON, &KalmanFilterSetupGui::OnAddColumn, this);
         removeColumnButton->Bind(wxEVT_BUTTON, &KalmanFilterSetupGui::OnRemoveColumn, this);
+        confirmCallibrationButton->Bind(wxEVT_BUTTON, &KalmanFilterSetupGui::OnConfirmCallibration, this);
 
 	}
+
+    bool getIsCallibrationDone() const
+    {
+        return isCallibrationDone;
+    }
+
+    MovementModel getMovementModel() const
+    {
+        return movementModel;
+    }
+
+    void OnConfirmCallibration(wxCommandEvent& event)
+    {
+        isCallibrationDone = true;
+
+        if (pedestrianModelButton->GetValue())
+        {
+            movementModel = MovementModel::PEDESTRIAN;
+            wxMessageBox(wxT("Model ruchu pieszego zosta³ wybrany"));
+        }
+        else if (rcCarModelButton->GetValue())
+        {
+            movementModel = MovementModel::RC_CAR;
+            wxMessageBox(wxT("Model ruchu RC samochó zaosta³ wybrany"));
+        }
+        else if (carModelButton->GetValue())
+        {
+            movementModel = MovementModel::CAR;
+            wxMessageBox(wxT("Model ruchu pojazd samochodowy zosta³ wybrany"));
+        }
+        else 
+        {
+            movementModel = MovementModel::NONE;
+            wxMessageBox(wxT("¯aden z przycisków nie zosta³ zaznaczony"));
+        }
+
+        wxLogMessage("Kalibracja zakoñczona - zbieranie pomiarów rozpoczêto.");
+    }
 
 	void OnStartFiltrationClick(wxCommandEvent& event)
 	{
@@ -90,7 +157,15 @@ private:
     wxButton* removeButton = nullptr;
     wxButton* addColumnButton = nullptr;
     wxButton* removeColumnButton = nullptr;
+    wxButton* confirmCallibrationButton = nullptr;
     wxGrid* grid = nullptr;
     wxBoxSizer* sizer = nullptr;
+
+    wxRadioButton* pedestrianModelButton;
+    wxRadioButton* rcCarModelButton;
+    wxRadioButton* carModelButton;
+
+    MovementModel movementModel{ MovementModel::NONE };
+    bool isCallibrationDone = false;
 };
 

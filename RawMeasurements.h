@@ -69,6 +69,9 @@ public:
 
 				return true;
 			}
+			const std::string errMeasConversion{ "ERR when measurement conversion from string to int16_t - some measurement is not integer!!" };
+			appLogger.logErrMeasurementConversion(errMeasConversion);
+			return false;
 		}
 		const std::string errMeasConversion{ "ERR when measurement conversion from string to int16_t" };
 		appLogger.logErrMeasurementConversion(errMeasConversion);

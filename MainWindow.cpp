@@ -114,6 +114,43 @@ void MyWindow::OnSubmitAccAdjustments(wxCommandEvent& event)
     wxLogMessage("New acc adj X:%d Y:%d Z:%d!", xAccCtrlValue, yAccCtrlValue, zAccCtrlValue);
 }
 
+void MyWindow::OnSpinXAccIncrUpdate(wxSpinEvent& event)
+{
+    const int newIncrement = spinCtrlXaccMultiplicator->GetValue();
+    spinCtrlXacc->SetIncrement(newIncrement);
+}
+
+void MyWindow::OnSpinXAccUpdate(wxSpinEvent& event)
+{
+    const int xAccCtrlValue = spinCtrlXacc->GetValue();
+    xBias = xAccCtrlValue;
+}
+
+void MyWindow::OnSpinYAccIncrUpdate(wxSpinEvent& event)
+{
+    const int newIncrement = spinCtrlYaccMultiplicator->GetValue();
+    spinCtrlYacc->SetIncrement(newIncrement);
+}
+
+void MyWindow::OnSpinYAccUpdate(wxSpinEvent& event)
+{
+    const int yAccCtrlValue = spinCtrlYacc->GetValue();
+    xBias = yAccCtrlValue;
+}
+
+void MyWindow::OnSpinZAccIncrUpdate(wxSpinEvent& event)
+{
+    const int newIncrement = spinCtrlZaccMultiplicator->GetValue();
+    spinCtrlZacc->SetIncrement(newIncrement);
+}
+
+void MyWindow::OnSpinZAccUpdate(wxSpinEvent& event)
+{
+    const int zAccCtrlValue = spinCtrlZacc->GetValue();
+    rawGrawity = zAccCtrlValue;
+}
+
+
 void MyWindow::OnSubmitAngleVelAdjustments(wxCommandEvent& event)
 {
     const int xAngleVelCtrlValue = spinCtrlXangleVel->GetValue();
@@ -124,6 +161,42 @@ void MyWindow::OnSubmitAngleVelAdjustments(wxCommandEvent& event)
     yGyroBias = yAngleVelCtrlValue;
     zGyroBias = zAngleVelCtrlValue;
     wxLogMessage("New acc adj X:%d Y:%d Z:%d!", xAngleVelCtrlValue, yAngleVelCtrlValue, zAngleVelCtrlValue);
+}
+
+void MyWindow::OnSpinXAnglVelIncrUpdate(wxSpinEvent& event)
+{
+    const int newIncrement = spinCtrlXangleVelMultiplicator->GetValue();
+    spinCtrlXangleVel->SetIncrement(newIncrement);
+}
+
+void MyWindow::OnSpinXAngleVelUpdate(wxSpinEvent& event)
+{
+    const int xAngleVelCtrlValue = spinCtrlXangleVel->GetValue();
+    xGyroBias = xAngleVelCtrlValue;
+}
+
+void MyWindow::OnSpinYAnglVelIncrUpdate(wxSpinEvent& event)
+{
+    const int newIncrement = spinCtrlYangleVelMultiplicator->GetValue();
+    spinCtrlYangleVel->SetIncrement(newIncrement);
+}
+
+void MyWindow::OnSpinYAngleVelUpdate(wxSpinEvent& event)
+{
+    const int yAngleVelCtrlValue = spinCtrlYangleVel->GetValue();
+    yGyroBias = yAngleVelCtrlValue;
+}
+
+void MyWindow::OnSpinZAnglVelIncrUpdate(wxSpinEvent& event)
+{
+    const int newIncrement = spinCtrlZangleVelMultiplicator->GetValue();
+    spinCtrlZangleVel->SetIncrement(newIncrement);
+}
+
+void MyWindow::OnSpinZAngleVelUpdate(wxSpinEvent& event)
+{
+    const int zAngleVelCtrlValue = spinCtrlZangleVel->GetValue();
+    zGyroBias = zAngleVelCtrlValue;
 }
 
 void MyWindow::OnResetMagnChart(wxCommandEvent& event)
@@ -234,58 +307,91 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
             if (rawMeasurement.assign(measurements, deltaTimeMs))
             {
 
-                const uint32_t totalTimeMs = deltaTimeCalculator.getTotalTimeMs();
+                //const uint32_t totalTimeMs = deltaTimeCalculator.getTotalTimeMs();
 
-                const double distance = haversineConverter.calculateDistance(rawMeasurement.getLongitude(), 70.2, rawMeasurement.getLatitude(), 30.2);
-                const auto xyPoint = haversineConverter.convertToXY_({70.234, 30.234});
-                //rawMeasurement.setDeltaTimeMs(deltaTimeMs);
-                //rawMeasurementsSet.push_back(rawMeasurement);
+                //const double distance = haversineConverter.calculateDistance(rawMeasurement.getLongitude(), 70.2, rawMeasurement.getLatitude(), 30.2);
+                //const auto xyPoint = haversineConverter.convertToXY_({70.234, 30.234});
+                ////rawMeasurement.setDeltaTimeMs(deltaTimeMs);
+                ////rawMeasurementsSet.push_back(rawMeasurement);
+                if (kalmanFilterSetupGui.getIsCallibrationDone() == false)
+                {
+                    updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), 1.0, totalTimeMs);
+                    updateAccChart(rawMeasurement.getXaccMPerS2(),
+                        rawMeasurement.getYaccMPerS2(),
+                        rawMeasurement.getZaccMPerS2(),
+                        totalTimeMs, deltaTimeMs);
+                    ////updateVelChart(rawMeasurement.getXvelocityMperS());
+                    ////updatePositionChart(rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
+                    updateAngleVelocityChart(rawMeasurement.getXangleVelocityDegreePerS(),
+                        rawMeasurement.getYangleVelocityDegreePerS(),
+                        rawMeasurement.getZangleVelocityDegreePerS(), totalTimeMs);
+                }
+                else
+                {
+                    if (measurementCounter == 0)
+                    {
+                        totalTimeMs = 0;
+                        resetChartsAfterCallibration();
 
-                updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), totalTimeMs);
-                updateAccChart(rawMeasurement.getXaccMPerS2(),
-                    rawMeasurement.getYaccMPerS2(),
-                    rawMeasurement.getZaccMPerS2(),
-                    totalTimeMs);
-                //updateVelChart(rawMeasurement.getXvelocityMperS());
-                updatePositionChart(rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
-                updateAngleVelocityChart(rawMeasurement.getXangleVelocityDegreePerS(),
-                    rawMeasurement.getYangleVelocityDegreePerS(),
-                    rawMeasurement.getZangleVelocityDegreePerS(), totalTimeMs);
+                    }
+                    measurementCounter++;
 
-                //kalman filter experiment
-                kalmanFilter.setInitialState(rawMeasurement.getXDistance(), rawMeasurement.getXvelocityMperS(), rawMeasurement.getXaccMPerS2(),
-                    rawMeasurement.getYDistance(), rawMeasurement.getYvelocityMperS(), rawMeasurement.getYaccMPerS2());
 
-                experimentKf(rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
+                    kalmanFilterAzimuth.setInitialStateForAzimuth(rawMeasurement.getAzimuth());
+                    experimentKfAzimuth(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
+                        rawMeasurement.getAzimuth(), deltaTimeMs);
 
-                kalmanFilterGyro.setInitialStateForGyro(rawMeasurement.getXangleVelocityDegreePerS(),
-                    rawMeasurement.getYangleVelocityDegreePerS(),
-                    rawMeasurement.getZangleVelocityDegreePerS());
+                    //roll (X)
+                    const double filteredAzimuth = kalmanFilterAzimuth.vecX()[0];
 
-                experimentGyroKf(rawMeasurement.getXangleVelocityDegreePerS(),
-                    rawMeasurement.getYangleVelocityDegreePerS(),
-                    rawMeasurement.getZangleVelocityDegreePerS(),
-                    deltaTimeMs);
+                    updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
+                    updateAccChart(rawMeasurement.getXaccMPerS2(),
+                        rawMeasurement.getYaccMPerS2(),
+                        rawMeasurement.getZaccMPerS2(),
+                        totalTimeMs, deltaTimeMs);
+                    updateAngleVelocityChart(rawMeasurement.getXangleVelocityDegreePerS(),
+                        rawMeasurement.getYangleVelocityDegreePerS(),
+                        rawMeasurement.getZangleVelocityDegreePerS(), totalTimeMs);
 
-                const double calculatedPositionX = rawMeasurement.getXDistance();
-                const double calculatedPositionY = rawMeasurement.getYDistance();
+                    ////kalman filter experiment
+                    kalmanFilter.setInitialState(rawMeasurement.getXDistance(), rawMeasurement.getXvelocityMperS(), rawMeasurement.getXaccMPerS2(),
+                        rawMeasurement.getYDistance(), rawMeasurement.getYvelocityMperS(), rawMeasurement.getYaccMPerS2());
 
-                const double filteredPositionX = kalmanFilter.vecX()(0);//PosX
-                const double filteredVelocityX = kalmanFilter.vecX()(1);
-                const double filteredAccX = kalmanFilter.vecX()(1);
-                const double filteredPositionY = kalmanFilter.vecX()(3);//PosY
-                const double filteredVelocityY = kalmanFilter.vecX()(3);
+                    experimentKf(rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
 
-                updateFilteredPositionChart(filteredPositionX, filteredPositionY, totalTimeMs);
-                updateFilteredVelocityChart(filteredVelocityX, filteredVelocityY, totalTimeMs);
+                    const double filteredPositionX = kalmanFilter.vecX()(0);//PosX
+                    //const double filteredVelocityX = kalmanFilter.vecX()(1);
+                    //const double filteredAccX = kalmanFilter.vecX()(1);
+                    const double filteredPositionY = kalmanFilter.vecX()(3);//PosY
+                    //const double filteredVelocityY = kalmanFilter.vecX()(3);
 
-                const double filteredXangle = kalmanFilterGyro.vecX()(0);
+                    updateFilteredPositionChart(filteredPositionX, filteredPositionY, totalTimeMs);
+                }
 
-                updateFilteredAngleXVelocityChart(filteredXangle, rawMeasurement.getXangleVelocityDegreePerS(), totalTimeMs);
+
+
+                //kalmanFilterGyro.setInitialStateForGyro(rawMeasurement.getXangleVelocityDegreePerS(),
+                //    rawMeasurement.getYangleVelocityDegreePerS(),
+                //    rawMeasurement.getZangleVelocityDegreePerS());
+
+                //experimentGyroKf(rawMeasurement.getXangleVelocityDegreePerS(),
+                //    rawMeasurement.getYangleVelocityDegreePerS(),
+                //    rawMeasurement.getZangleVelocityDegreePerS(),
+                //    deltaTimeMs);
+
+                //const double calculatedPositionX = rawMeasurement.getXDistance();
+                //const double calculatedPositionY = rawMeasurement.getYDistance();
+
+
+                //updateFilteredVelocityChart(filteredVelocityX, filteredVelocityY, totalTimeMs);
+
+                //const double filteredXangle = kalmanFilterGyro.vecX()(0);
+
+                //updateFilteredAngleXVelocityChart(filteredXangle, rawMeasurement.getXangleVelocityDegreePerS(), totalTimeMs);
 
                 //
 
-                relativePositionCalculator.calculateActualRelativePosition(rawMeasurement.getXvelocityMperS(), deltaTimeMs, rawMeasurement.getAzimuth());
+                //relativePositionCalculator.calculateActualRelativePosition(rawMeasurement.getXvelocityMperS(), deltaTimeMs, rawMeasurement.getAzimuth());
 
                 //VelocityCalculator velocityCalculator;
             }
@@ -301,6 +407,23 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
     //dataReceivedOnMainThread.append(data.ToStdString());
     //appLogger.logSerialCommStartThread(dataReceivedOnMainThread);
     //wxMessageBox("Received data in the main thread: " + data, "Thread Event");
+}
+
+void MyWindow::resetChartsAfterCallibration()
+{
+    magnPointsBuffer.Clear();
+    filteredAzimuthBuffer.Clear();
+
+    xAccBuffer.Clear();
+    yAccBuffer.Clear();
+    zAccBuffer.Clear();
+
+    xAngleVelocityBuffer.Clear();
+    yAngleVelocityBuffer.Clear();
+    zAngleVelocityBuffer.Clear();
+
+    rawPositionBuffer.Clear();
+    filteredPositionBuffer.Clear();
 }
 
 /// </summary>
@@ -320,13 +443,14 @@ void MyWindow::OnTimer(wxTimerEvent& event)
     outputFile.close();
 }
 
-void MyWindow::updateMagnChart(const int16_t xMagn, const int16_t yMagn, const double azimuth, const double timeMs)
+void MyWindow::updateMagnChart(const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth, const double timeMs)
 {
     xMagnValue->SetLabel(std::to_string(xMagn));
     yMagnValue->SetLabel(std::to_string(yMagn));
     orientationValue->SetLabel(std::to_string(azimuth));
 
     magnPointsBuffer.AddElement(wxRealPoint(timeMs, azimuth));
+    filteredAzimuthBuffer.AddElement(wxRealPoint(timeMs, azimuth));
 
     //magnPoints.push_back(wxRealPoint(timeMs, azimuth));
     //azimuthXPoint += 1;
@@ -334,13 +458,14 @@ void MyWindow::updateMagnChart(const int16_t xMagn, const int16_t yMagn, const d
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
     dataset->AddSerie(new XYSerie(magnPointsBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(filteredAzimuthBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(accPoints));
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Azimuth [deg]"));
     bottomAxis->SetTitle(wxT("Time [ms]"));
-    if (magnPointsBuffer.getBuffer().size() >= 99)
+    if (magnPointsBuffer.getBuffer().size() >= 100)
     {
         bottomAxis->SetFixedBounds(magnPointsBuffer.getBuffer()[0].x, magnPointsBuffer.getBuffer()[99].x);
     }
@@ -351,11 +476,14 @@ void MyWindow::updateMagnChart(const int16_t xMagn, const int16_t yMagn, const d
     azimuthChartPanel->SetChart(chart);
 }
 
-void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs)
+void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs, const uint32_t deltaTime)
 {
     xAccValue->SetLabel(std::to_string(xAccMPerS2));
     yAccValue->SetLabel(std::to_string(yAccMPerS2));
     zAccValue->SetLabel(std::to_string(zAccMPerS2));
+
+    deltaTimeValue->SetLabel(std::to_string(deltaTime));
+    totalTimeValue->SetLabel(std::to_string(timeMs));
 
     //xAccPoints.push_back(wxRealPoint(timeMs, xAccMPerS2));
     //yAccPoints.push_back(wxRealPoint(timeMs, yAccMPerS2));
@@ -375,7 +503,7 @@ void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, 
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Acceleration [m/s2]"));
     bottomAxis->SetTitle(wxT("time [ms]"));
-    if (xAccBuffer.getBuffer().size() >= 99)
+    if (xAccBuffer.getBuffer().size() >= 100)
     {
         bottomAxis->SetFixedBounds(xAccBuffer.getBuffer()[0].x, xAccBuffer.getBuffer()[99].x);
     }
@@ -422,7 +550,7 @@ void MyWindow::updatePositionChart(const double xDistance, const double yDistanc
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Y position [m]"));
     bottomAxis->SetTitle(wxT("X position [m]"));
-    if (rawPositionBuffer.getBuffer().size() >= 99)
+    if (rawPositionBuffer.getBuffer().size() >= 100)
     {
         bottomAxis->SetFixedBounds(rawPositionBuffer.getBuffer()[0].x, rawPositionBuffer.getBuffer()[99].x);
     }
@@ -457,7 +585,7 @@ void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAn
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Angle velocity [deg/s]"));
     bottomAxis->SetTitle(wxT("time [ms]"));
-    if (xAngleVelocityBuffer.getBuffer().size() >= 99)
+    if (xAngleVelocityBuffer.getBuffer().size() >= 100)
     {
         bottomAxis->SetFixedBounds(xAngleVelocityBuffer.getBuffer()[0].x, xAngleVelocityBuffer.getBuffer()[99].x);
     }
@@ -487,7 +615,7 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
     //filteredPositionPoints.push_back(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
     filteredPositionBuffer.AddElement(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
 
-    updateMatQGrid();
+    //updateMatQGrid();
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
@@ -501,13 +629,13 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Filtered X position [m]"));
     bottomAxis->SetTitle(wxT("Filtered Y position [m]"));
-    if (rawPositionBuffer.getBuffer()[0].x < filteredPositionBuffer.getBuffer()[0].x && rawPositionBuffer.getBuffer().size() >= 99)
+    //if (rawPositionBuffer.getBuffer()[0].x < filteredPositionBuffer.getBuffer()[0].x && rawPositionBuffer.getBuffer().size() >= 100)
+    //{
+    //    bottomAxis->SetFixedBounds(rawPositionBuffer.getBuffer()[0].x, rawPositionBuffer.getBuffer()[99].x);
+    //}
+    if(rawPositionBuffer.getBuffer().size() >= 100)
     {
         bottomAxis->SetFixedBounds(rawPositionBuffer.getBuffer()[0].x, rawPositionBuffer.getBuffer()[99].x);
-    }
-    else if(filteredPositionBuffer.getBuffer().size() >= 99)
-    {
-        bottomAxis->SetFixedBounds(filteredPositionBuffer.getBuffer()[0].x, filteredPositionBuffer.getBuffer()[99].x);
     }
     
 
@@ -559,7 +687,7 @@ void MyWindow::updateFilteredAngleXVelocityChart(const double filteredXangle, co
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("X angle velocity [degree/s]"));
     bottomAxis->SetTitle(wxT("Time [ms]"));
-    if (filteredXAngleVelocityBuffer.getBuffer().size() >= 99)
+    if (filteredXAngleVelocityBuffer.getBuffer().size() >= 100)
     {
         bottomAxis->SetFixedBounds(filteredXAngleVelocityBuffer.getBuffer()[0].x, filteredXAngleVelocityBuffer.getBuffer()[99].x);
     }
@@ -616,24 +744,42 @@ void MyWindow::prepareAccChart()
     accChartPanel->SetMinSize(wxSize(600, 600));
 
     wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* controlPanelSizerForXAdj = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* controlPanelSizerForYAdj = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* controlPanelSizerForZAdj = new wxBoxSizer(wxHORIZONTAL);
 
-    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 15700);
+    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 530);
+    spinCtrlXaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
     wxStaticText* xAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X acc");
+    spinCtrlXacc->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinXAccUpdate, this);
+    spinCtrlXaccMultiplicator->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinXAccIncrUpdate, this);
 
     spinCtrlYacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 530);
+    spinCtrlYaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
     wxStaticText* yAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y acc");
+    spinCtrlYacc->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinYAccUpdate, this);
+    spinCtrlYaccMultiplicator->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinYAccIncrUpdate, this);
 
     spinCtrlZacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 16100);
+    spinCtrlZaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
     wxStaticText* zAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Z acc");
+    spinCtrlZacc->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinZAccUpdate, this);
+    spinCtrlZaccMultiplicator->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinZAccIncrUpdate, this);
 
     controlPanelSizer->Add(xAccText, 0, wxALL | wxALIGN_CENTER, 5);
-    controlPanelSizer->Add(spinCtrlXacc, 0, wxALL| wxALIGN_CENTER, 5);
+    controlPanelSizerForXAdj->Add(spinCtrlXacc, 0, wxALL| wxALIGN_CENTER, 5);
+    controlPanelSizerForXAdj->Add(spinCtrlXaccMultiplicator, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(controlPanelSizerForXAdj, 0, wxALL | wxALIGN_CENTER, 5);
 
     controlPanelSizer->Add(yAccText, 0, wxALL | wxALIGN_CENTER, 5);
-    controlPanelSizer->Add(spinCtrlYacc, 0, wxALL| wxALIGN_CENTER, 5);
+    controlPanelSizerForYAdj->Add(spinCtrlYacc, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizerForYAdj->Add(spinCtrlYaccMultiplicator, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(controlPanelSizerForYAdj, 0, wxALL | wxALIGN_CENTER, 5);
 
     controlPanelSizer->Add(zAccText, 0, wxALL | wxALIGN_CENTER, 5);
-    controlPanelSizer->Add(spinCtrlZacc, 0, wxALL| wxALIGN_CENTER, 5);
+    controlPanelSizerForZAdj->Add(spinCtrlZacc, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizerForZAdj->Add(spinCtrlZaccMultiplicator, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(controlPanelSizerForZAdj, 0, wxALL | wxALIGN_CENTER, 5);
 
 
     wxBoxSizer* accSetupButtonsSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -650,13 +796,20 @@ void MyWindow::prepareAccChart()
     wxBoxSizer* xAccLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* yAccLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* zAccLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* deltaTimeLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* totalTimeLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
 
     wxStaticText* xAccName = new wxStaticText(controlPanel, wxID_ANY, "Current X acc[ms/s^2]: ");
-    wxStaticText* yAccName = new wxStaticText(controlPanel, wxID_ANY, "Current Y acc[ms/s^2]");
-    wxStaticText* zAccName = new wxStaticText(controlPanel, wxID_ANY, "Current Z acc[ms/s^2]");
+    wxStaticText* yAccName = new wxStaticText(controlPanel, wxID_ANY, "Current Y acc[ms/s^2]: ");
+    wxStaticText* zAccName = new wxStaticText(controlPanel, wxID_ANY, "Current Z acc[ms/s^2]: ");
     xAccValue = new wxStaticText(controlPanel, wxID_ANY, "0");
     yAccValue = new wxStaticText(controlPanel, wxID_ANY, "0");
     zAccValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+
+    wxStaticText* deltaTimeName = new wxStaticText(controlPanel, wxID_ANY, "Delta time[ms]: ");
+    wxStaticText* totalTimeName = new wxStaticText(controlPanel, wxID_ANY, "Total time[ms]: ");
+    deltaTimeValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+    totalTimeValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 
     xAccLabelsSizer->Add(xAccName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
     xAccLabelsSizer->Add(xAccValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
@@ -669,6 +822,14 @@ void MyWindow::prepareAccChart()
     zAccLabelsSizer->Add(zAccName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
     zAccLabelsSizer->Add(zAccValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
     controlPanelSizer->Add(zAccLabelsSizer, 0, wxALL, 5);
+
+    deltaTimeLabelsSizer->Add(deltaTimeName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    deltaTimeLabelsSizer->Add(deltaTimeValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    controlPanelSizer->Add(deltaTimeLabelsSizer, 0, wxALL, 5);
+
+    totalTimeLabelsSizer->Add(totalTimeName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    totalTimeLabelsSizer->Add(totalTimeValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    controlPanelSizer->Add(totalTimeLabelsSizer, 0, wxALL, 5);
 
     controlPanelSizer->Add(accSetupButtonsSizer, 0, wxALL, 5);
 
@@ -699,24 +860,46 @@ void MyWindow::prepareAngleVelocityChart()
     angleVelocityChartPanel->SetMinSize(wxSize(600, 600));
 
     wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* controlPanelSizerForXSpins = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* controlPanelSizerForYSpins = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* controlPanelSizerForZSpins = new wxBoxSizer(wxHORIZONTAL);
 
-    spinCtrlXangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, -18000);
+    wxStaticText* callibrationMultiplicatorLabel = new wxStaticText(controlPanel, wxID_ANY, "Set callibration multiplicator");
+
+    spinCtrlXangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, -18600);
+    spinCtrlXangleVelMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
     wxStaticText* xAngleVelText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X angle velocity");
+    spinCtrlXangleVel->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinXAngleVelUpdate, this);
+    spinCtrlXangleVelMultiplicator->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinXAnglVelIncrUpdate, this);
 
-    spinCtrlYangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 12900);
+    spinCtrlYangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 13450);
+    spinCtrlYangleVelMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
     wxStaticText* yAngleVelText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y angle velocity");
+    spinCtrlYangleVel->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinYAngleVelUpdate, this);
+    spinCtrlYangleVelMultiplicator->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinYAnglVelIncrUpdate, this);
 
-    spinCtrlZangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 15000);
+    spinCtrlZangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 16500);
+    spinCtrlZangleVelMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
     wxStaticText* zAngleVelText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Z angle velocity");
+    spinCtrlZangleVel->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinZAngleVelUpdate, this);
+    spinCtrlZangleVelMultiplicator->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinZAnglVelIncrUpdate, this);
 
     controlPanelSizer->Add(xAngleVelText, 0, wxALL | wxALIGN_CENTER, 5);
-    controlPanelSizer->Add(spinCtrlXangleVel, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizerForXSpins->Add(spinCtrlXangleVel, 0, wxALL | wxALIGN_CENTER, 5);
+    //controlPanelSizerForXSpins->Add(spinCtrlXangleVel, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizerForXSpins->Add(spinCtrlXangleVelMultiplicator, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(controlPanelSizerForXSpins, 0, wxALL | wxALIGN_CENTER, 5);
+
 
     controlPanelSizer->Add(yAngleVelText, 0, wxALL | wxALIGN_CENTER, 5);
-    controlPanelSizer->Add(spinCtrlYangleVel, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizerForYSpins->Add(spinCtrlYangleVel, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizerForYSpins->Add(spinCtrlYangleVelMultiplicator, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(controlPanelSizerForYSpins, 0, wxALL | wxALIGN_CENTER, 5);
 
     controlPanelSizer->Add(zAngleVelText, 0, wxALL | wxALIGN_CENTER, 5);
-    controlPanelSizer->Add(spinCtrlZangleVel, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizerForZSpins->Add(spinCtrlZangleVel, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizerForZSpins->Add(spinCtrlZangleVelMultiplicator, 0, wxALL | wxALIGN_CENTER, 5);
+    controlPanelSizer->Add(controlPanelSizerForZSpins, 0, wxALL | wxALIGN_CENTER, 5);
 
     wxBoxSizer* angleVelSetupButtonsSizer = new wxBoxSizer(wxHORIZONTAL);
 

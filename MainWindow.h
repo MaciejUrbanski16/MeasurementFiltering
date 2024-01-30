@@ -117,8 +117,22 @@ private:
     void OnStartReceptionClick(wxCommandEvent& event);
     void OnResetAccChart(wxCommandEvent& event);
     void OnSubmitAccAdjustments(wxCommandEvent& event);
+    void OnSpinXAccUpdate(wxSpinEvent& event);
+    void OnSpinXAccIncrUpdate(wxSpinEvent& event);
+    void OnSpinYAccUpdate(wxSpinEvent& event);
+    void OnSpinYAccIncrUpdate(wxSpinEvent& event);
+    void OnSpinZAccUpdate(wxSpinEvent& event);
+    void OnSpinZAccIncrUpdate(wxSpinEvent& event);
+
     void OnResetAngleVelChart(wxCommandEvent& event);
     void OnSubmitAngleVelAdjustments(wxCommandEvent& event);
+    void OnSpinXAngleVelUpdate(wxSpinEvent& event);
+    void OnSpinXAnglVelIncrUpdate(wxSpinEvent& event);
+    void OnSpinYAngleVelUpdate(wxSpinEvent& event);
+    void OnSpinYAnglVelIncrUpdate(wxSpinEvent& event);
+    void OnSpinZAngleVelUpdate(wxSpinEvent& event);
+    void OnSpinZAnglVelIncrUpdate(wxSpinEvent& event);
+
     void OnResetMagnChart(wxCommandEvent& event);
     void OnApplyKFTunning(wxCommandEvent& event);
     void OnSubmitMagnAdjustments(wxCommandEvent& event);
@@ -241,6 +255,49 @@ private:
         appLogger.logKalmanFilterCorrectionStep(kalmanFilter);
     }
 
+    void experimentKfAzimuth(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double azimuthFromMagn, const uint32_t deltaTime)
+    {
+        double deltaTimeMs = static_cast<double>(deltaTime);
+        kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> A;
+        A << 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F, 0.0F,
+            0.0F, 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F,
+            0.0F, 0.0F, 1.0F, 0.0F, 0.0F, deltaTimeMs,
+            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
+
+        kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> Q;
+
+        double process_variance = 0.02F;
+        deltaTimeMs = deltaTimeMs / 1000.0F;
+        Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
+            pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
+            pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
+            0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
+            0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
+            0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
+
+        Q *= process_variance;
+
+        kalmanFilterAzimuth.predictLKF(A, Q);
+
+        kf::Vector<DIM_Z_azimuth> vecZ;
+
+        vecZ << xAngleVelocityDegPerSec, yAngleVelocityDegPerSec, azimuthFromMagn;
+
+        kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matR;
+        matR << 0.01F, 0, 0,
+                0, 0.01F, 0,
+                0, 0, 0.01F;
+        kf::Matrix<DIM_Z_azimuth, DIM_X_azimuth> matH;
+        matH << 0, 0, 0, 1, 0, 0,
+                0, 0, 0, 0, 1, 0,
+                0, 0, 0, 0, 0, 1;
+
+        kalmanFilterGyro.correctLKF(vecZ, matR, matH);
+
+    }
+
     void experimentGyroKf(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, uint32_t deltaTimeMs)
     {
         //double deltaTimeMs = static_cast<double>(deltaTimeUint) * 10.0F;
@@ -293,8 +350,10 @@ private:
     }
 
     void OnTimer(wxTimerEvent& event);
-    void updateMagnChart(const int16_t rawXMagn, const int16_t rawYMagn, const double magn, const double timeMs);
-    void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs);
+
+    void resetChartsAfterCallibration();
+    void updateMagnChart(const int16_t rawXMagn, const int16_t rawYMagn, const double rawAzimuth, const double filteredAzimuth, const double timeMs);
+    void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs, const uint32_t deltaTime);
     //void updateVelChart(const double xVelocity, const double timeMs);
     void updatePositionChart(const double xDistance, const double yDistance, const double timeMs);
     void updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double timeMs);
@@ -326,6 +385,10 @@ private:
     static constexpr size_t DIM_X_gyro{ 6 };
     static constexpr size_t DIM_Z_gyro{ 3 };
     kf::KalmanFilter<DIM_X_gyro, DIM_Z_gyro> kalmanFilterGyro;
+
+    static constexpr size_t DIM_X_azimuth{ 6 };
+    static constexpr size_t DIM_Z_azimuth{ 3 };
+    kf::KalmanFilter<DIM_X_azimuth, DIM_Z_azimuth> kalmanFilterAzimuth;
 
 
     bool isFirstMeasurement{ true };
@@ -377,7 +440,9 @@ private:
     wxVector <wxRealPoint> filteredPositionPoints;
     PlotElementsBuffer rawPositionBuffer;
     PlotElementsBuffer filteredPositionBuffer;
+
     PlotElementsBuffer magnPointsBuffer;
+    PlotElementsBuffer filteredAzimuthBuffer;
 
     PlotElementsBuffer xAccBuffer;
     PlotElementsBuffer yAccBuffer;
@@ -403,12 +468,18 @@ private:
     wxSplitterWindow* accPanelSplitter = nullptr;
     wxBoxSizer* sizerAccPlot = nullptr;
     wxSpinCtrl* spinCtrlXacc = nullptr;
+    wxSpinCtrl* spinCtrlXaccMultiplicator = nullptr;
     wxSpinCtrl* spinCtrlYacc = nullptr;
+    wxSpinCtrl* spinCtrlYaccMultiplicator = nullptr;
     wxSpinCtrl* spinCtrlZacc = nullptr;
+    wxSpinCtrl* spinCtrlZaccMultiplicator = nullptr;
 
     wxStaticText* xAccValue = nullptr;
     wxStaticText* yAccValue = nullptr;
     wxStaticText* zAccValue = nullptr;
+
+    wxStaticText* deltaTimeValue = nullptr;
+    wxStaticText* totalTimeValue = nullptr;
 
     double rawGrawity{ 16100.0 };
     double xBias{ 15700.0 };
@@ -418,8 +489,11 @@ private:
     wxSplitterWindow* angleVelPanelSplitter = nullptr;
     wxBoxSizer* sizerAngleVelPlot = nullptr;
     wxSpinCtrl* spinCtrlXangleVel = nullptr;
+    wxSpinCtrl* spinCtrlXangleVelMultiplicator = nullptr;
     wxSpinCtrl* spinCtrlYangleVel = nullptr;
+    wxSpinCtrl* spinCtrlYangleVelMultiplicator = nullptr;
     wxSpinCtrl* spinCtrlZangleVel = nullptr;
+    wxSpinCtrl* spinCtrlZangleVelMultiplicator = nullptr;
 
     wxStaticText* xAngleVelValue = nullptr;
     wxStaticText* yAngleVelValue = nullptr;
@@ -461,6 +535,8 @@ private:
     double timeNewAccPoint{ 0.0 };
 
     double xAngleVelNewPoint{ 0.0 };
+
+    uint32_t measurementCounter{ 0 };
 
    
     void prepareGui();
