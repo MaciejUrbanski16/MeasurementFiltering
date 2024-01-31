@@ -255,7 +255,7 @@ private:
         appLogger.logKalmanFilterCorrectionStep(kalmanFilter);
     }
 
-    void experimentKfAzimuth(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double azimuthFromMagn, const uint32_t deltaTime)
+    void experimentKfAzimuth(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, const double azimuthFromMagn, const uint32_t deltaTime)
     {
         double deltaTimeMs = static_cast<double>(deltaTime);
         kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> A;
@@ -268,7 +268,7 @@ private:
 
         kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> Q;
 
-        double process_variance = 0.02F;
+        double process_variance = 0.002F;
         deltaTimeMs = deltaTimeMs / 1000.0F;
         Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
             pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
@@ -283,18 +283,18 @@ private:
 
         kf::Vector<DIM_Z_azimuth> vecZ;
 
-        vecZ << xAngleVelocityDegPerSec, yAngleVelocityDegPerSec, azimuthFromMagn;
+        vecZ <<  xAngleVelocityDegPerSec, zAngleVelocityDegPerSec, azimuthFromMagn;
 
         kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matR;
-        matR << 0.01F, 0, 0,
-                0, 0.01F, 0,
-                0, 0, 0.01F;
+        matR << 1.0F, 0, 0,
+                0, 1.0F, 0,
+                0, 0, 1.0F;
         kf::Matrix<DIM_Z_azimuth, DIM_X_azimuth> matH;
-        matH << 0, 0, 0, 1, 0, 0,
-                0, 0, 0, 0, 1, 0,
-                0, 0, 0, 0, 0, 1;
+        matH << 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 0;
 
-        kalmanFilterGyro.correctLKF(vecZ, matR, matH);
+        kalmanFilterAzimuth.correctLKF(vecZ, matR, matH);
 
     }
 
@@ -356,7 +356,7 @@ private:
     void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs, const uint32_t deltaTime);
     //void updateVelChart(const double xVelocity, const double timeMs);
     void updatePositionChart(const double xDistance, const double yDistance, const double timeMs);
-    void updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double timeMs);
+    void updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double filteredZangleVelocity, const double timeMs);
     void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY, const double timeMs);
     void updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const double timeMs);
     void updateFilteredVelocityChart(const double filteredVelocityX, const double filteredVelocityY, const double timeMs);
@@ -482,7 +482,7 @@ private:
     wxStaticText* totalTimeValue = nullptr;
 
     double rawGrawity{ 16100.0 };
-    double xBias{ 15700.0 };
+    double xBias{ 530.0 };
     double yBias{ 530.0 };
 
 

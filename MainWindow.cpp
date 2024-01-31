@@ -324,7 +324,7 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
                     ////updatePositionChart(rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
                     updateAngleVelocityChart(rawMeasurement.getXangleVelocityDegreePerS(),
                         rawMeasurement.getYangleVelocityDegreePerS(),
-                        rawMeasurement.getZangleVelocityDegreePerS(), totalTimeMs);
+                        rawMeasurement.getZangleVelocityDegreePerS(), 1.0, totalTimeMs);
                 }
                 else
                 {
@@ -339,10 +339,11 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
 
                     kalmanFilterAzimuth.setInitialStateForAzimuth(rawMeasurement.getAzimuth());
                     experimentKfAzimuth(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
-                        rawMeasurement.getAzimuth(), deltaTimeMs);
+                        rawMeasurement.getZangleVelocityDegreePerS(), rawMeasurement.getAzimuth(), deltaTimeMs);
 
                     //roll (X)
                     const double filteredAzimuth = kalmanFilterAzimuth.vecX()[0];
+                    const double filteredZAngleVel = kalmanFilterAzimuth.vecX()[5];
 
                     updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
                     updateAccChart(rawMeasurement.getXaccMPerS2(),
@@ -351,7 +352,7 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
                         totalTimeMs, deltaTimeMs);
                     updateAngleVelocityChart(rawMeasurement.getXangleVelocityDegreePerS(),
                         rawMeasurement.getYangleVelocityDegreePerS(),
-                        rawMeasurement.getZangleVelocityDegreePerS(), totalTimeMs);
+                        rawMeasurement.getZangleVelocityDegreePerS(), filteredZAngleVel, totalTimeMs);
 
                     ////kalman filter experiment
                     kalmanFilter.setInitialState(rawMeasurement.getXDistance(), rawMeasurement.getXvelocityMperS(), rawMeasurement.getXaccMPerS2(),
@@ -450,7 +451,7 @@ void MyWindow::updateMagnChart(const int16_t xMagn, const int16_t yMagn, const d
     orientationValue->SetLabel(std::to_string(azimuth));
 
     magnPointsBuffer.AddElement(wxRealPoint(timeMs, azimuth));
-    filteredAzimuthBuffer.AddElement(wxRealPoint(timeMs, azimuth));
+    filteredAzimuthBuffer.AddElement(wxRealPoint(timeMs, filteredAzimuth));
 
     //magnPoints.push_back(wxRealPoint(timeMs, azimuth));
     //azimuthXPoint += 1;
@@ -561,7 +562,7 @@ void MyWindow::updatePositionChart(const double xDistance, const double yDistanc
     positionChartPanel->SetChart(chart);
 }
 
-void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double timeMs)
+void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double filteredZangleVelocity, const double timeMs)
 {
     xAngleVelValue->SetLabel(std::to_string(xAngleVel));
     yAngleVelValue->SetLabel(std::to_string(yAngleVel));
