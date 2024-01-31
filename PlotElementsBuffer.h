@@ -9,6 +9,7 @@ class PlotElementsBuffer
 {
 public:
 	explicit PlotElementsBuffer() : size_(100), buffer_(100, {0,0}), head_(0), count_(0) {}
+    explicit PlotElementsBuffer(const uint64_t size) : size_(size), buffer_(size, { 0,0 }), head_(0), count_(0) {}
 
     void AddElement(const wxRealPoint& element) {
         buffer_.push_back(element);

@@ -135,7 +135,7 @@ void MyWindow::OnSpinYAccIncrUpdate(wxSpinEvent& event)
 void MyWindow::OnSpinYAccUpdate(wxSpinEvent& event)
 {
     const int yAccCtrlValue = spinCtrlYacc->GetValue();
-    xBias = yAccCtrlValue;
+    yBias = yAccCtrlValue;
 }
 
 void MyWindow::OnSpinZAccIncrUpdate(wxSpinEvent& event)
@@ -340,7 +340,7 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
                     kalmanFilterAzimuth.setInitialStateForAzimuth(rawMeasurement.getAzimuth());
                     experimentKfAzimuth(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
                         rawMeasurement.getZangleVelocityDegreePerS(), rawMeasurement.getAzimuth(), deltaTimeMs);
-
+                    updatePositionChart(rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
                     //roll (X)
                     const double filteredAzimuth = kalmanFilterAzimuth.vecX()[0];
                     const double filteredZAngleVel = kalmanFilterAzimuth.vecX()[5];
@@ -360,13 +360,19 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
 
                     experimentKf(rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
 
-                    const double filteredPositionX = kalmanFilter.vecX()(0);//PosX
+
+                    positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
+                        filteredAzimuth);
+
+                    filteredPositionX = kalmanFilter.vecX()(0);//PosX
                     //const double filteredVelocityX = kalmanFilter.vecX()(1);
                     //const double filteredAccX = kalmanFilter.vecX()(1);
-                    const double filteredPositionY = kalmanFilter.vecX()(3);//PosY
+                    filteredPositionY = kalmanFilter.vecX()(3);//PosY
                     //const double filteredVelocityY = kalmanFilter.vecX()(3);
 
-                    updateFilteredPositionChart(filteredPositionX, filteredPositionY, totalTimeMs);
+                    const auto calculatedPosition{ positionUpdater.getCurrentPosition() };
+
+                    updateFilteredPositionChart(filteredPositionX, filteredPositionY, calculatedPosition, totalTimeMs);
                 }
 
 
@@ -422,9 +428,11 @@ void MyWindow::resetChartsAfterCallibration()
     xAngleVelocityBuffer.Clear();
     yAngleVelocityBuffer.Clear();
     zAngleVelocityBuffer.Clear();
+    filteredZangleVelocityBuffer.Clear();
 
     rawPositionBuffer.Clear();
     filteredPositionBuffer.Clear();
+    calculatedPositionBuffer.Clear();
 }
 
 /// </summary>
@@ -551,10 +559,10 @@ void MyWindow::updatePositionChart(const double xDistance, const double yDistanc
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Y position [m]"));
     bottomAxis->SetTitle(wxT("X position [m]"));
-    if (rawPositionBuffer.getBuffer().size() >= 100)
-    {
-        bottomAxis->SetFixedBounds(rawPositionBuffer.getBuffer()[0].x, rawPositionBuffer.getBuffer()[99].x);
-    }
+    //if (rawPositionBuffer.getBuffer().size() >= 100)
+    //{
+    //    bottomAxis->SetFixedBounds(rawPositionBuffer.getBuffer()[0].x, rawPositionBuffer.getBuffer()[99].x);
+    //}
     plot->AddObjects(dataset, leftAxis, bottomAxis);
 
     Chart* chart = new Chart(plot, "Position");
@@ -575,12 +583,15 @@ void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAn
     xAngleVelocityBuffer.AddElement(wxRealPoint(timeMs, xAngleVel));
     yAngleVelocityBuffer.AddElement(wxRealPoint(timeMs, yAngleVel));
     zAngleVelocityBuffer.AddElement(wxRealPoint(timeMs, zAngleVel));
+    filteredZangleVelocityBuffer.AddElement(wxRealPoint(timeMs, filteredZangleVelocity));
 
-    XYPlot* plot = new XYPlot();
+    XYPlot* plot = new XYPlot();    
     XYSimpleDataset* dataset = new XYSimpleDataset();
     dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+    dataset->GetSerie(1)->SetName("yAngleVelocity");
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
@@ -603,7 +614,8 @@ void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAn
     angleVelocityChartPanel->SetChart(chart);
 }
 
-void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY, const double timeMs)
+void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
+    const std::pair<double, double> calculatedPosition, const double timeMs)
 {
     //xAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, xAngleVel));
     //yAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, yAngleVel));
@@ -615,29 +627,33 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
 
     //filteredPositionPoints.push_back(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
     filteredPositionBuffer.AddElement(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
+    calculatedPositionBuffer.AddElement(wxRealPoint(calculatedPosition.first, calculatedPosition.second));
+
 
     //updateMatQGrid();
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
+    //dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(filteredPositionBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(calculatedPositionBuffer.getBuffer()));
 
     //dataset->AddSerie(new XYSerie(yAngleVelocityPoints));
     //dataset->AddSerie(new XYSerie(zAngleVelocityPoints));
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
-    leftAxis->SetTitle(wxT("Filtered X position [m]"));
-    bottomAxis->SetTitle(wxT("Filtered Y position [m]"));
+    leftAxis->SetTitle(wxT("Filtered Y position [m]"));
+    bottomAxis->SetTitle(wxT("Filtered X position [m]"));
     //if (rawPositionBuffer.getBuffer()[0].x < filteredPositionBuffer.getBuffer()[0].x && rawPositionBuffer.getBuffer().size() >= 100)
     //{
     //    bottomAxis->SetFixedBounds(rawPositionBuffer.getBuffer()[0].x, rawPositionBuffer.getBuffer()[99].x);
     //}
-    if(rawPositionBuffer.getBuffer().size() >= 100)
-    {
-        bottomAxis->SetFixedBounds(rawPositionBuffer.getBuffer()[0].x, rawPositionBuffer.getBuffer()[99].x);
-    }
+    //if(calculatedPositionBuffer.getBuffer().size() >= 100)
+    //{
+    //    bottomAxis->SetFixedBounds(calculatedPositionBuffer.getBuffer()[0].x, calculatedPositionBuffer.getBuffer()[99].x);
+    //}
     
 
     DatasetArray datasetArray();

@@ -37,6 +37,7 @@
 #include "RelativePositionCalculator.h"
 #include "PlotElementsBuffer.h"
 #include "HaversineConverter.h"
+#include "PositionUpdater.h"
 #include "KalmanFilterSetupGui.h"
 #include "kalman_filter/kalman_filter.h"
 
@@ -261,14 +262,14 @@ private:
         kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> A;
         A << 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F, 0.0F,
             0.0F, 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F,
-            0.0F, 0.0F, 1.0F, 0.0F, 0.0F, deltaTimeMs,
+            0.0F, 0.0F, 1.0F,  0.0F, 0.0F, deltaTimeMs,
             0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
             0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F,
             0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
         kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> Q;
 
-        double process_variance = 0.002F;
+        double process_variance = 0.02F;
         deltaTimeMs = deltaTimeMs / 1000.0F;
         Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
             pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
@@ -286,9 +287,9 @@ private:
         vecZ <<  xAngleVelocityDegPerSec, zAngleVelocityDegPerSec, azimuthFromMagn;
 
         kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matR;
-        matR << 1.0F, 0, 0,
-                0, 1.0F, 0,
-                0, 0, 1.0F;
+        matR << 0.0001F, 0, 0,
+                0, 0.1F, 0,
+                0, 0, 0.1F;
         kf::Matrix<DIM_Z_azimuth, DIM_X_azimuth> matH;
         matH << 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 1,
@@ -357,7 +358,8 @@ private:
     //void updateVelChart(const double xVelocity, const double timeMs);
     void updatePositionChart(const double xDistance, const double yDistance, const double timeMs);
     void updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double filteredZangleVelocity, const double timeMs);
-    void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY, const double timeMs);
+    void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
+        const std::pair<double, double> calculatedPosition, const double timeMs);
     void updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const double timeMs);
     void updateFilteredVelocityChart(const double filteredVelocityX, const double filteredVelocityY, const double timeMs);
 
@@ -367,6 +369,10 @@ private:
     RelativePositionCalculator relativePositionCalculator{};
     std::vector<MeasurementsController> rawMeasurementsSet{};
     HaversineConverter haversineConverter{};
+    PositionUpdater positionUpdater{};
+
+    double filteredPositionX{ 0.0 };
+    double filteredPositionY{ 0.0 };
 
     KalmanFilterSetupGui kalmanFilterSetupGui;
 
@@ -438,8 +444,10 @@ private:
 
     wxVector <wxRealPoint> filteredVelocityPoints;
     wxVector <wxRealPoint> filteredPositionPoints;
-    PlotElementsBuffer rawPositionBuffer;
-    PlotElementsBuffer filteredPositionBuffer;
+
+    PlotElementsBuffer rawPositionBuffer{ 300 };
+    PlotElementsBuffer filteredPositionBuffer{ 300 };
+    PlotElementsBuffer calculatedPositionBuffer{ 300 };
 
     PlotElementsBuffer magnPointsBuffer;
     PlotElementsBuffer filteredAzimuthBuffer;
@@ -451,6 +459,7 @@ private:
     PlotElementsBuffer xAngleVelocityBuffer;
     PlotElementsBuffer yAngleVelocityBuffer;
     PlotElementsBuffer zAngleVelocityBuffer;
+    PlotElementsBuffer filteredZangleVelocityBuffer;
 
     PlotElementsBuffer filteredXAngleVelocityBuffer;
     
