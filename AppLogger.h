@@ -12,10 +12,22 @@
 class AppLogger
 {
 public:
-	AppLogger() {
+	AppLogger() 
+	{
 		outputFile.open(filePath, std::ios::app);
 		kalmanOutputFile.open(kalmanFilePath, std::ios::app);
+		measurementsCsv.open(measurementsCsvPath, std::ios::app);
+
+		std::stringstream ssToCsv;
+		ssToCsv << "Current time" << ',' << "X acceleration" << ',' << "Y acceleration" << ',' << "Z acceleration" << ','
+			<< "X angle velocity" << ',' << "Y angle velocity" << ',' << "Z angle velocity" << ','
+			<< "X raw magnetometer" << ',' << "Y raw magnetometer" << ','
+			<< "X accel m/s2" << ',' << "Y accel m/s2" << ',' << "Z accel m/s2" << ','
+			<< "X velocity" << ',' << "Y velocity" << ',' << "X distance" << ',' << "Y distance" << ','
+			<< "Orientation degree" << ',' << "Longitude" << ',' << "Latitude" << ',' << "Delta time ms" << '\n';
+		measurementsCsv << ssToCsv.str();
 	}
+
 	~AppLogger()
 	{
 		if (outputFile.is_open())
@@ -26,7 +38,12 @@ public:
 		{
 			kalmanOutputFile.close();
 		}
+		if (measurementsCsv.is_open())
+		{
+			measurementsCsv.close();
+		}
 	}
+
 	void logSerialCommStartThread(const std::string& msg)
 	{
 		std::stringstream ss;
@@ -68,6 +85,14 @@ public:
 			<< " yVelocity: " << yVelocity << "[m/s] || xDistance: " << xDistance << "[m] yDistance: " << yDistance << "[m] || orientationDegree: " 
 			<< orientationDegree << " [deg] || longitude: " << longitude << ", latitude: " << latitude << " Delta time : " << deltaTimeMs<< "[ms]" << '\n';
 		outputFile << ss.str();
+
+		std::stringstream ssToCsv;
+		ssToCsv << currentTime << ',' << xAcc << ',' << yAcc << ',' << zAcc << ','
+			<< xGyro << ',' << yGyro << ',' << zGyro << ',' << xMagn << ',' << yMagn << ','
+			<< xAccMPerS2 << ',' << yAccMPerS2 << ',' << zAccMPerS2 << ','
+			<< xVelocity << ',' << yVelocity << ',' << xDistance << ',' << yDistance << ','
+			<< orientationDegree << ','  << longitude << ',' << latitude << ',' << deltaTimeMs <<'\n';
+		measurementsCsv << ssToCsv.str();
 	}
 	void logErrMeasurementConversion(const std::string& msg)
 	{
@@ -130,6 +155,9 @@ private:
 
 	std::ofstream kalmanOutputFile;
 	std::string kalmanFilePath = "kalmanFilterLogs.txt";
+
+	std::ofstream measurementsCsv;
+	std::string measurementsCsvPath = "measurementsCsv.txt";
 };
 //std::string AppLogger::path = "appLogs.txt";
 //std::ofstream AppLogger::outputFile;// = path;
