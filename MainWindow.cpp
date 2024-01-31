@@ -325,6 +325,11 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
                     updateAngleVelocityChart(rawMeasurement.getXangleVelocityDegreePerS(),
                         rawMeasurement.getYangleVelocityDegreePerS(),
                         rawMeasurement.getZangleVelocityDegreePerS(), 1.0, totalTimeMs);
+
+                    latitude = latitude + 0.003;
+                    longitude = longitude - 0.004;
+                    const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(longitude, latitude);
+                    updateGpsBasedPositionChart(gpsBasedPosition);
                 }
                 else
                 {
@@ -403,10 +408,15 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
                 //VelocityCalculator velocityCalculator;
             }
         }
+        else
+        {
+            const std::string errThreadEvent{ "ERR when handling data from thread - wrong size of data - should be 10!!!" };
+            appLogger.logErrThreadDataHandling(errThreadEvent);
+         }
     }
     else
     {
-        const std::string errThreadEvent{ "ERR when handling data from thread!!!" };
+        const std::string errThreadEvent{ "ERR when handling data from thread - no event received!!!" };
         appLogger.logErrThreadDataHandling(errThreadEvent);
     }
     //wxString data = event.GetString();
@@ -433,6 +443,7 @@ void MyWindow::resetChartsAfterCallibration()
     rawPositionBuffer.Clear();
     filteredPositionBuffer.Clear();
     calculatedPositionBuffer.Clear();
+    gpsBasedPositionBuffer.Clear();
 }
 
 /// </summary>
@@ -570,6 +581,22 @@ void MyWindow::updatePositionChart(const double xDistance, const double yDistanc
     positionChartPanel->SetChart(chart);
 }
 
+void MyWindow::updateGpsBasedPositionChart(std::pair<double, double> gpsBasedPosition)
+{
+    XYPlot* plot = new XYPlot();
+    XYSimpleDataset* dataset = new XYSimpleDataset();
+    gpsBasedPositionBuffer.AddElement(wxRealPoint(gpsBasedPosition.first, gpsBasedPosition.second));
+    dataset->AddSerie(new XYSerie(gpsBasedPositionBuffer.getBuffer()));
+    dataset->SetRenderer(new XYLineRenderer());
+    NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
+    NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
+    leftAxis->SetTitle(wxT("Y [m]"));
+    bottomAxis->SetTitle(wxT("X [m]"));
+    plot->AddObjects(dataset, leftAxis, bottomAxis);
+    Chart* chart = new Chart(plot, "GPS based position");
+    gpsBasedPositionChartPanel->SetChart(chart);
+}
+
 void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double filteredZangleVelocity, const double timeMs)
 {
     xAngleVelValue->SetLabel(std::to_string(xAngleVel));
@@ -615,7 +642,7 @@ void MyWindow::updateAngleVelocityChart(const double xAngleVel, const double yAn
 }
 
 void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
-    const std::pair<double, double> calculatedPosition, const double timeMs)
+                                           const std::pair<double, double> calculatedPosition, const double timeMs)
 {
     //xAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, xAngleVel));
     //yAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, yAngleVel));
@@ -1055,6 +1082,29 @@ void MyWindow::preparePositionChart()
     m_notebook->AddPage(positionChartPanel, "Pos chart");
 }
 
+void MyWindow::prepareGpsBasedPositionChart()
+{
+    wxPanel* panel = new wxPanel(m_notebook, wxID_ANY);
+    gpsBasedPositionPanelSplitter = new wxSplitterWindow(panel, wxID_ANY);
+    wxPanel* controlPanel = new wxPanel(gpsBasedPositionPanelSplitter, wxID_ANY);
+
+    gpsBasedPositionChartPanel = new wxChartPanel(gpsBasedPositionPanelSplitter);
+
+    wxBoxSizer* sizerGpsBasedPositionPlot = new wxBoxSizer(wxVERTICAL);
+    gpsBasedPositionChartPanel->SetMinSize(wxSize(600, 600));
+
+    wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
+
+    gpsBasedPositionPanelSplitter->SplitVertically(gpsBasedPositionChartPanel, controlPanel);
+    sizerGpsBasedPositionPlot->Add(gpsBasedPositionPanelSplitter, 1, wxEXPAND | wxALL, 5);
+
+    panel->SetSizer(sizerGpsBasedPositionPlot);
+
+    m_notebook->AddPage(panel, "GPS position");
+
+}
+
+
 
 void MyWindow::prepareVelChart()
 {
@@ -1214,6 +1264,7 @@ void MyWindow::prepareGui()
     prepareAccChart();
     prepareVelChart();
     preparePositionChart();
+    prepareGpsBasedPositionChart();
     prepareAngleVelocityChart();
     prepareFilteredPositionChart();
     prepareFilteredVelocityChart();

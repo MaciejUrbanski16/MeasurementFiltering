@@ -204,7 +204,7 @@ private:
             0.0F, 0.0F, 0.0F, 0.0F, 1.0F, deltaTimeMs,
             0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
-        double process_variance = 0.00002F;
+        double process_variance = 0.002F;
         deltaTimeMs = deltaTimeMs / 100000000.0F;
 
         //kowariancja szumu procesowego
@@ -358,6 +358,7 @@ private:
     //void updateVelChart(const double xVelocity, const double timeMs);
     void updatePositionChart(const double xDistance, const double yDistance, const double timeMs);
     void updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double filteredZangleVelocity, const double timeMs);
+    void updateGpsBasedPositionChart(std::pair<double, double> gpsBasedPosition);
     void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
         const std::pair<double, double> calculatedPosition, const double timeMs);
     void updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const double timeMs);
@@ -369,6 +370,9 @@ private:
     RelativePositionCalculator relativePositionCalculator{};
     std::vector<MeasurementsController> rawMeasurementsSet{};
     HaversineConverter haversineConverter{};
+    double longitude{ 52.3244 };
+    double latitude{ 19.3243 };
+
     PositionUpdater positionUpdater{};
 
     double filteredPositionX{ 0.0 };
@@ -406,6 +410,7 @@ private:
     wxPanel* dataReceptionPanel = nullptr;
     wxPanel* kalmanParamsSetupPanel = nullptr;
     wxChartPanel* azimuthChartPanel = nullptr;
+    wxChartPanel* gpsBasedPositionChartPanel = nullptr;
     wxChartPanel* accChartPanel = nullptr;
     wxChartPanel* velChartPanel = nullptr;
     wxChartPanel* positionChartPanel = nullptr;
@@ -416,7 +421,7 @@ private:
 
     wxChartPanel* filteredAngleXVelocity = nullptr;
 
-
+    wxSplitterWindow* gpsBasedPositionPanelSplitter = nullptr;
 
     XYPlot* plot = nullptr;
     XYSimpleDataset* dataset = nullptr;
@@ -448,6 +453,7 @@ private:
     PlotElementsBuffer rawPositionBuffer{ 300 };
     PlotElementsBuffer filteredPositionBuffer{ 300 };
     PlotElementsBuffer calculatedPositionBuffer{ 300 };
+    PlotElementsBuffer gpsBasedPositionBuffer{ 300 };
 
     PlotElementsBuffer magnPointsBuffer;
     PlotElementsBuffer filteredAzimuthBuffer;
@@ -552,6 +558,7 @@ private:
     void prepareAccChart();
     void prepareVelChart();
     void preparePositionChart();
+    void prepareGpsBasedPositionChart();
     void prepareAngleVelocityChart();
     void prepareFilteredPositionChart();
     void prepareFilteredVelocityChart();
