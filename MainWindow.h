@@ -39,6 +39,7 @@
 #include "HaversineConverter.h"
 #include "PositionUpdater.h"
 #include "KalmanFilterSetupGui.h"
+#include "CsvMeasurementReader.h"
 #include "CsvMeasurementLoadGui.h"
 
 #include "kalman_filter/kalman_filter.h"
@@ -381,7 +382,9 @@ private:
     double filteredPositionY{ 0.0 };
 
     KalmanFilterSetupGui kalmanFilterSetupGui;
-    CsvMeasurementLoadGui csvMeasurementLoadGui;
+    CsvMeasurementReader csvMeasurementReader;
+    CsvMeasurementLoadGui csvMeasurementLoadGui{ csvMeasurementReader };
+
 
     static constexpr size_t DIM_X{ 6 };
     static constexpr size_t DIM_Z{ 2 };

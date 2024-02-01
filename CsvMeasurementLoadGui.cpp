@@ -101,6 +101,8 @@ void CsvMeasurementLoadGui::OnStartFiltration(wxCommandEvent& event)
     }
 
     canFiltrationBeStarted = true;
+    const std::string& filepath{ filePathSensorDataTextCtrl->GetValue().ToStdString() };
+    csvMeasurementReader.readCSVHeader(filepath);
 }
 
 bool CsvMeasurementLoadGui::isFileExtensionCorrect(const wxString& filePath, const wxString& extension) const

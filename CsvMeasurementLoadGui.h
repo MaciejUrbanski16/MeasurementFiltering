@@ -5,10 +5,12 @@
 #include <wx/panel.h>
 #include <wx/grid.h>
 #include <wx/sizer.h>
+#include "CsvMeasurementReader.h"
 
 class CsvMeasurementLoadGui
 {
 public:
+	CsvMeasurementLoadGui(CsvMeasurementReader& csvMeasurementReader) : csvMeasurementReader(csvMeasurementReader) {}
 	void setup(wxPanel* kalmanParamsSetupPanel);
 
 private:
@@ -26,10 +28,10 @@ private:
 	wxTextCtrl* filePathGpsDataTextCtrl = nullptr;
 	wxFileDialog* openFileDialog = nullptr;
 
+	CsvMeasurementReader& csvMeasurementReader;
+
 	bool sensorDataPathGiven{ false };
 	bool gpsDataPathGiven{ false };
 	bool canFiltrationBeStarted{ false };
-
-
 };
 
