@@ -39,6 +39,8 @@
 #include "HaversineConverter.h"
 #include "PositionUpdater.h"
 #include "KalmanFilterSetupGui.h"
+#include "CsvMeasurementLoadGui.h"
+
 #include "kalman_filter/kalman_filter.h"
 
 #include <chrono>
@@ -205,7 +207,7 @@ private:
             0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
         double process_variance = 0.002F;
-        deltaTimeMs = deltaTimeMs / 100000000.0F;
+        deltaTimeMs = deltaTimeMs / 100000.0F;
 
         //kowariancja szumu procesowego
         matQ << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
@@ -379,6 +381,7 @@ private:
     double filteredPositionY{ 0.0 };
 
     KalmanFilterSetupGui kalmanFilterSetupGui;
+    CsvMeasurementLoadGui csvMeasurementLoadGui;
 
     static constexpr size_t DIM_X{ 6 };
     static constexpr size_t DIM_Z{ 2 };
@@ -409,6 +412,8 @@ private:
     wxPanel* comSetupPanel = nullptr;
     wxPanel* dataReceptionPanel = nullptr;
     wxPanel* kalmanParamsSetupPanel = nullptr;
+    wxPanel* csvMeasurementLoadPanel = nullptr;
+
     wxChartPanel* azimuthChartPanel = nullptr;
     wxChartPanel* gpsBasedPositionChartPanel = nullptr;
     wxChartPanel* accChartPanel = nullptr;
