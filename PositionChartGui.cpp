@@ -10,16 +10,13 @@ void PositionChartGui::updateChart(PlotElementsBuffer& rawPositionBuffer, const 
 {
     currentXPos = currentXPos + xDistance;
     currentYPos = currentYPos + yDistance;
-    //rawPositionPoints.push_back(wxRealPoint(currentXPos, currentYPos));
     rawPositionBuffer.AddElement(wxRealPoint(currentXPos, currentYPos));
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
-
-
     dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
     dataset->SetRenderer(new XYLineRenderer());
-    dataset->GetSerie(0)->SetName("raw position");
+    dataset->GetSerie(0)->SetName("Raw position");
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Y position [m]"));
@@ -30,9 +27,7 @@ void PositionChartGui::updateChart(PlotElementsBuffer& rawPositionBuffer, const 
     //}
     Legend* legend = new Legend(wxTOP, wxLEFT);
     plot->SetLegend(legend);
-
     plot->AddObjects(dataset, leftAxis, bottomAxis);
-
 
     Chart* chart = new Chart(plot, "Position");
 

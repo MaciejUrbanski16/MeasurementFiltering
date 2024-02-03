@@ -42,6 +42,7 @@
 #include "CsvMeasurementReader.h"
 #include "CsvMeasurementLoadGui.h"
 #include "PositionChartGui.h"
+#include "MagnChartGui.h"
 
 #include "kalman_filter/kalman_filter.h"
 
@@ -138,9 +139,8 @@ private:
     void OnSpinZAngleVelUpdate(wxSpinEvent& event);
     void OnSpinZAnglVelIncrUpdate(wxSpinEvent& event);
 
-    void OnResetMagnChart(wxCommandEvent& event);
     void OnApplyKFTunning(wxCommandEvent& event);
-    void OnSubmitMagnAdjustments(wxCommandEvent& event);
+
 
 
 
@@ -361,10 +361,8 @@ private:
 
 
     void resetChartsAfterCallibration();
-    void updateMagnChart(const int16_t rawXMagn, const int16_t rawYMagn, const double rawAzimuth, const double filteredAzimuth, const double timeMs);
     void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs, const uint32_t deltaTime);
     //void updateVelChart(const double xVelocity, const double timeMs);
-    void updatePositionChart(const double xDistance, const double yDistance, const double timeMs);
     void updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double filteredZangleVelocity, const double timeMs);
     void updateGpsBasedPositionChart(std::pair<double, double> gpsBasedPosition);
     void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
@@ -391,6 +389,8 @@ private:
     CsvMeasurementLoadGui csvMeasurementLoadGui{ csvMeasurementReader };
 
     PositionChartGui positionChartGui;
+    MagnChartGui magnChartGui;
+
 
 
     static constexpr size_t DIM_X{ 6 };
@@ -533,11 +533,6 @@ private:
     double yGyroBias{ 12900.0 };
     double zGyroBias{ 15000.0 };
 
-    wxSplitterWindow* azimuthPanelSplitter = nullptr;
-    wxBoxSizer* sizerAzimuthPlot = nullptr;
-    wxSpinCtrl* spinCtrlXmagn = nullptr;
-    wxSpinCtrl* spinCtrlYmagn = nullptr;
-
     wxStaticText* xMagnValue = nullptr;
     wxStaticText* yMagnValue = nullptr;
     wxStaticText* orientationValue = nullptr;
@@ -576,7 +571,6 @@ private:
     void prepareAngleVelocityChart();
     void prepareFilteredPositionChart();
     void prepareFilteredVelocityChart();
-    void prepareAzimuthChart();
     void prepareFilteredAngleXVelocityChart();
 
     void createDataReceptionThread();
