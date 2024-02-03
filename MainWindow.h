@@ -141,7 +141,7 @@ private:
     void OnApplyKFTunning(wxCommandEvent& event);
     void OnSubmitMagnAdjustments(wxCommandEvent& event);
 
-    void OnThreadEvent(wxThreadEvent& event);
+
 
     void experimentKf(const double Xacc, const double Yacc, uint32_t deltaTimeUint)
     {
@@ -353,7 +353,11 @@ private:
         kalmanFilterGyro.correctLKF(vecZ, matR, matH);
     }
 
-    void OnTimer(wxTimerEvent& event);
+    void processFiltration(const std::vector<std::string>& measurements, const bool isRealTimeMeasurement);
+
+    void OnThreadEvent(wxThreadEvent& event);
+    void OnFilterFileMeasTimer(wxTimerEvent& event);
+
 
     void resetChartsAfterCallibration();
     void updateMagnChart(const int16_t rawXMagn, const int16_t rawYMagn, const double rawAzimuth, const double filteredAzimuth, const double timeMs);
@@ -551,7 +555,7 @@ private:
 
     MeasReceptionThrea* serialComThread = nullptr;
 
-    wxTimer m_timer;
+    wxTimer filterFileMeasTimer;
     double xNewPoint = 0.0;
     double yNewPoint = 36.0;
 

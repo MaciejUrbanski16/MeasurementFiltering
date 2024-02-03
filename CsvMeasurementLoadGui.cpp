@@ -1,7 +1,8 @@
 #include "CsvMeasurementLoadGui.h"
 
-void CsvMeasurementLoadGui::setup(wxPanel* kalmanParamsSetupPanel)
+void CsvMeasurementLoadGui::setup(wxPanel* kalmanParamsSetupPanel, wxTimer* filterFileMeasTimer)
 {
+    m_filterFileMeasTimer = filterFileMeasTimer;
 
     wxBoxSizer* loadSensorDataSizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* loadGpsDataSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -101,8 +102,24 @@ void CsvMeasurementLoadGui::OnStartFiltration(wxCommandEvent& event)
     }
 
     canFiltrationBeStarted = true;
-    const std::string& filepath{ filePathSensorDataTextCtrl->GetValue().ToStdString() };
-    csvMeasurementReader.readCSVHeader(filepath);
+    //const std::string& filepath{ filePathSensorDataTextCtrl->GetValue().ToStdString() };
+    //.readCSVHeader(filepath);
+    if (m_filterFileMeasTimer)
+    {
+        const std::string& filepath{ filePathSensorDataTextCtrl->GetValue().ToStdString() };
+        if (not csvMeasurementReader.openFile(filepath))
+        {
+            wxMessageBox("File has not been opened!", "Informacja", wxOK | wxICON_INFORMATION);
+            return;
+        }
+        
+        m_filterFileMeasTimer->Start(100);
+    }
+    else
+    {
+        wxMessageBox("Timer cannot be started!", "Informacja", wxOK | wxICON_INFORMATION);
+    }
+    
 }
 
 bool CsvMeasurementLoadGui::isFileExtensionCorrect(const wxString& filePath, const wxString& extension) const

@@ -9,6 +9,12 @@
 class CsvMeasurementReader
 {
 public:
-	std::vector<std::string> readCSVHeader(const std::string& filename, char delimiter = ',');
+	bool openFile(const std::string filePath);
+	std::vector<std::string> readCSVrow(char delimiter = ',');
+	~CsvMeasurementReader();
+
+private:
+	std::ifstream file;
+	std::vector<std::string> headers;
 };
 

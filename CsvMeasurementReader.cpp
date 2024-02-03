@@ -1,32 +1,48 @@
 #include "CsvMeasurementReader.h"
 
-std::vector<std::string> CsvMeasurementReader::readCSVHeader(const std::string& filename, char delimiter)
+
+bool CsvMeasurementReader::openFile(const std::string filePath)
 {
-    std::vector<std::string> headers;
-    std::ifstream file(filename);
-    if (!file.is_open()) 
+    file.open(filePath);
+    if (!file.is_open())
     {
-        return headers;
+        return false;
     }
 
     std::string line;
-    if (std::getline(file, line)) 
+    if (std::getline(file, line))
     {
         std::stringstream ss(line);
         std::string header;
-        while (std::getline(ss, header, delimiter)) 
+        while (std::getline(ss, header, ','))
         {
             headers.push_back(header);
         }
     }
 
-    
-    std::vector<std::vector<std::string>> data;
-    int count{ 0 };
-    
-    while (std::getline(file, line))
+    return true;
+}
+
+CsvMeasurementReader::~CsvMeasurementReader()
+{
+    if (file.is_open())
     {
-        std::vector<std::string> row;
+        file.close();
+    }
+}
+
+std::vector<std::string> CsvMeasurementReader::readCSVrow(char delimiter)
+{
+    std::vector<std::string> row;
+    std::string line;
+    
+    if (!file.is_open()) 
+    {
+        return row;
+    }
+    
+    if (std::getline(file, line))
+    { 
         std::stringstream ss(line);
         std::string cell;
         int cellNr{ 0 };
@@ -44,17 +60,6 @@ std::vector<std::string> CsvMeasurementReader::readCSVHeader(const std::string& 
         //GPS
         row.push_back("70.342");
         row.push_back("30.342");
-
-        //HERE CALL OF FILTRATION
-
-        data.push_back(row);
-        count++;
-        if (count == 20)
-        {
-            break;
-        }
     }
-
-    file.close();
-    return headers;
+    return row;
 }

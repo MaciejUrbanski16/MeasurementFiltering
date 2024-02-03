@@ -25,7 +25,7 @@ public:
 		//assign(measurements);
 	}
 
-	bool assign(const std::vector<std::string>& measurements, const uint32_t deltaTimeMs)
+	bool assign(const std::vector<std::string>& measurements, const uint32_t deltaTimeMs, const bool isRealTimeMeasurement)
 	{
 		if (measurements.size() == 10)
 		{
@@ -66,6 +66,13 @@ public:
 				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, xMagn, yMagn,
 					xAccMPerS2, yAccMPerS2, zAccMPerS2, xVelocity, yVelocity,
 					xDistance, yDistance, orientationDegree, longitude, latitude, deltaTimeMs);
+
+				if (isRealTimeMeasurement)
+				{
+					appLogger.logHandledMeasIntoCSV(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, xMagn, yMagn,
+						xAccMPerS2, yAccMPerS2, zAccMPerS2, xVelocity, yVelocity,
+						xDistance, yDistance, orientationDegree, longitude, latitude, deltaTimeMs);
+				}
 
 				return true;
 			}
