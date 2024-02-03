@@ -69,6 +69,8 @@ void MagnChartGui::setup(wxNotebook* m_notebook /*, MyWindow* window*/)
 
 	controlPanelSizer->Add(azimuthSetupButtonsSizer, 0, wxALL, 5);
 
+	controlPanelSizer->AddSpacer(10);
+
 	checkBoxSizer->Add(rawAzimuthCheckbox, 0, wxALL, 5);
 	checkBoxSizer->Add(filteredAzimuthCheckbox, 0, wxALL, 5);
 	controlPanelSizer->Add(checkBoxSizer, 0, wxALL, 5);

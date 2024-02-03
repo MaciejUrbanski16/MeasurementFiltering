@@ -66,6 +66,7 @@ void AngleVelocityChartGui::setup(wxNotebook* m_notebook)
     wxBoxSizer* xAngleVelLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* yAngleVelLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* zAngleVelLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* checkBoxSizer = new wxBoxSizer(wxVERTICAL);
 
     wxStaticText* xAngleVelName = new wxStaticText(controlPanel, wxID_ANY, "Current X angle vel [degree/s]: ");
     wxStaticText* yAngleVelName = new wxStaticText(controlPanel, wxID_ANY, "Current Y angle vel [degree/s]: ");
@@ -73,6 +74,22 @@ void AngleVelocityChartGui::setup(wxNotebook* m_notebook)
     xAngleVelValue = new wxStaticText(controlPanel, wxID_ANY, "0");
     yAngleVelValue = new wxStaticText(controlPanel, wxID_ANY, "0");
     zAngleVelValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+
+    rawXangleVelCheckbox = new wxCheckBox(controlPanel, wxID_ANY, wxT("Plot raw X angle velocity"));
+    rawXangleVelCheckbox->SetValue(true);
+    rawXangleVelCheckbox->Bind(wxEVT_CHECKBOX, &AngleVelocityChartGui::OnRawXangleVelCheckBoxClicked, this);
+
+    rawYangleVelCheckbox = new wxCheckBox(controlPanel, wxID_ANY, wxT("Plot raw Y angle velocity"));
+    rawYangleVelCheckbox->SetValue(true);
+    rawYangleVelCheckbox->Bind(wxEVT_CHECKBOX, &AngleVelocityChartGui::OnRawYangleVelCheckBoxClicked, this);
+
+    rawZangleVelCheckbox = new wxCheckBox(controlPanel, wxID_ANY, wxT("Plot raw Z angle velocity"));
+    rawZangleVelCheckbox->SetValue(true);
+    rawZangleVelCheckbox->Bind(wxEVT_CHECKBOX, &AngleVelocityChartGui::OnRawZangleVelCheckBoxClicked, this);
+
+    filteredZangleVelCheckbox = new wxCheckBox(controlPanel, wxID_ANY, wxT("Plot filtered Z angle velocity"));
+    filteredZangleVelCheckbox->SetValue(true);
+    filteredZangleVelCheckbox->Bind(wxEVT_CHECKBOX, &AngleVelocityChartGui::OnFilteredZangleVelCheckBoxClicked, this);
 
     xAngleVelLabelsSizer->Add(xAngleVelName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
     xAngleVelLabelsSizer->Add(xAngleVelValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
@@ -85,6 +102,14 @@ void AngleVelocityChartGui::setup(wxNotebook* m_notebook)
     zAngleVelLabelsSizer->Add(zAngleVelName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
     zAngleVelLabelsSizer->Add(zAngleVelValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
     controlPanelSizer->Add(zAngleVelLabelsSizer, 0, wxALL, 5);
+
+    controlPanelSizer->AddSpacer(10);
+
+    checkBoxSizer->Add(rawXangleVelCheckbox, 0, wxALL, 5);
+    checkBoxSizer->Add(rawYangleVelCheckbox, 0, wxALL, 5);
+    checkBoxSizer->Add(rawZangleVelCheckbox, 0, wxALL, 5);
+    checkBoxSizer->Add(filteredZangleVelCheckbox, 0, wxALL, 5);
+    controlPanelSizer->Add(checkBoxSizer, 0, wxALL, 5);
 
     controlPanelSizer->Add(angleVelSetupButtonsSizer, 0, wxALL, 5);
 
@@ -116,11 +141,164 @@ void AngleVelocityChartGui::updateChart(
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
-    dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
-    dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
-    dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
-    dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
-    dataset->GetSerie(1)->SetName("yAngleVelocity");
+
+    if (plotRawXangleVelocity and plotRawYangleVelocity and plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        dataset->GetSerie(0)->SetName("raw X angle velocity");
+        dataset->GetSerie(1)->SetName("raw Y angle velocity");
+        dataset->GetSerie(2)->SetName("raw Z angle velocity");
+        dataset->GetSerie(3)->SetName("filtered Z angle velocity");
+    }
+    else if (not plotRawXangleVelocity and plotRawYangleVelocity and plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        //dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        //dataset->GetSerie(0)->SetName("raw X angle velocity");
+        dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        dataset->GetSerie(1)->SetName("raw Z angle velocity");
+        dataset->GetSerie(2)->SetName("filtered Z angle velocity");
+    }
+    else if (not plotRawXangleVelocity and not plotRawYangleVelocity and plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        //dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        //dataset->GetSerie(0)->SetName("raw X angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        dataset->GetSerie(0)->SetName("raw Z angle velocity");
+        dataset->GetSerie(1)->SetName("filtered Z angle velocity");
+    }
+    else if (not plotRawXangleVelocity and not plotRawYangleVelocity and not plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        //dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        //dataset->GetSerie(0)->SetName("raw X angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Z angle velocity");
+        dataset->GetSerie(0)->SetName("filtered Z angle velocity");
+    }
+    else if (plotRawXangleVelocity and not plotRawYangleVelocity and not plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        dataset->GetSerie(0)->SetName("raw X angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Z angle velocity");
+        dataset->GetSerie(1)->SetName("filtered Z angle velocity");
+    }
+    else if (plotRawXangleVelocity and plotRawYangleVelocity and not plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        dataset->GetSerie(0)->SetName("raw X angle velocity");
+        dataset->GetSerie(1)->SetName("raw Y angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Z angle velocity");
+        dataset->GetSerie(2)->SetName("filtered Z angle velocity");
+    }
+    else if (not plotRawXangleVelocity and plotRawYangleVelocity and not plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        //dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        //dataset->GetSerie(0)->SetName("raw X angle velocity");
+        dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Z angle velocity");
+        dataset->GetSerie(1)->SetName("filtered Z angle velocity");
+    }
+    else if (not plotRawXangleVelocity and not plotRawYangleVelocity and plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        //dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        //dataset->GetSerie(0)->SetName("raw X angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        dataset->GetSerie(0)->SetName("raw Z angle velocity");
+        dataset->GetSerie(1)->SetName("filtered Z angle velocity");
+    }
+    else if (not plotRawXangleVelocity and plotRawYangleVelocity and not plotRawZangleVelocity and not plotFilteredZangleVelocity)
+    {
+        //dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        //dataset->GetSerie(0)->SetName("raw X angle velocity");
+        dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Z angle velocity");
+        //dataset->GetSerie(1)->SetName("filtered Z angle velocity");
+    }
+    else if (not plotRawXangleVelocity and not plotRawYangleVelocity and plotRawZangleVelocity and not plotFilteredZangleVelocity)
+    {
+        //dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        //dataset->GetSerie(0)->SetName("raw X angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        dataset->GetSerie(0)->SetName("raw Z angle velocity");
+        //dataset->GetSerie(1)->SetName("filtered Z angle velocity");
+    }
+    else if (not plotRawXangleVelocity and not plotRawYangleVelocity and not plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        //dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        //dataset->GetSerie(0)->SetName("raw X angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Z angle velocity");
+        dataset->GetSerie(0)->SetName("filtered Z angle velocity");
+    }
+    else if (not plotRawXangleVelocity and not plotRawYangleVelocity and plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        //dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        //dataset->GetSerie(0)->SetName("raw X angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        dataset->GetSerie(0)->SetName("raw Z angle velocity");
+        dataset->GetSerie(1)->SetName("filtered Z angle velocity");
+    }
+    else if (plotRawXangleVelocity and not plotRawYangleVelocity and plotRawZangleVelocity and plotFilteredZangleVelocity)
+    {
+        dataset->AddSerie(new XYSerie(xAngleVelocityBuffer.getBuffer()));
+        //dataset->AddSerie(new XYSerie(yAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(zAngleVelocityBuffer.getBuffer()));
+        dataset->AddSerie(new XYSerie(filteredZangleVelocityBuffer.getBuffer()));
+
+        dataset->GetSerie(0)->SetName("raw X angle velocity");
+        //dataset->GetSerie(0)->SetName("raw Y angle velocity");
+        dataset->GetSerie(1)->SetName("raw Z angle velocity");
+        dataset->GetSerie(2)->SetName("filtered Z angle velocity");
+        }
+
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
@@ -130,14 +308,10 @@ void AngleVelocityChartGui::updateChart(
     {
         bottomAxis->SetFixedBounds(xAngleVelocityBuffer.getBuffer()[0].x, xAngleVelocityBuffer.getBuffer()[99].x);
     }
-    DatasetArray datasetArray();
-    //datasetArray
-    Legend* lengend = new Legend(10, 10);
-    wxRect rect(wxSize(10, 10));
-    //lengend.Draw(this, rect, datasetArray);
 
+    Legend* legend = new Legend(wxTOP, wxRIGHT);
+    plot->SetLegend(legend);
     plot->AddObjects(dataset, leftAxis, bottomAxis);
-    //plot->SetLegend(lengend);
     Chart* chart = new Chart(plot, "Angle velocity");
 
     angleVelocityChartPanel->SetChart(chart);
@@ -156,6 +330,62 @@ double AngleVelocityChartGui::getYgyroBias() const
 double AngleVelocityChartGui::getZgyroBias() const
 {
     return zGyroBias;
+}
+
+void AngleVelocityChartGui::OnRawXangleVelCheckBoxClicked(wxCommandEvent& event)
+{
+    if (rawXangleVelCheckbox->IsChecked())
+    {
+        plotRawXangleVelocity = true;
+        wxMessageBox("Raw X angle velocity checkbox zosta³ zaznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+    }
+    else
+    {
+        plotRawXangleVelocity = false;
+        wxMessageBox("Raw X angle velocity checkbox zosta³ odznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+    }
+}
+
+void AngleVelocityChartGui::OnRawYangleVelCheckBoxClicked(wxCommandEvent& event)
+{
+    if (rawYangleVelCheckbox->IsChecked())
+    {
+        plotRawYangleVelocity = true;
+        wxMessageBox("Raw Y angle velocity checkbox zosta³ zaznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+    }
+    else
+    {
+        plotRawYangleVelocity = false;
+        wxMessageBox("Raw Y angle velocity checkbox zosta³ odznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+    }
+}
+
+void AngleVelocityChartGui::OnRawZangleVelCheckBoxClicked(wxCommandEvent& event)
+{
+    if (rawZangleVelCheckbox->IsChecked())
+    {
+        plotRawZangleVelocity = true;
+        wxMessageBox("Raw Z angle velocity checkbox zosta³ zaznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+    }
+    else
+    {
+        plotRawZangleVelocity = false;
+        wxMessageBox("Raw Z angle velocity checkbox zosta³ odznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+    }
+}
+
+void AngleVelocityChartGui::OnFilteredZangleVelCheckBoxClicked(wxCommandEvent& event)
+{
+    if (filteredZangleVelCheckbox->IsChecked())
+    {
+        plotFilteredZangleVelocity = true;
+        wxMessageBox("Filtered Z angle velocity checkbox zosta³ zaznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+    }
+    else
+    {
+        plotFilteredZangleVelocity = false;
+        wxMessageBox("Filtered Z angle velocity checkbox zosta³ odznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+    }
 }
 
 void AngleVelocityChartGui::OnResetAngleVelChart(wxCommandEvent& event)

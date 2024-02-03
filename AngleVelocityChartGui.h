@@ -42,6 +42,11 @@ private:
     void OnSpinZAngleVelUpdate(wxSpinEvent& event);
     void OnSpinZAnglVelIncrUpdate(wxSpinEvent& event);
 
+    void OnRawXangleVelCheckBoxClicked(wxCommandEvent& event);
+    void OnRawYangleVelCheckBoxClicked(wxCommandEvent& event);
+    void OnRawZangleVelCheckBoxClicked(wxCommandEvent& event);
+    void OnFilteredZangleVelCheckBoxClicked(wxCommandEvent& event);
+
     wxChartPanel* angleVelocityChartPanel = nullptr;
     wxSplitterWindow* angleVelPanelSplitter = nullptr;
     wxBoxSizer* sizerAngleVelPlot = nullptr;
@@ -55,6 +60,15 @@ private:
     wxStaticText* xAngleVelValue = nullptr;
     wxStaticText* yAngleVelValue = nullptr;
     wxStaticText* zAngleVelValue = nullptr;
+    wxCheckBox* rawXangleVelCheckbox = nullptr;
+    wxCheckBox* rawYangleVelCheckbox = nullptr;
+    wxCheckBox* rawZangleVelCheckbox = nullptr;
+    wxCheckBox* filteredZangleVelCheckbox = nullptr;
+
+    bool plotRawXangleVelocity{ true };
+    bool plotRawYangleVelocity{ true };
+    bool plotRawZangleVelocity{ true };
+    bool plotFilteredZangleVelocity{ true };
 
     double xGyroBias{ -18000.0 };
     double yGyroBias{ 12900.0 };
