@@ -294,7 +294,7 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 //updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), 1.0, totalTimeMs);
                 updateAccChart(rawMeasurement.getXaccMPerS2(),
                     rawMeasurement.getYaccMPerS2(),
-                    rawMeasurement.getZaccMPerS2(),
+                    rawMeasurement.getZaccMPerS2(), 1.0, 1.0,
                     totalTimeMs, deltaTimeMs);
                 ////updateVelChart(rawMeasurement.getXvelocityMperS());
                 ////updatePositionChart(rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
@@ -303,8 +303,8 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                     rawMeasurement.getYangleVelocityDegreePerS(),
                     rawMeasurement.getZangleVelocityDegreePerS(), 1.0, totalTimeMs);
 
-                latitude = latitude + 0.0003;
-                longitude = longitude - 0.0004;
+                latitude = latitude + 0.00003;
+                longitude = longitude - 0.00004;
                 const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(longitude, latitude);
                 updateGpsBasedPositionChart(gpsBasedPosition);
             }
@@ -330,10 +330,7 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer,
                     rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
                 //updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
-                updateAccChart(rawMeasurement.getXaccMPerS2(),
-                    rawMeasurement.getYaccMPerS2(),
-                    rawMeasurement.getZaccMPerS2(),
-                    totalTimeMs, deltaTimeMs);
+
                 angleVelocityChartGui.updateChart(xAngleVelocityBuffer, yAngleVelocityBuffer, zAngleVelocityBuffer, filteredZangleVelocityBuffer,
                     rawMeasurement.getXangleVelocityDegreePerS(),
                     rawMeasurement.getYangleVelocityDegreePerS(),
@@ -349,11 +346,18 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
                     filteredAzimuth);
 
-                filteredPositionX = kalmanFilter.vecX()(0);//PosX
+                filteredPositionX = kalmanFilter.vecX()(2);//PosX
+                filteredPositionY = kalmanFilter.vecX()(5);//PosY
+                const double filteredXacc = kalmanFilter.vecX()(0); //xAcc
+                const double filteredYacc = kalmanFilter.vecX()(3); //yAcc
                 //const double filteredVelocityX = kalmanFilter.vecX()(1);
                 //const double filteredAccX = kalmanFilter.vecX()(1);
-                filteredPositionY = kalmanFilter.vecX()(3);//PosY
+                
                 //const double filteredVelocityY = kalmanFilter.vecX()(3);
+                updateAccChart(rawMeasurement.getXaccMPerS2(),
+                    rawMeasurement.getYaccMPerS2(),
+                    rawMeasurement.getZaccMPerS2(), filteredXacc, filteredYacc,
+                    totalTimeMs, deltaTimeMs);
 
                 const auto calculatedPosition{ positionUpdater.getCurrentPosition() };
 
@@ -429,6 +433,8 @@ void MyWindow::resetChartsAfterCallibration()
     xAccBuffer.Clear();
     yAccBuffer.Clear();
     zAccBuffer.Clear();
+    filteredXaccBuffer.Clear();
+    filteredYaccBuffer.Clear();
 
     xAngleVelocityBuffer.Clear();
     yAngleVelocityBuffer.Clear();
@@ -441,7 +447,8 @@ void MyWindow::resetChartsAfterCallibration()
     gpsBasedPositionBuffer.Clear();
 }
 
-void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs, const uint32_t deltaTime)
+void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, 
+    const double filteredXacc, const double filteredYacc, const double timeMs, const uint32_t deltaTime)
 {
     xAccValue->SetLabel(std::to_string(xAccMPerS2));
     yAccValue->SetLabel(std::to_string(yAccMPerS2));
@@ -454,11 +461,23 @@ void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, 
     yAccBuffer.AddElement(wxRealPoint(timeMs, yAccMPerS2));
     zAccBuffer.AddElement(wxRealPoint(timeMs, zAccMPerS2));
 
+    filteredXaccBuffer.AddElement(wxRealPoint(timeMs, filteredXacc));
+    filteredYaccBuffer.AddElement(wxRealPoint(timeMs, filteredYacc));
+
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
     dataset->AddSerie(new XYSerie(xAccBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(yAccBuffer.getBuffer()));
-    dataset->AddSerie(new XYSerie(zAccBuffer.getBuffer()));
+    //dataset->AddSerie(new XYSerie(zAccBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(filteredXaccBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(filteredYaccBuffer.getBuffer()));
+
+    dataset->GetSerie(0)->SetName("raw X acceleration");
+    dataset->GetSerie(1)->SetName("raw Y acceleration");
+    //dataset->GetSerie(2)->SetName("raw Z aceleration");
+    dataset->GetSerie(2)->SetName("filtered X acceleration");
+    dataset->GetSerie(3)->SetName("filtered Y acceleration");
+
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
@@ -468,6 +487,9 @@ void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, 
     {
         bottomAxis->SetFixedBounds(xAccBuffer.getBuffer()[0].x, xAccBuffer.getBuffer()[99].x);
     }
+
+    Legend* legend = new Legend(wxTOP, wxRIGHT);
+    plot->SetLegend(legend);
     plot->AddObjects(dataset, leftAxis, bottomAxis);
 
     Chart* chart = new Chart(plot, "X Acceleration");
@@ -662,13 +684,13 @@ void MyWindow::prepareAccChart()
     wxBoxSizer* controlPanelSizerForYAdj = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* controlPanelSizerForZAdj = new wxBoxSizer(wxHORIZONTAL);
 
-    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 530);
+    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 15500);
     spinCtrlXaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
     wxStaticText* xAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X acc");
     spinCtrlXacc->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinXAccUpdate, this);
     spinCtrlXaccMultiplicator->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinXAccIncrUpdate, this);
 
-    spinCtrlYacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 530);
+    spinCtrlYacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 675);
     spinCtrlYaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
     wxStaticText* yAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y acc");
     spinCtrlYacc->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinYAccUpdate, this);
@@ -810,11 +832,11 @@ void MyWindow::prepareFilteredPositionChart()
     wxPanel* panel = new wxPanel(m_notebook, wxID_ANY);
     splitter = new wxSplitterWindow(panel, wxID_ANY);
 
-    matR << 0.1F, 0.0F,
-            0.0F, 0.1F;
-
+    matR << 1.0F, 0.0F,
+            0.0F, 1.0F;
+            //acc vel  pos
     matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F;
+            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F;
 
     // Create two panels to be placed in the splitter window
     //wxPanel* panel1 = new wxPanel(splitter, wxID_ANY);

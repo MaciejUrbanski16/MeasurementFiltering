@@ -197,8 +197,18 @@ private:
             0.0F, 0.0F, 0.0F, 0.0F, 1.0F, deltaTimeMs,
             0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
+         //   A << 1, dt, 0.5 * dt * dt, 0, 0, 0, 0, 0, 0,
+         //0, 1, dt, 0, 0, 0, 0, 0, 0,
+         //0, 0, 1, 0, 0, 0, 0, 0, 0,
+         //0, 0, 0, 1, dt, 0.5 * dt * dt, 0, 0, 0,
+         //0, 0, 0, 0, 1, dt, 0, 0, 0,
+         //0, 0, 0, 0, 0, 1, 0, 0, 0,
+         //0, 0, 0, 0, 0, 0, 1, dt, 0.5 * dt * dt,
+         //0, 0, 0, 0, 0, 0, 0, 1, dt,
+         //0, 0, 0, 0, 0, 0, 0, 0, 1;
+
         double process_variance = 0.002F;
-        deltaTimeMs = deltaTimeMs / 100000.0F;
+        deltaTimeMs = deltaTimeMs / 100000000.0F;
 
         //kowariancja szumu procesowego
         matQ << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
@@ -350,7 +360,9 @@ private:
 
 
     void resetChartsAfterCallibration();
-    void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs, const uint32_t deltaTime);
+    void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
+        const double filteredXacc, const double filteredYacc,
+        const double timeMs, const uint32_t deltaTime);
     //void updateVelChart(const double xVelocity, const double timeMs);
     void updateGpsBasedPositionChart(std::pair<double, double> gpsBasedPosition);
     void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
@@ -465,6 +477,8 @@ private:
     PlotElementsBuffer xAccBuffer;
     PlotElementsBuffer yAccBuffer;
     PlotElementsBuffer zAccBuffer;
+    PlotElementsBuffer filteredXaccBuffer;
+    PlotElementsBuffer filteredYaccBuffer;
 
     PlotElementsBuffer xAngleVelocityBuffer;
     PlotElementsBuffer yAngleVelocityBuffer;
@@ -501,8 +515,8 @@ private:
     wxStaticText* totalTimeValue = nullptr;
 
     double rawGrawity{ 16100.0 };
-    double xBias{ 530.0 };
-    double yBias{ 530.0 };
+    double xBias{ 15500.0 };
+    double yBias{ 675.0 };
 
     double totalTimeMs{ 0.0 };
     double azimuthXPoint{ 0.0 };
