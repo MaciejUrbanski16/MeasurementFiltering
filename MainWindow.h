@@ -41,6 +41,7 @@
 #include "KalmanFilterSetupGui.h"
 #include "CsvMeasurementReader.h"
 #include "CsvMeasurementLoadGui.h"
+#include "PositionChartGui.h"
 
 #include "kalman_filter/kalman_filter.h"
 
@@ -389,6 +390,8 @@ private:
     CsvMeasurementReader csvMeasurementReader;
     CsvMeasurementLoadGui csvMeasurementLoadGui{ csvMeasurementReader };
 
+    PositionChartGui positionChartGui;
+
 
     static constexpr size_t DIM_X{ 6 };
     static constexpr size_t DIM_Z{ 2 };
@@ -425,7 +428,7 @@ private:
     wxChartPanel* gpsBasedPositionChartPanel = nullptr;
     wxChartPanel* accChartPanel = nullptr;
     wxChartPanel* velChartPanel = nullptr;
-    wxChartPanel* positionChartPanel = nullptr;
+    //wxChartPanel* positionChartPanel = nullptr;
     wxChartPanel* angleVelocityChartPanel = nullptr;
 
     wxChartPanel* filteredPositionChartPanel = nullptr;
@@ -542,8 +545,7 @@ private:
     double totalTimeMs{ 0.0 };
     double azimuthXPoint{ 0.0 };
 
-    double currentXPos{ 0.0 };
-    double currentYPos{ 0.0 };
+
 
     double currentFilteredXPosition{ 0.0 };
     double currentFilteredYPosition{ 0.0 };
