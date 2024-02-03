@@ -100,7 +100,11 @@ void CsvMeasurementLoadGui::OnStartFiltration(wxCommandEvent& event)
     {
         gpsDataPathGiven = true;
     }
-
+    if (canFiltrationBeStarted)
+    {
+        wxMessageBox("The filtration has already been started", "Informacja", wxOK | wxICON_INFORMATION);
+        return;
+    }
     canFiltrationBeStarted = true;
     //const std::string& filepath{ filePathSensorDataTextCtrl->GetValue().ToStdString() };
     //.readCSVHeader(filepath);

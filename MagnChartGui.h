@@ -19,17 +19,22 @@
 #include <wx/spinctrl.h> 
 
 #include "PlotElementsBuffer.h"
+//#include "MainWindow.h"
 
-class MagnChartGui
+//class MyWindow;
+
+class MagnChartGui : public wxFrame
 {
 public:
-	void setup(wxNotebook* m_notebook/*, wxWindow* window*/);
+	void setup(wxNotebook* m_notebook/*, MyWindow* window*/);
 	void updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElementsBuffer& filteredAzimuthBuffer,
 		 const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth, const double timeMs);
 
 private:
 	void OnResetMagnChart(wxCommandEvent& event);
 	void OnSubmitMagnAdjustments(wxCommandEvent& event);
+	void OnRawAzimuthCheckBoxClicked(wxCommandEvent& event);
+	void OnFilteredAzimuthCheckBoxClicked(wxCommandEvent& event);
 
 	wxChartPanel* azimuthChartPanel = nullptr;
 	wxSplitterWindow* azimuthPanelSplitter = nullptr;
@@ -39,4 +44,9 @@ private:
 	wxStaticText* xMagnValue = nullptr;
 	wxStaticText* yMagnValue = nullptr;
 	wxStaticText* orientationValue = nullptr;
+	wxCheckBox* rawAzimuthCheckbox = nullptr;
+	wxCheckBox* filteredAzimuthCheckbox = nullptr;
+
+	bool plotRawAzimuth{ true };
+	bool plotFilteredAzimuth{ true };
 };

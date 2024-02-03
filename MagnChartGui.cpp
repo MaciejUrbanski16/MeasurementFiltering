@@ -1,6 +1,6 @@
 #include "MagnChartGui.h"
 
-void MagnChartGui::setup(wxNotebook* m_notebook/*, wxWindow* window*/)
+void MagnChartGui::setup(wxNotebook* m_notebook /*, MyWindow* window*/)
 {
 	wxPanel* panel = new wxPanel(m_notebook, wxID_ANY);
 	azimuthPanelSplitter = new wxSplitterWindow(panel, wxID_ANY);
@@ -29,15 +29,16 @@ void MagnChartGui::setup(wxNotebook* m_notebook/*, wxWindow* window*/)
 
 	wxButton* resetButton = new wxButton(controlPanel, wxID_ANY, "Reset chart");
 	azimuthSetupButtonsSizer->Add(resetButton, 0, wxALL | wxALIGN_LEFT, 5);
-	//resetButton->Bind(wxEVT_BUTTON, &MagnChartGui::OnResetMagnChart, window);
+	resetButton->Bind(wxEVT_BUTTON, &MagnChartGui::OnResetMagnChart, this);
 
 	wxButton* submitButton = new wxButton(controlPanel, wxID_ANY, "Submit adjustments");
 	azimuthSetupButtonsSizer->Add(submitButton, 0, wxALL | wxALIGN_LEFT, 5);
-	//submitButton->Bind(wxEVT_BUTTON, &MagnChartGui::OnSubmitMagnAdjustments, window);
+	submitButton->Bind(wxEVT_BUTTON, &MagnChartGui::OnSubmitMagnAdjustments, this);
 
 	wxBoxSizer* xMagnLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* yMagnLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* orientationSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* checkBoxSizer = new wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* xMagnName = new wxStaticText(controlPanel, wxID_ANY, "Current X magn: ");
 	wxStaticText* yMagnName = new wxStaticText(controlPanel, wxID_ANY, "Current Y magn: ");
@@ -45,6 +46,14 @@ void MagnChartGui::setup(wxNotebook* m_notebook/*, wxWindow* window*/)
 	xMagnValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	yMagnValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	orientationValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+
+	rawAzimuthCheckbox = new wxCheckBox(controlPanel, wxID_ANY, wxT("Plot raw azimuth"));
+	rawAzimuthCheckbox->SetValue(true);
+	rawAzimuthCheckbox->Bind(wxEVT_CHECKBOX, &MagnChartGui::OnRawAzimuthCheckBoxClicked, this);
+
+	filteredAzimuthCheckbox = new wxCheckBox(controlPanel, wxID_ANY, wxT("Plot filtered azimuth"));
+	filteredAzimuthCheckbox->SetValue(true);
+	filteredAzimuthCheckbox->Bind(wxEVT_CHECKBOX, &MagnChartGui::OnFilteredAzimuthCheckBoxClicked, this);
 
 	xMagnLabelsSizer->Add(xMagnName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	xMagnLabelsSizer->Add(xMagnValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
@@ -59,6 +68,10 @@ void MagnChartGui::setup(wxNotebook* m_notebook/*, wxWindow* window*/)
 	controlPanelSizer->Add(orientationSizer, 0, wxALL, 5);
 
 	controlPanelSizer->Add(azimuthSetupButtonsSizer, 0, wxALL, 5);
+
+	checkBoxSizer->Add(rawAzimuthCheckbox, 0, wxALL, 5);
+	checkBoxSizer->Add(filteredAzimuthCheckbox, 0, wxALL, 5);
+	controlPanelSizer->Add(checkBoxSizer, 0, wxALL, 5);
 
 	controlPanel->SetSizer(controlPanelSizer);
 
@@ -79,15 +92,26 @@ void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElement
 	magnPointsBuffer.AddElement(wxRealPoint(timeMs, azimuth));
 	filteredAzimuthBuffer.AddElement(wxRealPoint(timeMs, filteredAzimuth));
 
-	//magnPoints.push_back(wxRealPoint(timeMs, azimuth));
-	//azimuthXPoint += 1;
-	//yNewPoint = static_cast<double>(azimuth);
 	XYPlot* plot = new XYPlot();
 	XYSimpleDataset* dataset = new XYSimpleDataset();
-	dataset->AddSerie(new XYSerie(magnPointsBuffer.getBuffer()));
-	dataset->AddSerie(new XYSerie(filteredAzimuthBuffer.getBuffer()));
-	dataset->GetSerie(0)->SetName("Raw azimuth");
-	dataset->GetSerie(1)->SetName("Filtered azimuth");
+	if (plotFilteredAzimuth and plotRawAzimuth)
+	{
+		dataset->AddSerie(new XYSerie(magnPointsBuffer.getBuffer()));
+		dataset->AddSerie(new XYSerie(filteredAzimuthBuffer.getBuffer()));
+		dataset->GetSerie(0)->SetName("Raw azimuth");
+		dataset->GetSerie(1)->SetName("Filtered azimuth");
+	}
+	else if (plotFilteredAzimuth and not plotRawAzimuth)
+	{
+		dataset->AddSerie(new XYSerie(filteredAzimuthBuffer.getBuffer()));
+		dataset->GetSerie(0)->SetName("Filtered azimuth");
+	}
+	else if(not plotFilteredAzimuth and plotRawAzimuth)
+	{
+		dataset->AddSerie(new XYSerie(magnPointsBuffer.getBuffer()));
+		dataset->GetSerie(0)->SetName("Raw azimuth");
+	}
+
 	//dataset->AddSerie(new XYSerie(accPoints));
 	dataset->SetRenderer(new XYLineRenderer());
 	NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
@@ -110,18 +134,38 @@ void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElement
 
 void MagnChartGui::OnResetMagnChart(wxCommandEvent& event)
 {
-	//magnPoints.clear();
-	//yAngleVelocityPoints.clear();
-	//zAngleVelocityPoints.clear();
-	//azimuthXPoint = 0;
-	wxLogMessage("Reset azimuth chart!");
+	wxMessageBox("OnResetMagnChart was clicked", "Informacja", wxOK | wxICON_INFORMATION);
 }
 
 void MagnChartGui::OnSubmitMagnAdjustments(wxCommandEvent& event)
 {
-	//magnPoints.clear();
-	//yAngleVelocityPoints.clear();
-	//zAngleVelocityPoints.clear();
-	//azimuthXPoint = 0;
-	wxLogMessage("Reset azimuth chart!");
+	wxMessageBox("OnSubmitMagnAdjustments was clicked", "Informacja", wxOK | wxICON_INFORMATION);
+}
+
+void MagnChartGui::OnRawAzimuthCheckBoxClicked(wxCommandEvent& event)
+{
+	if (rawAzimuthCheckbox->IsChecked())
+	{
+		plotRawAzimuth = true;
+		wxMessageBox("Raw azimuth checkbox zosta³ zaznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+	}
+	else
+	{
+		plotRawAzimuth = false;
+		wxMessageBox("Raw azimuth checkbox zosta³ odznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+	}
+}
+
+void MagnChartGui::OnFilteredAzimuthCheckBoxClicked(wxCommandEvent& event)
+{
+	if (filteredAzimuthCheckbox->IsChecked())
+	{
+		plotFilteredAzimuth = true;
+		wxMessageBox("Filtered azimuth checkbox zosta³ zaznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+	}
+	else
+	{
+		plotFilteredAzimuth = false;
+		wxMessageBox("Filtered azimuth checkbox zosta³ odznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
+	}
 }
