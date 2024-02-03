@@ -19,9 +19,6 @@
 #include <wx/spinctrl.h> 
 
 #include "PlotElementsBuffer.h"
-//#include "MainWindow.h"
-
-//class MyWindow;
 
 class MagnChartGui : public wxFrame
 {

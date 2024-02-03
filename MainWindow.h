@@ -43,6 +43,7 @@
 #include "CsvMeasurementLoadGui.h"
 #include "PositionChartGui.h"
 #include "MagnChartGui.h"
+#include "AngleVelocityChartGui.h"
 
 #include "kalman_filter/kalman_filter.h"
 
@@ -130,19 +131,7 @@ private:
     void OnSpinZAccUpdate(wxSpinEvent& event);
     void OnSpinZAccIncrUpdate(wxSpinEvent& event);
 
-    void OnResetAngleVelChart(wxCommandEvent& event);
-    void OnSubmitAngleVelAdjustments(wxCommandEvent& event);
-    void OnSpinXAngleVelUpdate(wxSpinEvent& event);
-    void OnSpinXAnglVelIncrUpdate(wxSpinEvent& event);
-    void OnSpinYAngleVelUpdate(wxSpinEvent& event);
-    void OnSpinYAnglVelIncrUpdate(wxSpinEvent& event);
-    void OnSpinZAngleVelUpdate(wxSpinEvent& event);
-    void OnSpinZAnglVelIncrUpdate(wxSpinEvent& event);
-
     void OnApplyKFTunning(wxCommandEvent& event);
-
-
-
 
     void experimentKf(const double Xacc, const double Yacc, uint32_t deltaTimeUint)
     {
@@ -363,7 +352,6 @@ private:
     void resetChartsAfterCallibration();
     void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, const double timeMs, const uint32_t deltaTime);
     //void updateVelChart(const double xVelocity, const double timeMs);
-    void updateAngleVelocityChart(const double xAngleVel, const double yAngleVel, const double zAngleVel, const double filteredZangleVelocity, const double timeMs);
     void updateGpsBasedPositionChart(std::pair<double, double> gpsBasedPosition);
     void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
         const std::pair<double, double> calculatedPosition, const double timeMs);
@@ -390,6 +378,7 @@ private:
 
     PositionChartGui positionChartGui;
     MagnChartGui magnChartGui;
+    AngleVelocityChartGui angleVelocityChartGui;
 
 
 
@@ -424,12 +413,12 @@ private:
     wxPanel* kalmanParamsSetupPanel = nullptr;
     wxPanel* csvMeasurementLoadPanel = nullptr;
 
-    wxChartPanel* azimuthChartPanel = nullptr;
+    //wxChartPanel* azimuthChartPanel = nullptr;
     wxChartPanel* gpsBasedPositionChartPanel = nullptr;
     wxChartPanel* accChartPanel = nullptr;
     wxChartPanel* velChartPanel = nullptr;
     //wxChartPanel* positionChartPanel = nullptr;
-    wxChartPanel* angleVelocityChartPanel = nullptr;
+    
 
     wxChartPanel* filteredPositionChartPanel = nullptr;
     wxChartPanel* filteredVelocityChartPanel = nullptr;
@@ -515,31 +504,8 @@ private:
     double xBias{ 530.0 };
     double yBias{ 530.0 };
 
-
-    wxSplitterWindow* angleVelPanelSplitter = nullptr;
-    wxBoxSizer* sizerAngleVelPlot = nullptr;
-    wxSpinCtrl* spinCtrlXangleVel = nullptr;
-    wxSpinCtrl* spinCtrlXangleVelMultiplicator = nullptr;
-    wxSpinCtrl* spinCtrlYangleVel = nullptr;
-    wxSpinCtrl* spinCtrlYangleVelMultiplicator = nullptr;
-    wxSpinCtrl* spinCtrlZangleVel = nullptr;
-    wxSpinCtrl* spinCtrlZangleVelMultiplicator = nullptr;
-
-    wxStaticText* xAngleVelValue = nullptr;
-    wxStaticText* yAngleVelValue = nullptr;
-    wxStaticText* zAngleVelValue = nullptr;
-
-    double xGyroBias{ -18000.0 };
-    double yGyroBias{ 12900.0 };
-    double zGyroBias{ 15000.0 };
-
-    wxStaticText* xMagnValue = nullptr;
-    wxStaticText* yMagnValue = nullptr;
-    wxStaticText* orientationValue = nullptr;
-
     double totalTimeMs{ 0.0 };
     double azimuthXPoint{ 0.0 };
-
 
 
     double currentFilteredXPosition{ 0.0 };
@@ -568,7 +534,6 @@ private:
     void prepareVelChart();
     void preparePositionChart();
     void prepareGpsBasedPositionChart();
-    void prepareAngleVelocityChart();
     void prepareFilteredPositionChart();
     void prepareFilteredVelocityChart();
     void prepareFilteredAngleXVelocityChart();
@@ -576,7 +541,6 @@ private:
     void createDataReceptionThread();
 
     AppLogger appLogger;
-
 };
 
 
