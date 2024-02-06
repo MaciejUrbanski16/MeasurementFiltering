@@ -950,13 +950,13 @@ void MyWindow::prepareGui()
     m_notebook->AddPage(comSetupPanel, "Serial port setup");
     dataReceptionPanel = new wxPanel(m_notebook);
     m_notebook->AddPage(dataReceptionPanel, "Data reception");
-    kalmanParamsSetupPanel = new wxPanel(m_notebook);
-    innerNotebook = new wxNotebook(kalmanParamsSetupPanel, 2);
-    wxPanel* innerPanel = new wxPanel(innerNotebook);
-    innerNotebook->AddPage(innerPanel, "Inner");
+    
+    //innerNotebook = new wxNotebook(kalmanParamsSetupPanel, 2);
+    //wxPanel* innerPanel = new wxPanel(innerNotebook);
+    //innerNotebook->AddPage(innerPanel, "Inner");
 
-    m_notebook->AddPage(kalmanParamsSetupPanel, "KF setup");
-    kalmanFilterSetupGui.setup(kalmanParamsSetupPanel);
+    
+    kalmanFilterSetupGui.setup(m_notebook);
 
     csvMeasurementLoadPanel = new wxPanel(m_notebook);
     m_notebook->AddPage(csvMeasurementLoadPanel, "Load CSV");
