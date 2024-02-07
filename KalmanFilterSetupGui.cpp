@@ -5,7 +5,7 @@ void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
     wxBoxSizer* leftVerticalSizer = new wxBoxSizer(wxVERTICAL);
     leftPanel = new wxPanel(mainPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_SIMPLE);
 
-    chooseModel = new wxStaticText(leftPanel, wxID_ANY, "Model ruchu:");
+    chooseModel = new wxStaticText(leftPanel, wxID_ANY, "Ustawienie filtracji dla modeli ruchu");
 
     pedestrianModelButton = new wxRadioButton(leftPanel, wxID_ANY, wxT("Pedestrian model"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
     rcCarModelButton = new wxRadioButton(leftPanel, wxID_ANY, wxT("RC car model"));
@@ -17,12 +17,16 @@ void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
 
 
     confirmCallibrationButton = new wxButton(leftPanel, wxID_ANY, wxT("ZatwierdŸ kalibracjê"));
-    confirmCallibrationButton->SetSize({ 60,100 });
-    confirmCallibrationButton->SetBackgroundColour(wxColour(128, 0, 64));
+    confirmCallibrationButton->SetMinSize(wxSize(300, 400));
+    confirmCallibrationButton->SetBackgroundColour(wxColour(64, 255, 255));
 
     wxBoxSizer* mainSizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* leftSizer = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer* rightSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxStaticBoxSizer* staticBoxSizer = new wxStaticBoxSizer(wxVERTICAL, mainPanel, "Macierze filtracji");
+    wxStaticBoxSizer* staticBoxSizerRadioButtons = new wxStaticBoxSizer(wxVERTICAL, mainPanel, "Model filtracji");
+
 
     stateVectorAzimuthName = new wxStaticText(leftPanel, wxID_ANY, "Wektor stanu X dla rotacji");
     createAndFillStateVectorRotationGrid();
@@ -39,24 +43,33 @@ void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
     leftSizer->Add(stateVectorAzimuthName, 0, wxALL | wxALIGN_CENTER, 5);
     leftSizer->Add(stateVectorAzimuthGrid, 0, wxALL | wxALIGN_CENTER, 5);
 
+    leftSizer->AddSpacer(10);
+
     leftSizer->Add(matrixHAzimuthName, 0, wxALL | wxALIGN_CENTER, 5);
     leftSizer->Add(matrixHAzimuthGrid, 0, wxALL | wxALIGN_CENTER, 5);
 
     rightSizer->Add(stateVectorPositionName, 0, wxALL | wxALIGN_CENTER, 5);
     rightSizer->Add(stateVectorPositionGrid, 0, wxALL | wxALIGN_CENTER, 5);
 
+    rightSizer->AddSpacer(10);
+
     rightSizer->Add(matrixHPositionName, 0, wxALL | wxALIGN_CENTER, 5);
     rightSizer->Add(matrixHPositionGrid, 0, wxALL | wxALIGN_CENTER, 5);
 
-    mainSizer->Add(leftSizer, 1, wxALL, 5);
-    mainSizer->Add(rightSizer, 1, wxALL, 5);
+    mainSizer->Add(leftSizer, 0, wxALL, 5);
+    mainSizer->Add(rightSizer, 0, wxALL, 5);
 
-    leftVerticalSizer->Add(chooseModel, 0, wxALL, 5);
-    leftVerticalSizer->Add(pedestrianModelButton, 0, wxALL, 5);
-    leftVerticalSizer->Add(rcCarModelButton, 0, wxALL, 5);
-    leftVerticalSizer->Add(carModelButton, 0, wxALL, 5);
-    leftVerticalSizer->AddSpacer(10);
-    leftVerticalSizer->Add(mainSizer, 1, wxALL, 5);
+    leftVerticalSizer->Add(chooseModel, 0, wxALL | wxALIGN_CENTER, 5);
+    leftVerticalSizer->AddSpacer(15);
+    staticBoxSizerRadioButtons->Add(pedestrianModelButton, 0, wxALL, 5);
+    staticBoxSizerRadioButtons->Add(rcCarModelButton, 0, wxALL, 5);
+    staticBoxSizerRadioButtons->Add(carModelButton, 0, wxALL, 5);
+
+    leftVerticalSizer->Add(staticBoxSizerRadioButtons, 0, wxALIGN_CENTER | wxALL, 5);
+    leftVerticalSizer->AddSpacer(20);
+    staticBoxSizer->Add(mainSizer, 0, wxCENTER | wxALL, 10);
+
+    leftVerticalSizer->Add(staticBoxSizer, 0, wxALIGN_CENTER | wxALL, 5);
  
 
     leftVerticalSizer->Add(confirmCallibrationButton, 0, wxALL | wxALIGN_CENTER, 5);
@@ -430,7 +443,7 @@ void KalmanFilterSetupGui::createAndFillMatrixHRotationGrid()
     matrixHAzimuthGrid = new wxGrid(leftPanel, wxID_ANY);
     matrixHAzimuthGrid->HideRowLabels();
     matrixHAzimuthGrid->HideColLabels();
-    matrixHPositionGrid->SetDefaultColSize(25);
+    matrixHAzimuthGrid->SetDefaultColSize(25);
 
     kf::Matrix<DIM_Z_azimuth, DIM_X_azimuth> matH;
     matH << 0, 0, 0, 0, 0, 0,
