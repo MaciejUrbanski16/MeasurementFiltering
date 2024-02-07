@@ -11,6 +11,14 @@
 
 #include "kalman_filter/kalman_filter.h"
 
+#include <optional>
+
+static constexpr size_t DIM_X_azimuth{ 6 };
+static constexpr size_t DIM_Z_azimuth{ 3 };
+
+static constexpr size_t DIM_X{ 6 };
+static constexpr size_t DIM_Z{ 2 };
+
 enum class MovementModel
 {
     PEDESTRIAN = 0,
@@ -22,6 +30,13 @@ enum class MovementModel
 class KalmanFilterSetupGui
 {
 public:
+
+
+    std::optional<kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth>> getMatRazimuth();
+    std::optional<kf::Matrix<DIM_X_azimuth, DIM_X_azimuth>> getMatQazimuth();
+    std::optional<kf::Matrix<DIM_Z, DIM_Z>> getMatRacc();
+    std::optional<kf::Matrix<DIM_X, DIM_X>> getMatQacc();
+
 	void setup(wxNotebook* m_notebook)
 	{ 
         wxBoxSizer* mainVerticalSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -51,25 +66,31 @@ public:
 
     void OnConfirmCallibration(wxCommandEvent& event)
     {
-        //wxStaticText* newText = new wxStaticText(this, wxID_ANY, "Replaced Text", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-
-        //GetSizer()->Replace(textCtrl, newText);
         if (pedestrianModelButton->GetValue())
         {
             isCallibrationDone = true;
             movementModel = MovementModel::PEDESTRIAN;
+
+            handleKfMatricesForPedestrian();
+
             wxMessageBox(wxT("Model ruchu pieszego zosta³ wybrany - rozpoczêto filtracjê"));
         }
         else if (rcCarModelButton->GetValue())
         {
             isCallibrationDone = true;
             movementModel = MovementModel::RC_CAR;
+
+            handleKfMatricesForRcCar();
+
             wxMessageBox(wxT("Model ruchu RC samochodu zosta³ wybrany - rozpoczêto filtracjê"));
         }
         else if (carModelButton->GetValue())
         {
             isCallibrationDone = true;
             movementModel = MovementModel::CAR;
+         
+            handleKfMatricesForCar();
+
             wxMessageBox(wxT("Model ruchu pojazd samochodowy zosta³ wybrany - rozpoczêto filtracjê"));
         }
         else 
@@ -77,8 +98,6 @@ public:
             movementModel = MovementModel::NONE;
             wxMessageBox(wxT("¯aden z przycisków nie zosta³ zaznaczony"));
         }
-
-        //wxLogMessage("Kalibracja zakoñczona - zbieranie pomiarów rozpoczêto.");
     }
 
 private:
@@ -154,10 +173,30 @@ private:
     void fillMatRPedestrianAcc();
     void fillMatQPedestrianAcc();
 
-    static constexpr size_t DIM_X_azimuth{ 6 };
-    static constexpr size_t DIM_Z_azimuth{ 3 };
 
-    static constexpr size_t DIM_X{ 6 };
-    static constexpr size_t DIM_Z{ 2 };
+
+    kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matRAzimuthPedestrian;
+    kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> matQAzimuthPedestrian;
+    kf::Matrix<DIM_Z, DIM_Z> matRAccPedestrian;
+    kf::Matrix<DIM_X, DIM_X> matQAccPedestrian;
+
+    kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matRAzimuthRcCar;
+    kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> matQAzimuthRcCar;
+    kf::Matrix<DIM_Z, DIM_Z> matRAccRcCar;
+    kf::Matrix<DIM_X, DIM_X> matQAccRcCar;
+
+    kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matRAzimuthCar;
+    kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> matQAzimuthCar;
+    kf::Matrix<DIM_Z, DIM_Z> matRAccCar;
+    kf::Matrix<DIM_X, DIM_X> matQAccCar;
+
+    void handleKfMatricesForPedestrian();
+    void handleKfMatricesForRcCar();
+    void handleKfMatricesForCar();
+
+    bool handleMatRazimuth(kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth>& matRAzimuth);
+    bool handleMatQazimuth(kf::Matrix<DIM_X_azimuth, DIM_X_azimuth>& matQAzimuth);
+    bool handleMatRAcc(kf::Matrix<DIM_Z, DIM_Z>& matRAcc);
+    bool handleMatQAcc(kf::Matrix<DIM_X, DIM_X>& matQAcc);
 };
 

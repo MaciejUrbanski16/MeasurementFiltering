@@ -1,5 +1,89 @@
 #include "KalmanFilterSetupGui.h"
 
+std::optional<kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth>> KalmanFilterSetupGui::getMatRazimuth()
+{
+    if (not isCallibrationDone)
+    {
+        wxMessageBox(wxT("ERR Kalibracja nie zosta³a jeszcze ukonczona"));
+        return std::nullopt;
+    }
+    switch (movementModel)
+    {
+    case MovementModel::PEDESTRIAN:
+        return matRAzimuthPedestrian;
+    case MovementModel::RC_CAR:
+        return matRAzimuthRcCar;
+    case MovementModel::CAR:
+        return matRAzimuthCar;
+    default:
+        wxMessageBox(wxT("Model ruchu pieszego NIE zosta³ wybrany - nie mo¿na rozpoczac filtracji"));
+        return std::nullopt;
+    }
+}
+
+std::optional<kf::Matrix<DIM_X_azimuth, DIM_X_azimuth>> KalmanFilterSetupGui::getMatQazimuth()
+{
+    if (not isCallibrationDone)
+    {
+        wxMessageBox(wxT("ERR Kalibracja nie zosta³a jeszcze ukonczona"));
+        return std::nullopt;
+    }
+    switch (movementModel)
+    {
+    case MovementModel::PEDESTRIAN:
+        return matQAzimuthPedestrian;
+    case MovementModel::RC_CAR:
+        return matQAzimuthRcCar;
+    case MovementModel::CAR:
+        return matQAzimuthCar;
+    default:
+        wxMessageBox(wxT("Model ruchu pieszego NIE zosta³ wybrany - nie mo¿na rozpoczac filtracji"));
+        return std::nullopt;
+    }
+}
+
+std::optional<kf::Matrix<DIM_Z, DIM_Z>> KalmanFilterSetupGui::getMatRacc()
+{
+    if (not isCallibrationDone)
+    {
+        wxMessageBox(wxT("ERR Kalibracja nie zosta³a jeszcze ukonczona"));
+        return std::nullopt;
+    }
+    switch (movementModel)
+    {
+    case MovementModel::PEDESTRIAN:
+        return matRAccPedestrian;
+    case MovementModel::RC_CAR:
+        return matRAccRcCar;
+    case MovementModel::CAR:
+        return matRAccCar;
+    default:
+        wxMessageBox(wxT("Model ruchu pieszego NIE zosta³ wybrany - nie mo¿na rozpoczac filtracji"));
+        return std::nullopt;
+    }
+}
+
+std::optional<kf::Matrix<DIM_X, DIM_X>> KalmanFilterSetupGui::getMatQacc()
+{
+    if (not isCallibrationDone)
+    {
+        wxMessageBox(wxT("ERR Kalibracja nie zosta³a jeszcze ukonczona"));
+        return std::nullopt;
+    }
+    switch (movementModel)
+    {
+    case MovementModel::PEDESTRIAN:
+        return matQAccPedestrian;
+    case MovementModel::RC_CAR:
+        return matQAccRcCar;
+    case MovementModel::CAR:
+        return matQAccCar;
+    default:
+        wxMessageBox(wxT("Model ruchu pieszego NIE zosta³ wybrany - nie mo¿na rozpoczac filtracji"));
+        return std::nullopt;
+    }
+}
+
 void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
 {
     wxBoxSizer* leftVerticalSizer = new wxBoxSizer(wxVERTICAL);
@@ -70,7 +154,6 @@ void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
     staticBoxSizer->Add(mainSizer, 0, wxCENTER | wxALL, 10);
 
     leftVerticalSizer->Add(staticBoxSizer, 0, wxALIGN_CENTER | wxALL, 5);
- 
 
     leftVerticalSizer->Add(confirmCallibrationButton, 0, wxALL | wxALIGN_CENTER, 5);
 
@@ -477,4 +560,113 @@ void KalmanFilterSetupGui::createAndFillMatrixHPositionGrid()
             matrixHPositionGrid->SetCellValue(row, col, wxString::Format("%g", matH(row, col)));
         }
     }
+}
+
+void KalmanFilterSetupGui::handleKfMatricesForPedestrian()
+{
+    const bool matRAzimuthPed = handleMatRazimuth(matRAzimuthPedestrian);
+    const bool matQAzimuthPed = handleMatQazimuth(matQAzimuthPedestrian);
+    const bool matRAccPed = handleMatRAcc(matRAccPedestrian);
+    const bool matQAccPed = handleMatQAcc(matQAccPedestrian);
+}
+
+void KalmanFilterSetupGui::handleKfMatricesForRcCar()
+{
+    const bool matRAzimuthPed = handleMatRazimuth(matRAzimuthRcCar);
+    const bool matQAzimuthPed = handleMatQazimuth(matQAzimuthRcCar);
+    const bool matRAccPed = handleMatRAcc(matRAccRcCar);
+    const bool matQAccPed = handleMatQAcc(matQAccRcCar);
+}
+
+void KalmanFilterSetupGui::handleKfMatricesForCar()
+{
+    const bool matRAzimuthPed = handleMatRazimuth(matRAzimuthCar);
+    const bool matQAzimuthPed = handleMatQazimuth(matQAzimuthCar);
+    const bool matRAccPed = handleMatRAcc(matRAccCar);
+    const bool matQAccPed = handleMatQAcc(matQAccCar);
+}
+
+
+bool KalmanFilterSetupGui::handleMatRazimuth(kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth>& matRAzimuth)
+{
+    int numRows = matrixRforAzimuthFilterPedestrianModel->GetNumberRows();
+    int numCols = matrixRforAzimuthFilterPedestrianModel->GetNumberCols();
+    if (numRows != DIM_Z_azimuth || numCols != DIM_Z_azimuth)
+    {
+        wxLogMessage(wxT("Nieprawidlowy rozmiar macierzy R azimuth"));
+        return false;
+    }
+
+    for (int row = 0; row < numRows; ++row) {
+        for (int col = 0; col < numCols; ++col) {
+            wxString valueStr = matrixRforAzimuthFilterPedestrianModel->GetCellValue(row, col);
+            double value;
+            valueStr.ToDouble(&value);
+            matRAzimuth(row, col) = value;
+        }
+    }
+    return true;
+}
+
+bool KalmanFilterSetupGui::handleMatQazimuth(kf::Matrix<DIM_X_azimuth, DIM_X_azimuth>& matQAzimuth)
+{
+    int numRows1 = matrixQforAzimuthFilterPedestrianModel->GetNumberRows();
+    int numCols1 = matrixQforAzimuthFilterPedestrianModel->GetNumberCols();
+    if (numRows1 != DIM_X_azimuth || numCols1 != DIM_X_azimuth)
+    {
+        wxLogMessage(wxT("Nieprawidlowy rozmiar macierzy Q azimuth"));
+        return false;
+    }
+
+    for (int row = 0; row < numRows1; ++row) {
+        for (int col = 0; col < numCols1; ++col) {
+            wxString valueStr = matrixQforAzimuthFilterPedestrianModel->GetCellValue(row, col);
+            double value;
+            valueStr.ToDouble(&value);
+            matQAzimuth(row, col) = value;
+        }
+    }
+    return true;
+}
+
+bool KalmanFilterSetupGui::handleMatRAcc(kf::Matrix<DIM_Z, DIM_Z>& matRAcc)
+{
+    int numRows2 = matrixRforAccFilterPedestrianModel->GetNumberRows();
+    int numCols2 = matrixRforAccFilterPedestrianModel->GetNumberCols();
+    if (numRows2 != DIM_Z || numCols2 != DIM_Z)
+    {
+        wxLogMessage(wxT("Nieprawidlowy rozmiar macierzy R acc"));
+        return false;
+    }
+
+    for (int row = 0; row < numRows2; ++row) {
+        for (int col = 0; col < numCols2; ++col) {
+            wxString valueStr = matrixRforAccFilterPedestrianModel->GetCellValue(row, col);
+            double value;
+            valueStr.ToDouble(&value);
+            matRAcc(row, col) = value;
+        }
+    }
+    return true;
+}
+
+bool KalmanFilterSetupGui::handleMatQAcc(kf::Matrix<DIM_X, DIM_X>& matQAcc)
+{
+    int numRows3 = matrixQforAccFilterPedestrianModel->GetNumberRows();
+    int numCols3 = matrixQforAccFilterPedestrianModel->GetNumberCols();
+    if (numRows3 != DIM_X || numCols3 != DIM_X)
+    {
+        wxLogMessage(wxT("Nieprawidlowy rozmiar macierzy Q acc"));
+        return false;
+    }
+
+    for (int row = 0; row < numRows3; ++row) {
+        for (int col = 0; col < numCols3; ++col) {
+            wxString valueStr = matrixQforAccFilterPedestrianModel->GetCellValue(row, col);
+            double value;
+            valueStr.ToDouble(&value);
+            matQAcc(row, col) = value;
+        }
+    }
+    return true;
 }

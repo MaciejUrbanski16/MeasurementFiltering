@@ -254,6 +254,12 @@ private:
         //        0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F;
 
         ////CORRECTION STEP
+
+        const auto matRFromGui{ kalmanFilterSetupGui.getMatRacc() };
+        const auto matQFromGui{ kalmanFilterSetupGui.getMatQacc() };
+        const auto matRAzzFromGui{ kalmanFilterSetupGui.getMatRazimuth() };
+        const auto matQAzzFromGui{ kalmanFilterSetupGui.getMatQazimuth() };
+
         kalmanFilter.correctLKF(vecZ, matR, matH);
 
         appLogger.logKalmanFilterCorrectionStep(kalmanFilter);
