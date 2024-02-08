@@ -817,8 +817,8 @@ void KalmanFilterSetupGui::initMatrices()
 void KalmanFilterSetupGui::initPedestrianModelMatrices()
 {
     matRAzimuthPedestrian << 0.0001F, 0, 0,
-        0, 0.1F, 0,
-        0, 0, 0.1F;
+                                0, 0.1F, 0,
+                                0, 0, 0.1F;
 
     double process_variance = 0.02F;
     double deltaTimeMs = 0.1F;
@@ -850,48 +850,68 @@ void KalmanFilterSetupGui::initPedestrianModelMatrices()
 
 void KalmanFilterSetupGui::initRcCarModelMatrices()
 {
-    matRAzimuthRcCar << 112.0F, 0, 0,
-                        12.5F, 2.6F, 10,
-                        1, 2, 34;
+    matRAzimuthRcCar << 0.0001F, 0, 0,
+                        0, 0.1F, 0,
+                        0, 0, 0.1F;
 
-    matQAzimuthRcCar << 11.0F, 0, 0, 11.0F, 0, 0,
-        12.5F, 2.6F, 0, 12.5F, 2.6F, 0,
-        1, 2, 4, 1, 2, 4342,
-        11.0F, 0, 0, 11.0F, 0, 0,
-        12.5F, 2.6F, 0, 12.5F, 2.6F, 0,
-        1, 2, 4, 1, 2, 4342;
+    double process_variance = 0.02F;
+    double deltaTimeMs = 0.1F;
+    matQAzimuthRcCar << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
+        pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
+        pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
+        0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
+        0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
+        0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
 
-    matRAccRcCar << 2.0F, 3.0F,
-        1.9F, 2.7F;
+    matQAzimuthRcCar *= process_variance;
 
-    matQAccRcCar << 11, 12, 12, 12, 12, 12,
-        11, 12, 12, 12, 12, 12,
-        11, 12, 12, 12, 12, 12,
-        11, 12, 12, 12, 12, 12,
-        11, 12, 12, 12, 12, 12,
-        11, 12, 12, 12, 12, 12;
+    matRAccRcCar << 1.0F, 0.0F,
+                    0.0F, 1.0F;
+
+    double processVarianceAcc = 0.002F;
+    double sCoefficient = 100.0F;
+    sCoefficient = sCoefficient / 100000000.0F;
+
+    matQAccRcCar << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0, 0, 0,
+        pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0, 0, 0,
+        pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2), 0, 0, 0,
+        0, 0, 0, pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6,
+        0, 0, 0, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2,
+        0, 0, 0, pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2);
+
+    matQAccRcCar *= processVarianceAcc;
 }
 
 void KalmanFilterSetupGui::initCarModelMatrices()
 {
-    matRAzimuthCar << 11.0F, 0, 0,
-        12.5F, 2.6F, 0,
-        1, 2, 4;
+    matRAzimuthCar << 0.0001F, 0, 0,
+        0, 0.1F, 0,
+        0, 0, 0.1F;
 
-    matQAzimuthCar << 11.0F, 0, 0, 11.0F, 0, 0,
-        12.5F, 2.6F, 0, 12.5F, 2.6F, 0,
-        1, 2, 4, 1, 2, 4,
-        11.0F, 0, 0, 11.0F, 0, 0,
-        12.5F, 2.6F, 0, 12.5F, 2.6F, 0,
-        1, 2, 4, 1, 2, 4;
+    double process_variance = 0.02F;
+    double deltaTimeMs = 0.1F;
+    matQAzimuthCar << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
+        pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
+        pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
+        0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
+        0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
+        0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
 
-    matRAccCar << 2.0F, 3.0F,
-        1.9F, 2.7F;
+    matQAzimuthCar *= process_variance;
 
-    matQAccCar << 11, 12, 12, 12, 12, 12,
-        11, 12, 12, 12, 12, 12,
-        11, 12, 12, 12, 12, 12,
-        11, 12, 12, 12, 12, 12,
-        11, 12, 12, 12, 12, 12,
-        11, 12, 12, 12, 12, 12;
+    matRAccCar << 1.0F, 0.0F,
+        0.0F, 1.0F;
+
+    double processVarianceAcc = 0.002F;
+    double sCoefficient = 100.0F;
+    sCoefficient = sCoefficient / 100000000.0F;
+
+    matQAccCar << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0, 0, 0,
+        pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0, 0, 0,
+        pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2), 0, 0, 0,
+        0, 0, 0, pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6,
+        0, 0, 0, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2,
+        0, 0, 0, pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2);
+
+    matQAccCar *= processVarianceAcc;
 }

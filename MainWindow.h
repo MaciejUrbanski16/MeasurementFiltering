@@ -135,60 +135,8 @@ private:
 
     void experimentKf(const double Xacc, const double Yacc, uint32_t deltaTimeUint)
     {
+        kf::Matrix<DIM_X, DIM_X> A;
 
-        static constexpr kf::float32_t T{ 1.0F };
-        static constexpr kf::float32_t Q11{ 0.1F }, Q22{ 0.1F };
-
-
-
-        /*
-        *  macierz A = [1, dt, 0.5 * dt^2  -- dla pozycji x
-        *               0, 1,  dt          -- dla prêdkosci x
-        *               0, 0, 1          ] -- dla przyspieszenia x
-        *
-        *
-        *
-        *
-        *  X
-        *  [x
-            y
-            vx
-            vy]
-        */
-
-        //macierz F
-        /*
-        *  1 dt 1/2 dt^2 0 0 0
-        *  0 1 dt 0 0 0
-        *  0 0 1 0 0 0
-        *  0 0 0 1 dt 1/2 dt^2
-        *  0 0 0 0 1 dt
-        *  0 0 0 0 0 1
-        */
-
-        /*
-        * X =  [x
-        *       vx
-        *       ax
-        *       y
-        *       vy
-        *       ay]
-        *
-        */
-
-        //const uint32_t deltaT{ 100 };
-        //const double teta{ 18.0 };
-
-
-
-        //kalmanFilter.vecX() << 0.0F, 2.0F;
-        //kalmanFilter.matP() << 0.1F, 0.0F, 0.0F, 0.1F;
-
-        kf::Matrix<DIM_X, DIM_X> A; // macierz stanu
-        //F << 1.0F, deltaT, 0.5F*cos(teta)*deltaT*deltaT, 0.0F,
-        //    0, 1, 0.5F * sin(teta) * deltaT * deltaT, 0.0F,
-        //    0, 0, 1, deltaT,
-        //    0, 0, 0, 1;
         double deltaTimeMs = static_cast<double>(deltaTimeUint);
         A << 1.0F, deltaTimeMs, (deltaTimeMs * deltaTimeMs) / 2, 0.0F, 0.0F, 0.0F,
             0.0F, 1.0F, deltaTimeMs, 0.0F, 0.0F, 0.0F,
@@ -197,70 +145,17 @@ private:
             0.0F, 0.0F, 0.0F, 0.0F, 1.0F, deltaTimeMs,
             0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
-         //   A << 1, dt, 0.5 * dt * dt, 0, 0, 0, 0, 0, 0,
-         //0, 1, dt, 0, 0, 0, 0, 0, 0,
-         //0, 0, 1, 0, 0, 0, 0, 0, 0,
-         //0, 0, 0, 1, dt, 0.5 * dt * dt, 0, 0, 0,
-         //0, 0, 0, 0, 1, dt, 0, 0, 0,
-         //0, 0, 0, 0, 0, 1, 0, 0, 0,
-         //0, 0, 0, 0, 0, 0, 1, dt, 0.5 * dt * dt,
-         //0, 0, 0, 0, 0, 0, 0, 1, dt,
-         //0, 0, 0, 0, 0, 0, 0, 0, 1;
-
-        double process_variance = 0.002F;
-        deltaTimeMs = deltaTimeMs / 100000000.0F;
-
-        //kowariancja szumu procesowego
-        matQ << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
-            pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
-            pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
-            0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
-            0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
-            0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
-
-        //Q << 1000, 2000, 25, 0, 0, 0,
-        //    2000, 25, 20, 0, 0, 0,
-        //    25, 20, 5, 0, 0, 0,
-        //    0, 0, 0, 5, 20, 25,
-        //    0, 0, 0, 20, 25, 2000,
-        //    0, 0, 0, 25, 2000, 1000;
-
-        //Q << 1, 1, 1, 0, 0, 0,
-        //    1, 1, 1, 0, 0, 0,
-        //    1, 1, 1, 0, 0, 0,
-        //    0, 0, 0, 1, 1, 1,
-        //    0, 0, 0, 1, 1, 1,
-        //    0, 0, 0, 1, 1, 1;
-
-
-        matQ *= process_variance;
-
-        ////PREDICTION STEP
-        kalmanFilter.predictLKF(A, matQ);
-        appLogger.logKalmanFilterPredictionStep(kalmanFilter);
-        ////
-
-        kf::Vector<DIM_Z> vecZ;
-        //float ax = newMeasurement + 1.1f;
-        //float ay = newMeasurement + 2.1f;
-        vecZ << Xacc, Yacc;
-
-        //kf::Matrix<DIM_Z, DIM_Z> matR;
-        //matR << 0.1F, 0.0F,
-        //        0.0F, 0.1F;
-
-        //kf::Matrix<DIM_Z, DIM_X> matH;
-        //matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-        //        0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F;
-
-        ////CORRECTION STEP
-
         const auto matRFromGui{ kalmanFilterSetupGui.getMatRacc() };
         const auto matQFromGui{ kalmanFilterSetupGui.getMatQacc() };
-        const auto matRAzzFromGui{ kalmanFilterSetupGui.getMatRazimuth() };
-        const auto matQAzzFromGui{ kalmanFilterSetupGui.getMatQazimuth() };
 
-        kalmanFilter.correctLKF(vecZ, matR, matH);
+        kalmanFilter.predictLKF(A, matQFromGui.value());
+        appLogger.logKalmanFilterPredictionStep(kalmanFilter);
+
+
+        kf::Vector<DIM_Z> vecZ;
+        vecZ << Xacc, Yacc;
+
+        kalmanFilter.correctLKF(vecZ, matRFromGui.value(), matH);
 
         appLogger.logKalmanFilterCorrectionStep(kalmanFilter);
     }
@@ -268,6 +163,7 @@ private:
     void experimentKfAzimuth(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, const double azimuthFromMagn, const uint32_t deltaTime)
     {
         double deltaTimeMs = static_cast<double>(deltaTime);
+
         kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> A;
         A << 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F, 0.0F,
             0.0F, 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F,
@@ -276,36 +172,20 @@ private:
             0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F,
             0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
-        kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> Q;
+        const auto matRAzzFromGui{ kalmanFilterSetupGui.getMatRazimuth() };
+        const auto matQAzzFromGui{ kalmanFilterSetupGui.getMatQazimuth() };
 
-        double process_variance = 0.02F;
-        deltaTimeMs = deltaTimeMs / 1000.0F;
-        Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
-            pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
-            pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
-            0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
-            0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
-            0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
-
-        Q *= process_variance;
-
-        kalmanFilterAzimuth.predictLKF(A, Q);
+        kalmanFilterAzimuth.predictLKF(A, matQAzzFromGui.value());
 
         kf::Vector<DIM_Z_azimuth> vecZ;
-
         vecZ <<  xAngleVelocityDegPerSec, zAngleVelocityDegPerSec, azimuthFromMagn;
 
-        kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matR;
-        matR << 0.0001F, 0, 0,
-                0, 0.1F, 0,
-                0, 0, 0.1F;
         kf::Matrix<DIM_Z_azimuth, DIM_X_azimuth> matH;
         matH << 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 1,
                 1, 0, 0, 0, 0, 0;
 
-        kalmanFilterAzimuth.correctLKF(vecZ, matR, matH);
-
+        kalmanFilterAzimuth.correctLKF(vecZ, matRAzzFromGui.value(), matH);
     }
 
     void experimentGyroKf(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, uint32_t deltaTimeMs)
