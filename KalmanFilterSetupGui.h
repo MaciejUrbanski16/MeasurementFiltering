@@ -157,6 +157,7 @@ private:
     wxTextCtrl* textCtrl = nullptr;
 
     MovementModel movementModel{ MovementModel::NONE };
+    MovementModel previousMovementModel{ MovementModel::PEDESTRIAN };
     bool isCallibrationDone = false;
 
 
@@ -174,9 +175,18 @@ private:
 
     void fillMatRPedestrianAzimuth();
     void fillMatQPedestrianAzimuth();
-
     void fillMatRPedestrianAcc();
     void fillMatQPedestrianAcc();
+
+    void fillMatRCarAzimuth();
+    void fillMatQCarAzimuth();
+    void fillMatRCarAcc();
+    void fillMatQCarAcc();
+
+    void fillMatRRcCarAzimuth();
+    void fillMatQRcCarAzimuth();
+    void fillMatRRcCarAcc();
+    void fillMatQRcCarAcc();
 
 
 

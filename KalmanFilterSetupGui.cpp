@@ -199,6 +199,20 @@ void KalmanFilterSetupGui::OnRadioButtonClicked(wxCommandEvent& event)
 
     if (selectedId == pedestrianModelButton->GetId()) 
     {
+        if (previousMovementModel == MovementModel::CAR)
+        {
+            handleKfMatricesForCar();
+        }
+        else if (previousMovementModel == MovementModel::RC_CAR)
+        {
+            handleKfMatricesForRcCar();
+        }
+        else
+        {
+            wxLogMessage(wxT("Nieprawidlowy poprzedni  model ruchu."));
+        }
+        previousMovementModel = MovementModel::PEDESTRIAN;
+
         rightVerticalSizer->Clear();
         destroyWidgets();
 
@@ -221,6 +235,20 @@ void KalmanFilterSetupGui::OnRadioButtonClicked(wxCommandEvent& event)
     }
     else if (selectedId == rcCarModelButton->GetId()) 
     {
+        if (previousMovementModel == MovementModel::CAR)
+        {
+            handleKfMatricesForCar();
+        }
+        else if (previousMovementModel == MovementModel::PEDESTRIAN)
+        {
+            handleKfMatricesForPedestrian();
+        }
+        else
+        {
+            wxLogMessage(wxT("Nieprawidlowy poprzedni  model ruchu."));
+        }
+        previousMovementModel = MovementModel::RC_CAR;
+
         rightVerticalSizer->Clear();
         destroyWidgets();
 
@@ -232,10 +260,10 @@ void KalmanFilterSetupGui::OnRadioButtonClicked(wxCommandEvent& event)
 
         createGrids();
 
-        fillMatRPedestrianAzimuth();
-        fillMatQPedestrianAzimuth();
-        fillMatRPedestrianAcc();
-        fillMatQPedestrianAcc();
+        fillMatRRcCarAzimuth();
+        fillMatQRcCarAzimuth();
+        fillMatRRcCarAcc();
+        fillMatQRcCarAcc();
 
         setupSizer();
 
@@ -243,6 +271,20 @@ void KalmanFilterSetupGui::OnRadioButtonClicked(wxCommandEvent& event)
     }
     else if (selectedId == carModelButton->GetId()) 
     {
+        if (previousMovementModel == MovementModel::RC_CAR)
+        {
+            handleKfMatricesForRcCar();
+        }
+        else if (previousMovementModel == MovementModel::PEDESTRIAN)
+        {
+            handleKfMatricesForPedestrian();
+        }
+        else
+        {
+            wxLogMessage(wxT("Nieprawidlowy poprzedni  model ruchu."));
+        }
+        previousMovementModel = MovementModel::CAR;
+
         rightVerticalSizer->Clear();
         destroyWidgets();
 
@@ -254,10 +296,10 @@ void KalmanFilterSetupGui::OnRadioButtonClicked(wxCommandEvent& event)
 
         createGrids();
 
-        fillMatRPedestrianAzimuth();
-        fillMatQPedestrianAzimuth();
-        fillMatRPedestrianAcc();
-        fillMatQPedestrianAcc();
+        fillMatRCarAzimuth();
+        fillMatQCarAzimuth();
+        fillMatRCarAcc();
+        fillMatQCarAcc();
 
         setupSizer();
 
@@ -351,6 +393,138 @@ void KalmanFilterSetupGui::fillMatQPedestrianAcc()
         for (int row = 0; row < rows; ++row) {
             for (int col = 0; col < cols; ++col) {
                 matrixQforAccFilterPedestrianModel->SetCellValue(row, col, wxString::Format("%.6f", matQAccPedestrian(row, col)));
+            }
+        }
+    }
+}
+
+void KalmanFilterSetupGui::fillMatRRcCarAzimuth()
+{
+    if (matrixRforAzimuthFilterPedestrianModel)
+    {
+        const int rows = matRAzimuthRcCar.rows();
+        const int cols = matRAzimuthRcCar.cols();
+        matrixRforAzimuthFilterPedestrianModel->CreateGrid(rows, cols);
+
+        for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col) {
+                matrixRforAzimuthFilterPedestrianModel->SetCellValue
+                (row, col, wxString::Format("%.4f", matRAzimuthRcCar(row, col)));
+            }
+        }
+    }
+}
+
+void KalmanFilterSetupGui::fillMatQRcCarAzimuth()
+{
+    if (matrixQforAzimuthFilterPedestrianModel)
+    {
+        int rows = matQAzimuthRcCar.rows();
+        int cols = matQAzimuthRcCar.cols();
+        matrixQforAzimuthFilterPedestrianModel->CreateGrid(rows, cols);
+
+        for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col) {
+                matrixQforAzimuthFilterPedestrianModel->SetCellValue(row, col, wxString::Format("%.6f", matQAzimuthRcCar(row, col)));
+            }
+        }
+    }
+}
+
+void KalmanFilterSetupGui::fillMatRRcCarAcc()
+{
+    if (matrixRforAccFilterPedestrianModel)
+    {
+        const int rows = matRAccRcCar.rows();
+        const int cols = matRAccRcCar.cols();
+        matrixRforAccFilterPedestrianModel->CreateGrid(rows, cols);
+
+        for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col) {
+                matrixRforAccFilterPedestrianModel->SetCellValue
+                (row, col, wxString::Format("%.4f", matRAccRcCar(row, col)));
+            }
+        }
+    }
+}
+
+void KalmanFilterSetupGui::fillMatQRcCarAcc()
+{
+    if (matrixQforAccFilterPedestrianModel)
+    {
+        int rows = matQAccRcCar.rows();
+        int cols = matQAccRcCar.cols();
+        matrixQforAccFilterPedestrianModel->CreateGrid(rows, cols);
+
+        for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col) {
+                matrixQforAccFilterPedestrianModel->SetCellValue(row, col, wxString::Format("%.6f", matQAccRcCar(row, col)));
+            }
+        }
+    }
+}
+
+void KalmanFilterSetupGui::fillMatRCarAzimuth()
+{
+    if (matrixRforAzimuthFilterPedestrianModel)
+    {
+        const int rows = matRAzimuthCar.rows();
+        const int cols = matRAzimuthCar.cols();
+        matrixRforAzimuthFilterPedestrianModel->CreateGrid(rows, cols);
+
+        for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col) {
+                matrixRforAzimuthFilterPedestrianModel->SetCellValue
+                (row, col, wxString::Format("%.4f", matRAzimuthCar(row, col)));
+            }
+        }
+    }
+}
+
+void KalmanFilterSetupGui::fillMatQCarAzimuth()
+{
+    if (matrixQforAzimuthFilterPedestrianModel)
+    {
+        int rows = matQAzimuthCar.rows();
+        int cols = matQAzimuthCar.cols();
+        matrixQforAzimuthFilterPedestrianModel->CreateGrid(rows, cols);
+
+        for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col) {
+                matrixQforAzimuthFilterPedestrianModel->SetCellValue(row, col, wxString::Format("%.6f", matQAzimuthCar(row, col)));
+            }
+        }
+    }
+}
+
+void KalmanFilterSetupGui::fillMatRCarAcc()
+{
+    if (matrixRforAccFilterPedestrianModel)
+    {
+        const int rows = matRAccCar.rows();
+        const int cols = matRAccCar.cols();
+        matrixRforAccFilterPedestrianModel->CreateGrid(rows, cols);
+
+        for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col) {
+                matrixRforAccFilterPedestrianModel->SetCellValue
+                (row, col, wxString::Format("%.4f", matRAccCar(row, col)));
+            }
+        }
+    }
+}
+
+void KalmanFilterSetupGui::fillMatQCarAcc()
+{
+    if (matrixQforAccFilterPedestrianModel)
+    {
+        int rows = matQAccCar.rows();
+        int cols = matQAccCar.cols();
+        matrixQforAccFilterPedestrianModel->CreateGrid(rows, cols);
+
+        for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col) {
+                matrixQforAccFilterPedestrianModel->SetCellValue(row, col, wxString::Format("%.6f", matQAccCar(row, col)));
             }
         }
     }
