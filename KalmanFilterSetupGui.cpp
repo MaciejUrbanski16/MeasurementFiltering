@@ -176,6 +176,8 @@ void KalmanFilterSetupGui::setupRightPanel(wxPanel* mainPanel)
     matrixRNameForAcc = new wxStaticText(rightPanel, wxID_ANY, "Macierz R dla po³o¿enia w ruchu pieszego");
     matrixQNameForAcc = new wxStaticText(rightPanel, wxID_ANY, "Macierz Q dla po³o¿enia w ruchu pieszego");
 
+    initMatrices();
+
     createGrids();
 
     fillMatRPedestrianAzimuth();
@@ -292,20 +294,14 @@ void KalmanFilterSetupGui::fillMatRPedestrianAzimuth()
 {
     if (matrixRforAzimuthFilterPedestrianModel)
     {
-        kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matR;
-        matR << 0.0001F, 0, 0,
-            0, 0.1F, 0,
-            0, 0, 0.1F;
-
-
-        const int rows = matR.rows();
-        const int cols = matR.cols();
+        const int rows = matRAzimuthPedestrian.rows();
+        const int cols = matRAzimuthPedestrian.cols();
         matrixRforAzimuthFilterPedestrianModel->CreateGrid(rows, cols);
 
         for (int row = 0; row < rows; ++row) {
             for (int col = 0; col < cols; ++col) {
                 matrixRforAzimuthFilterPedestrianModel->SetCellValue
-                    (row, col, wxString::Format("%.4f", matR(row, col)));
+                    (row, col, wxString::Format("%.4f", matRAzimuthPedestrian(row, col)));
             }
         }
     }
@@ -315,26 +311,13 @@ void KalmanFilterSetupGui::fillMatQPedestrianAzimuth()
 {
     if (matrixQforAzimuthFilterPedestrianModel)
     {
-        kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> Q;
-
-        double process_variance = 0.02F;
-        double deltaTimeMs = 0.1F;
-        Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
-            pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
-            pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
-            0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
-            0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
-            0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
-
-        Q *= process_variance;
-
-        int rows = Q.rows();
-        int cols = Q.cols();
+        int rows = matQAzimuthPedestrian.rows();
+        int cols = matQAzimuthPedestrian.cols();
         matrixQforAzimuthFilterPedestrianModel->CreateGrid(rows, cols);
 
         for (int row = 0; row < rows; ++row) {
             for (int col = 0; col < cols; ++col) {
-                matrixQforAzimuthFilterPedestrianModel->SetCellValue(row, col, wxString::Format("%.6f", Q(row, col)));
+                matrixQforAzimuthFilterPedestrianModel->SetCellValue(row, col, wxString::Format("%.6f", matQAzimuthPedestrian(row, col)));
             }
         }
     }
@@ -344,19 +327,14 @@ void KalmanFilterSetupGui::fillMatRPedestrianAcc()
 {
     if (matrixRforAccFilterPedestrianModel)
     {
-        kf::Matrix<DIM_Z, DIM_Z> matR;
-        matR << 1.0F, 0.0F,
-                0.0F, 1.0F;
-
-
-        const int rows = matR.rows();
-        const int cols = matR.cols();
+        const int rows = matRAccPedestrian.rows();
+        const int cols = matRAccPedestrian.cols();
         matrixRforAccFilterPedestrianModel->CreateGrid(rows, cols);
 
         for (int row = 0; row < rows; ++row) {
             for (int col = 0; col < cols; ++col) {
                 matrixRforAccFilterPedestrianModel->SetCellValue
-                (row, col, wxString::Format("%.4f", matR(row, col)));
+                (row, col, wxString::Format("%.4f", matRAccPedestrian(row, col)));
             }
         }
     }
@@ -366,29 +344,13 @@ void KalmanFilterSetupGui::fillMatQPedestrianAcc()
 {
     if (matrixQforAccFilterPedestrianModel)
     {
-        double process_variance = 0.002F;
-        double deltaTimeMs = 100.0F;
-        deltaTimeMs = deltaTimeMs / 100000000.0F;
-
-
-        kf::Matrix<DIM_X, DIM_X> matQ;
-
-        matQ << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
-            pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
-            pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
-            0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
-            0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
-            0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
-
-        matQ *= process_variance;
-
-        int rows = matQ.rows();
-        int cols = matQ.cols();
+        int rows = matQAccPedestrian.rows();
+        int cols = matQAccPedestrian.cols();
         matrixQforAccFilterPedestrianModel->CreateGrid(rows, cols);
 
         for (int row = 0; row < rows; ++row) {
             for (int col = 0; col < cols; ++col) {
-                matrixQforAccFilterPedestrianModel->SetCellValue(row, col, wxString::Format("%.6f", matQ(row, col)));
+                matrixQforAccFilterPedestrianModel->SetCellValue(row, col, wxString::Format("%.6f", matQAccPedestrian(row, col)));
             }
         }
     }
@@ -669,4 +631,93 @@ bool KalmanFilterSetupGui::handleMatQAcc(kf::Matrix<DIM_X, DIM_X>& matQAcc)
         }
     }
     return true;
+}
+
+void KalmanFilterSetupGui::initMatrices()
+{
+    initPedestrianModelMatrices();
+    initRcCarModelMatrices();
+    initCarModelMatrices();
+}
+
+void KalmanFilterSetupGui::initPedestrianModelMatrices()
+{
+    matRAzimuthPedestrian << 0.0001F, 0, 0,
+        0, 0.1F, 0,
+        0, 0, 0.1F;
+
+    double process_variance = 0.02F;
+    double deltaTimeMs = 0.1F;
+    matQAzimuthPedestrian << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
+        pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
+        pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
+        0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
+        0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
+        0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
+
+    matQAzimuthPedestrian *= process_variance;
+
+    matRAccPedestrian << 1.0F, 0.0F,
+        0.0F, 1.0F;
+
+    double processVarianceAcc = 0.002F;
+    double sCoefficient = 100.0F;
+    sCoefficient = sCoefficient / 100000000.0F;
+
+    matQAccPedestrian << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0, 0, 0,
+        pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0, 0, 0,
+        pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2), 0, 0, 0,
+        0, 0, 0, pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6,
+        0, 0, 0, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2,
+        0, 0, 0, pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2);
+
+    matQAccPedestrian *= processVarianceAcc;
+}
+
+void KalmanFilterSetupGui::initRcCarModelMatrices()
+{
+    matRAzimuthRcCar << 112.0F, 0, 0,
+                        12.5F, 2.6F, 10,
+                        1, 2, 34;
+
+    matQAzimuthRcCar << 11.0F, 0, 0, 11.0F, 0, 0,
+        12.5F, 2.6F, 0, 12.5F, 2.6F, 0,
+        1, 2, 4, 1, 2, 4342,
+        11.0F, 0, 0, 11.0F, 0, 0,
+        12.5F, 2.6F, 0, 12.5F, 2.6F, 0,
+        1, 2, 4, 1, 2, 4342;
+
+    matRAccRcCar << 2.0F, 3.0F,
+        1.9F, 2.7F;
+
+    matQAccRcCar << 11, 12, 12, 12, 12, 12,
+        11, 12, 12, 12, 12, 12,
+        11, 12, 12, 12, 12, 12,
+        11, 12, 12, 12, 12, 12,
+        11, 12, 12, 12, 12, 12,
+        11, 12, 12, 12, 12, 12;
+}
+
+void KalmanFilterSetupGui::initCarModelMatrices()
+{
+    matRAzimuthCar << 11.0F, 0, 0,
+        12.5F, 2.6F, 0,
+        1, 2, 4;
+
+    matQAzimuthCar << 11.0F, 0, 0, 11.0F, 0, 0,
+        12.5F, 2.6F, 0, 12.5F, 2.6F, 0,
+        1, 2, 4, 1, 2, 4,
+        11.0F, 0, 0, 11.0F, 0, 0,
+        12.5F, 2.6F, 0, 12.5F, 2.6F, 0,
+        1, 2, 4, 1, 2, 4;
+
+    matRAccCar << 2.0F, 3.0F,
+        1.9F, 2.7F;
+
+    matQAccCar << 11, 12, 12, 12, 12, 12,
+        11, 12, 12, 12, 12, 12,
+        11, 12, 12, 12, 12, 12,
+        11, 12, 12, 12, 12, 12,
+        11, 12, 12, 12, 12, 12,
+        11, 12, 12, 12, 12, 12;
 }

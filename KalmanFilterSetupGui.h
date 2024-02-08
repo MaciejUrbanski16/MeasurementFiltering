@@ -165,6 +165,11 @@ private:
     void createGrids();
     void setupSizer();
 
+    void initMatrices();
+    void initPedestrianModelMatrices();
+    void initRcCarModelMatrices();
+    void initCarModelMatrices();
+
     void createWidgetsForAcc();
 
     void fillMatRPedestrianAzimuth();
