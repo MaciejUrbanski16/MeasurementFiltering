@@ -87,6 +87,8 @@ namespace kf
             }
         }
 
+        //void setIsInitialized
+
         ~KalmanFilter()
         {
 

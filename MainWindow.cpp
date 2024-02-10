@@ -1,21 +1,21 @@
 #include "MainWindow.h"
 
 
-MeasReceptionThrea::MeasReceptionThrea(AppLogger& appLogger, wxEvtHandler* parent) : wxThread(), appLogger(appLogger), m_parent(parent)
+SensorDataReceptionThread::SensorDataReceptionThread(AppLogger& appLogger, wxEvtHandler* parent) : wxThread(), appLogger(appLogger), m_parent(parent)
 {
     //this->appLogger = appLogger;
     m_count = 0;
 }
 
-MeasReceptionThrea::~MeasReceptionThrea()
+SensorDataReceptionThread::~SensorDataReceptionThread()
 {
 
 }
 
-wxThread::ExitCode MeasReceptionThrea::Entry()
+wxThread::ExitCode SensorDataReceptionThread::Entry()
 {
     boost::asio::io_context io;
-    std::string com = "COM7";
+    //std::string com = "COM7";
 
     //wxThreadEvent* event = new wxThreadEvent(wxEVT_MY_THREAD_EVENT);
     //event->SetString("Data from thread");
@@ -25,11 +25,44 @@ wxThread::ExitCode MeasReceptionThrea::Entry()
     Server server(io, 8081, appLogger, m_parent);
     io.run();
 
-    const std::string threadFinished{ "SerialComm Thread finished successfully.\n" };
+    const std::string threadFinished{ "SensorDataReceptionThread Thread finished successfully.\n" };
     appLogger.logSerialCommStartThread(threadFinished);
 
     return NULL;
 }
+
+////////////////////
+GpsDataReceptionThread::GpsDataReceptionThread(AppLogger& appLogger, wxEvtHandler* parent) : wxThread(), appLogger(appLogger), m_parent(parent)
+{
+    //this->appLogger = appLogger;
+    m_count = 0;
+}
+
+GpsDataReceptionThread::~GpsDataReceptionThread()
+{
+
+}
+
+wxThread::ExitCode GpsDataReceptionThread::Entry()
+{
+    boost::asio::io_context io;
+    std::string com = "COM12";
+
+    //wxThreadEvent* event = new wxThreadEvent(wxEVT_MY_THREAD_EVENT);
+    //event->SetString("Data from thread");
+    //wxQueueEvent(m_parent, event);
+
+    SerialComm serialComm(io, com, m_parent);
+    //Server server(io, 8081, appLogger, m_parent);
+    io.run();
+
+    const std::string threadFinished{ "GpsDataReceptionThread Thread finished successfully.\n" };
+    appLogger.logSerialCommStartThread(threadFinished);
+
+    return NULL;
+}
+
+////////////////////////
 
 
 MyWindow::MyWindow(const wxString& title)
@@ -45,7 +78,8 @@ MyWindow::MyWindow(const wxString& title)
     }
 
 
-    createDataReceptionThread();
+    createSensorDataReceptionThread();
+    createGpsDataReceptionThread();
 }
 
 void MyWindow::OnBaudRateChoice(wxCommandEvent& event) 
@@ -318,6 +352,21 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 }
                 measurementCounter++;
 
+                if (kalmanFilterSetupGui.getIsFiltrationRestarted())
+                {
+                    kalmanFilterSetupGui.setIsFiltrationRestarted(false);
+                    //isFirstMeasurement = true;
+                    resetChartsAfterCallibration();
+                    totalTimeMs = 0;
+
+                    kalmanFilter.vecX().setZero();
+                    kalmanFilter.matP().setZero();
+                    kalmanFilterAzimuth.vecX().setZero();
+                    kalmanFilterAzimuth.matP().setZero();
+                    kalmanFilterGyro.vecX().setZero();
+                    kalmanFilterGyro.matP().setZero();
+                    
+                }
 
                 kalmanFilterAzimuth.setInitialStateForAzimuth(rawMeasurement.getAzimuth());
                 experimentKfAzimuth(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
@@ -346,10 +395,10 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
                     filteredAzimuth);
 
-                filteredPositionX = kalmanFilter.vecX()(2);//PosX
-                filteredPositionY = kalmanFilter.vecX()(5);//PosY
-                const double filteredXacc = kalmanFilter.vecX()(0); //xAcc
-                const double filteredYacc = kalmanFilter.vecX()(3); //yAcc
+                filteredPositionX = kalmanFilter.vecX()(0);//PosX
+                filteredPositionY = kalmanFilter.vecX()(3);//PosY
+                const double filteredXacc = kalmanFilter.vecX()(2); //xAcc
+                const double filteredYacc = kalmanFilter.vecX()(5); //yAcc
                 //const double filteredVelocityX = kalmanFilter.vecX()(1);
                 //const double filteredAccX = kalmanFilter.vecX()(1);
                 
@@ -408,7 +457,7 @@ void MyWindow::OnFilterFileMeasTimer(wxTimerEvent& event)
     //call filtration
 }
 
-void MyWindow::OnThreadEvent(wxThreadEvent& event) {
+void MyWindow::OnSensorsDataThreadEvent(wxThreadEvent& event) {
 
     MeasurementCustomizator* myEvent = dynamic_cast<MeasurementCustomizator*>(&event);
     if (myEvent)
@@ -423,6 +472,11 @@ void MyWindow::OnThreadEvent(wxThreadEvent& event) {
         const std::string errThreadEvent{ "ERR when handling data from thread - no event received!!!" };
         appLogger.logErrThreadDataHandling(errThreadEvent);
     }
+}
+
+void MyWindow::OnGpsDataThreadEvent(wxThreadEvent& event)
+{
+
 }
 
 void MyWindow::resetChartsAfterCallibration()
@@ -645,25 +699,48 @@ void MyWindow::updateFilteredVelocityChart(const double filteredVelocityX, const
 
 }
 
-void MyWindow::createDataReceptionThread()
+void MyWindow::createSensorDataReceptionThread()
 {
-    serialComThread = new MeasReceptionThrea(appLogger, this);
-    if (serialComThread->Create() != wxTHREAD_NO_ERROR)
+    sensorDataReceptionThread = new SensorDataReceptionThread(appLogger, this);
+    if (sensorDataReceptionThread->Create() != wxTHREAD_NO_ERROR)
     {
-        const std::string threadNotCreated{ "Can't create SerialComThread thread! \n" };
+        const std::string threadNotCreated{ "Can't create SensorDataReceptionThread thread! \n" };
         appLogger.logSerialCommStartThread(threadNotCreated);
     }
     else {
-        if (serialComThread->Run() != wxTHREAD_NO_ERROR)
+        if (sensorDataReceptionThread->Run() != wxTHREAD_NO_ERROR)
         {
-            const std::string cantStartThread{ "Can't start SerialComThread thread! \n" };
+            const std::string cantStartThread{ "Can't start SensorDataReceptionThread thread! \n" };
             appLogger.logSerialCommStartThread(cantStartThread);
         }
         else
         {
-            const std::string threadStarted{ "New thread SerialComThread started.\n" };
+            const std::string threadStarted{ "New thread SensorDataReceptionThread started.\n" };
             appLogger.logSerialCommStartThread(threadStarted);
-            Bind(wxEVT_MY_THREAD_EVENT, &MyWindow::OnThreadEvent, this);
+            Bind(wxEVT_MY_THREAD_EVENT, &MyWindow::OnSensorsDataThreadEvent, this);
+        }
+    }
+}
+
+void MyWindow::createGpsDataReceptionThread()
+{
+    gpsDataReceptionThread = new GpsDataReceptionThread(appLogger, this);
+    if (gpsDataReceptionThread->Create() != wxTHREAD_NO_ERROR)
+    {
+        const std::string threadNotCreated{ "Can't create GpsDataReceptionThread thread! \n" };
+        appLogger.logSerialCommStartThread(threadNotCreated);
+    }
+    else {
+        if (gpsDataReceptionThread->Run() != wxTHREAD_NO_ERROR)
+        {
+            const std::string cantStartThread{ "Can't start GpsDataReceptionThread thread! \n" };
+            appLogger.logSerialCommStartThread(cantStartThread);
+        }
+        else
+        {
+            const std::string threadStarted{ "New thread GpsDataReceptionThread started.\n" };
+            appLogger.logSerialCommStartThread(threadStarted);
+            Bind(wxEVT_MY_THREAD_EVENT_1, &MyWindow::OnGpsDataThreadEvent, this);
         }
     }
 }

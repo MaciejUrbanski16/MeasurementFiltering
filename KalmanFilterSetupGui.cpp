@@ -10,11 +10,11 @@ std::optional<kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth>> KalmanFilterSetupGui::ge
     switch (movementModel)
     {
     case MovementModel::PEDESTRIAN:
-        return matRAzimuthPedestrian;
+        return matRAzimuthPedestrianAct;
     case MovementModel::RC_CAR:
-        return matRAzimuthRcCar;
+        return matRAzimuthRcCarAct;
     case MovementModel::CAR:
-        return matRAzimuthCar;
+        return matRAzimuthCarAct;
     default:
         wxMessageBox(wxT("Model ruchu pieszego NIE zosta³ wybrany - nie mo¿na rozpoczac filtracji"));
         return std::nullopt;
@@ -31,11 +31,11 @@ std::optional<kf::Matrix<DIM_X_azimuth, DIM_X_azimuth>> KalmanFilterSetupGui::ge
     switch (movementModel)
     {
     case MovementModel::PEDESTRIAN:
-        return matQAzimuthPedestrian;
+        return matQAzimuthPedestrianAct;
     case MovementModel::RC_CAR:
-        return matQAzimuthRcCar;
+        return matQAzimuthRcCarAct;
     case MovementModel::CAR:
-        return matQAzimuthCar;
+        return matQAzimuthCarAct;
     default:
         wxMessageBox(wxT("Model ruchu pieszego NIE zosta³ wybrany - nie mo¿na rozpoczac filtracji"));
         return std::nullopt;
@@ -52,11 +52,11 @@ std::optional<kf::Matrix<DIM_Z, DIM_Z>> KalmanFilterSetupGui::getMatRacc()
     switch (movementModel)
     {
     case MovementModel::PEDESTRIAN:
-        return matRAccPedestrian;
+        return matRAccPedestrianAct;
     case MovementModel::RC_CAR:
-        return matRAccRcCar;
+        return matRAccRcCarAct;
     case MovementModel::CAR:
-        return matRAccCar;
+        return matRAccCarAct;
     default:
         wxMessageBox(wxT("Model ruchu pieszego NIE zosta³ wybrany - nie mo¿na rozpoczac filtracji"));
         return std::nullopt;
@@ -73,11 +73,11 @@ std::optional<kf::Matrix<DIM_X, DIM_X>> KalmanFilterSetupGui::getMatQacc()
     switch (movementModel)
     {
     case MovementModel::PEDESTRIAN:
-        return matQAccPedestrian;
+        return matQAccPedestrianAct;
     case MovementModel::RC_CAR:
-        return matQAccRcCar;
+        return matQAccRcCarAct;
     case MovementModel::CAR:
-        return matQAccCar;
+        return matQAccCarAct;
     default:
         wxMessageBox(wxT("Model ruchu pieszego NIE zosta³ wybrany - nie mo¿na rozpoczac filtracji"));
         return std::nullopt;
@@ -100,9 +100,13 @@ void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
     carModelButton->Bind(wxEVT_RADIOBUTTON, &KalmanFilterSetupGui::OnRadioButtonClicked, this);
 
 
-    confirmCallibrationButton = new wxButton(leftPanel, wxID_ANY, wxT("ZatwierdŸ kalibracjê"));
-    confirmCallibrationButton->SetMinSize(wxSize(300, 400));
+    confirmCallibrationButton = new wxButton(leftPanel, wxID_ANY, wxT("ZatwierdŸ kalibracjê - rozpocznij filtracjê"));
+    confirmCallibrationButton->SetMinSize(wxSize(300, 100));
     confirmCallibrationButton->SetBackgroundColour(wxColour(64, 255, 255));
+
+    restartFiltrationAfterCallibrationButton = new wxButton(leftPanel, wxID_ANY, wxT("Restart filtracji po kalibracji"));
+    restartFiltrationAfterCallibrationButton->SetMinSize(wxSize(300, 100));
+    restartFiltrationAfterCallibrationButton->SetBackgroundColour(wxColour(64, 255, 255));
 
     wxBoxSizer* mainSizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* leftSizer = new wxBoxSizer(wxVERTICAL);
@@ -144,18 +148,28 @@ void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
     mainSizer->Add(rightSizer, 0, wxALL, 5);
 
     leftVerticalSizer->Add(chooseModel, 0, wxALL | wxALIGN_CENTER, 5);
-    leftVerticalSizer->AddSpacer(15);
+    leftVerticalSizer->AddSpacer(10);
     staticBoxSizerRadioButtons->Add(pedestrianModelButton, 0, wxALL, 5);
     staticBoxSizerRadioButtons->Add(rcCarModelButton, 0, wxALL, 5);
     staticBoxSizerRadioButtons->Add(carModelButton, 0, wxALL, 5);
 
     leftVerticalSizer->Add(staticBoxSizerRadioButtons, 0, wxALIGN_CENTER | wxALL, 5);
-    leftVerticalSizer->AddSpacer(20);
+    leftVerticalSizer->AddSpacer(10);
     staticBoxSizer->Add(mainSizer, 0, wxCENTER | wxALL, 10);
 
     leftVerticalSizer->Add(staticBoxSizer, 0, wxALIGN_CENTER | wxALL, 5);
 
-    leftVerticalSizer->Add(confirmCallibrationButton, 0, wxALL | wxALIGN_CENTER, 5);
+    restartFiltrationAfterCallibrationButton->Enable(false);
+
+    wxBoxSizer* buttonsSizer = new wxBoxSizer(wxHORIZONTAL);
+    buttonsSizer->Add(confirmCallibrationButton, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    buttonsSizer->AddSpacer(20);
+    buttonsSizer->Add(restartFiltrationAfterCallibrationButton, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
+    //leftVerticalSizer->Add(confirmCallibrationButton, 0, wxALL | wxALIGN_CENTER, 5);
+    leftVerticalSizer->Add(buttonsSizer, 0, wxALL | wxALIGN_CENTER, 5);
+
+    restartFiltrationAfterCallibrationButton->Bind(wxEVT_BUTTON, &KalmanFilterSetupGui::OnRestartFiltration, this);
 
     confirmCallibrationButton->Bind(wxEVT_BUTTON, &KalmanFilterSetupGui::OnConfirmCallibration, this);
 
@@ -914,4 +928,103 @@ void KalmanFilterSetupGui::initCarModelMatrices()
         0, 0, 0, pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2);
 
     matQAccCar *= processVarianceAcc;
+}
+
+void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
+{
+    restartFiltrationAfterCallibrationButton->Enable(true);
+
+    if (pedestrianModelButton->GetValue())
+    {
+        isCallibrationDone = true;
+        movementModel = MovementModel::PEDESTRIAN;
+
+        handleKfMatricesForPedestrian();
+        assignActiveMatrices();
+
+        wxMessageBox(wxT("Model ruchu pieszego zosta³ wybrany - rozpoczêto filtracjê"));
+    }
+    else if (rcCarModelButton->GetValue())
+    {
+        isCallibrationDone = true;
+        movementModel = MovementModel::RC_CAR;
+
+        handleKfMatricesForRcCar();
+        assignActiveMatrices();
+
+        wxMessageBox(wxT("Model ruchu RC samochodu zosta³ wybrany - rozpoczêto filtracjê"));
+    }
+    else if (carModelButton->GetValue())
+    {
+        isCallibrationDone = true;
+        movementModel = MovementModel::CAR;
+
+        handleKfMatricesForCar();
+        assignActiveMatrices();
+
+        wxMessageBox(wxT("Model ruchu pojazd samochodowy zosta³ wybrany - rozpoczêto filtracjê"));
+    }
+    else
+    {
+        movementModel = MovementModel::NONE;
+        wxMessageBox(wxT("¯aden z przycisków nie zosta³ zaznaczony"));
+    }
+}
+
+void KalmanFilterSetupGui::OnRestartFiltration(wxCommandEvent& event)
+{
+    
+
+    if (pedestrianModelButton->GetValue())
+    {
+        isFiltrationRestarted = true;
+        movementModel = MovementModel::PEDESTRIAN;
+
+        handleKfMatricesForPedestrian();
+        assignActiveMatrices();
+
+        wxMessageBox(wxT("Model ruchu pieszego zosta³ wybrany - rozpoczêto filtracjê"));
+    }
+    else if (rcCarModelButton->GetValue())
+    {
+        isFiltrationRestarted = true;
+        movementModel = MovementModel::RC_CAR;
+
+        handleKfMatricesForRcCar();
+        assignActiveMatrices();
+
+        wxMessageBox(wxT("Model ruchu RC samochodu zosta³ wybrany - rozpoczêto filtracjê"));
+    }
+    else if (carModelButton->GetValue())
+    {
+        isFiltrationRestarted = true;
+        movementModel = MovementModel::CAR;
+
+        handleKfMatricesForCar();
+        assignActiveMatrices();
+
+        wxMessageBox(wxT("Model ruchu pojazd samochodowy zosta³ wybrany - rozpoczêto filtracjê"));
+    }
+    else
+    {
+        movementModel = MovementModel::NONE;
+        wxMessageBox(wxT("¯aden z przycisków nie zosta³ zaznaczony"));
+    }
+}
+
+void KalmanFilterSetupGui::assignActiveMatrices()
+{
+    matRAccRcCarAct = matRAccRcCar;
+    matQAccRcCarAct = matQAccRcCar;
+    matRAccPedestrianAct = matRAccPedestrian;
+    matQAccPedestrianAct = matQAccPedestrian;
+    matRAccCarAct = matRAccCar;
+    matQAccCarAct = matQAccCar;
+
+    matRAzimuthRcCarAct = matRAzimuthRcCar;
+    matQAzimuthRcCarAct = matQAzimuthRcCar;
+    matRAzimuthPedestrianAct = matRAzimuthPedestrian;
+    matQAzimuthPedestrianAct = matQAzimuthPedestrian;
+    matRAzimuthCarAct = matRAzimuthCar;
+    matQAzimuthCarAct = matQAzimuthCar;
 }

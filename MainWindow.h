@@ -26,7 +26,8 @@
 #include <wx/spinctrl.h> 
 #include <wx/grid.h>
 
-#include "MeasurementReceptionThread.h"
+#include "SensorDataReceptionThread.h"
+#include "GpsDataReceptionThread.h"
 #include "SerialComm.h"
 #include "WifiDataReceiver.h"
 //#include "KalmanFilter.h"
@@ -241,7 +242,9 @@ private:
 
     void processFiltration(const std::vector<std::string>& measurements, const bool isRealTimeMeasurement);
 
-    void OnThreadEvent(wxThreadEvent& event);
+    void OnSensorsDataThreadEvent(wxThreadEvent& event);
+    void OnGpsDataThreadEvent(wxThreadEvent& event);
+
     void OnFilterFileMeasTimer(wxTimerEvent& event);
 
 
@@ -416,7 +419,8 @@ private:
     double currentXangleMeasured{ 0.0 };
     double angleTimeMeasurementsMs{ 0.0 };
 
-    MeasReceptionThrea* serialComThread = nullptr;
+    SensorDataReceptionThread* sensorDataReceptionThread = nullptr;
+    GpsDataReceptionThread* gpsDataReceptionThread = nullptr;
 
     wxTimer filterFileMeasTimer;
     double xNewPoint = 0.0;
@@ -438,7 +442,8 @@ private:
     void prepareFilteredVelocityChart();
     void prepareFilteredAngleXVelocityChart();
 
-    void createDataReceptionThread();
+    void createSensorDataReceptionThread();
+    void createGpsDataReceptionThread();
 
     AppLogger appLogger;
 };

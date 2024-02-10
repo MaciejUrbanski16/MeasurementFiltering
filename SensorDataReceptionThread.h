@@ -2,11 +2,12 @@
 #include <wx/thread.h>
 #include "AppLogger.h"
 #include "SerialComm.h"
-class MeasReceptionThrea : public wxThread
+
+class SensorDataReceptionThread : public wxThread
 {
 public:
-    MeasReceptionThrea(AppLogger& appLogger, wxEvtHandler* parent);
-    virtual ~MeasReceptionThrea();
+    SensorDataReceptionThread(AppLogger& appLogger, wxEvtHandler* parent);
+    virtual ~SensorDataReceptionThread();
 
 
     virtual void* Entry();

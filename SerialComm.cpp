@@ -41,6 +41,14 @@ void SerialComm::logIntoFile(const std::string& frameWithMeasurements, const std
     outputFile << ssSensorData.str();
 }
 
+void SerialComm::logReadRemoteData(const std::string& frameWithMeasurements)
+{
+    const auto currentTime = getCurrentTimeWithMilliSeconds();
+    std::stringstream ssSensorData;
+    ssSensorData << currentTime << " GPS FRAME: " << frameWithMeasurements <<"\r\n";
+    outputFile << ssSensorData.str();
+}
+
 void SerialComm::logErrReadRemoteData()
 {
     std::stringstream errRead;

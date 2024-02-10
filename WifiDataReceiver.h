@@ -26,10 +26,7 @@ private:
         socket_.async_read_some(buffer(data_),
             [this, self](boost::system::error_code ec, std::size_t length) {
                 if (!ec) {
-                    // Przetwarzanie odebranych danych
-                    //std::cout << "Received from client: " << std::string(data_.begin(), data_.begin() + length) << std::endl;
 
-                    // Kontynuacja odbierania danych
                     std::stringstream ss;
                     const std::string receivedMeasurement = std::string(data_.begin(), data_.begin() + length);
                     ss << "Session on: " << socket_.remote_endpoint().address().to_string() << " : port: " << socket_.remote_endpoint().port() <<

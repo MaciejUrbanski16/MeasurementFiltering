@@ -30,8 +30,6 @@ enum class MovementModel
 class KalmanFilterSetupGui
 {
 public:
-
-
     std::optional<kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth>> getMatRazimuth();
     std::optional<kf::Matrix<DIM_X_azimuth, DIM_X_azimuth>> getMatQazimuth();
     std::optional<kf::Matrix<DIM_Z, DIM_Z>> getMatRacc();
@@ -59,55 +57,33 @@ public:
         return isCallibrationDone;
     }
 
+    bool getIsFiltrationRestarted() const
+    {
+        return isFiltrationRestarted;
+    }
+    void setIsFiltrationRestarted(bool value)
+    {
+        isFiltrationRestarted = value;
+    }
+
     MovementModel getMovementModel() const
     {
         return movementModel;
-    }
-
-    void OnConfirmCallibration(wxCommandEvent& event)
-    {
-        if (pedestrianModelButton->GetValue())
-        {
-            isCallibrationDone = true;
-            movementModel = MovementModel::PEDESTRIAN;
-
-            handleKfMatricesForPedestrian();
-
-            wxMessageBox(wxT("Model ruchu pieszego zosta³ wybrany - rozpoczêto filtracjê"));
-        }
-        else if (rcCarModelButton->GetValue())
-        {
-            isCallibrationDone = true;
-            movementModel = MovementModel::RC_CAR;
-
-            handleKfMatricesForRcCar();
-
-            wxMessageBox(wxT("Model ruchu RC samochodu zosta³ wybrany - rozpoczêto filtracjê"));
-        }
-        else if (carModelButton->GetValue())
-        {
-            isCallibrationDone = true;
-            movementModel = MovementModel::CAR;
-         
-            handleKfMatricesForCar();
-
-            wxMessageBox(wxT("Model ruchu pojazd samochodowy zosta³ wybrany - rozpoczêto filtracjê"));
-        }
-        else 
-        {
-            movementModel = MovementModel::NONE;
-            wxMessageBox(wxT("¯aden z przycisków nie zosta³ zaznaczony"));
-        }
     }
 
 private:
     void setupLeftPanel(wxPanel* mainPanel);
     void setupRightPanel(wxPanel* mainPanel);
 
+
+    void OnConfirmCallibration(wxCommandEvent& event);
+    void OnRestartFiltration(wxCommandEvent& event);
+
     void OnRadioButtonClicked(wxCommandEvent& event);
 
     wxPanel* kalmanParamsSetupPanel = nullptr;
 	wxButton* confirmCallibrationButton = nullptr;
+    wxButton* restartFiltrationAfterCallibrationButton = nullptr;
     wxBoxSizer* sizer = nullptr;
     wxSplitterWindow* azimuthPanelSplitter = nullptr;
 
@@ -159,6 +135,7 @@ private:
     MovementModel movementModel{ MovementModel::NONE };
     MovementModel previousMovementModel{ MovementModel::PEDESTRIAN };
     bool isCallibrationDone = false;
+    bool isFiltrationRestarted{ false };
 
 
     //PoC
@@ -188,8 +165,7 @@ private:
     void fillMatRRcCarAcc();
     void fillMatQRcCarAcc();
 
-
-
+    //TEMPORARY MATRICES
     kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matRAzimuthPedestrian;
     kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> matQAzimuthPedestrian;
     kf::Matrix<DIM_Z, DIM_Z> matRAccPedestrian;
@@ -205,6 +181,22 @@ private:
     kf::Matrix<DIM_Z, DIM_Z> matRAccCar;
     kf::Matrix<DIM_X, DIM_X> matQAccCar;
 
+    //ACTIVE MATRICES
+    kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matRAzimuthPedestrianAct;
+    kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> matQAzimuthPedestrianAct;
+    kf::Matrix<DIM_Z, DIM_Z> matRAccPedestrianAct;
+    kf::Matrix<DIM_X, DIM_X> matQAccPedestrianAct;
+
+    kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matRAzimuthRcCarAct;
+    kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> matQAzimuthRcCarAct;
+    kf::Matrix<DIM_Z, DIM_Z> matRAccRcCarAct;
+    kf::Matrix<DIM_X, DIM_X> matQAccRcCarAct;
+
+    kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matRAzimuthCarAct;
+    kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> matQAzimuthCarAct;
+    kf::Matrix<DIM_Z, DIM_Z> matRAccCarAct;
+    kf::Matrix<DIM_X, DIM_X> matQAccCarAct;
+
     void handleKfMatricesForPedestrian();
     void handleKfMatricesForRcCar();
     void handleKfMatricesForCar();
@@ -213,5 +205,7 @@ private:
     bool handleMatQazimuth(kf::Matrix<DIM_X_azimuth, DIM_X_azimuth>& matQAzimuth);
     bool handleMatRAcc(kf::Matrix<DIM_Z, DIM_Z>& matRAcc);
     bool handleMatQAcc(kf::Matrix<DIM_X, DIM_X>& matQAcc);
+
+    void assignActiveMatrices();
 };
 

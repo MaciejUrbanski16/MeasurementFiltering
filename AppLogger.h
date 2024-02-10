@@ -16,7 +16,9 @@ public:
 	{
 		outputFile.open(filePath, std::ios::app);
 		kalmanOutputFile.open(kalmanFilePath, std::ios::app);
-		measurementsCsv.open(measurementsCsvPath, std::ios::app);
+		const auto timeAsString = getCurrentTimeWithSeconds() + measurementsCsvPath;
+
+		measurementsCsv.open(timeAsString, std::ios::app);
 
 		std::stringstream ssToCsv;
 		ssToCsv << "Current time" << ',' << "X acceleration" << ',' << "Y acceleration" << ',' << "Z acceleration" << ','
@@ -153,6 +155,23 @@ private:
 		std::stringstream timeString;
 		timeString << std::put_time(&tm_now, "%Y-%m-%d %H:%M:%S");
 		timeString << '.' << std::setfill('0') << std::setw(3) << us;
+
+		std::string currentDateTimeWithMillis = timeString.str();
+		return currentDateTimeWithMillis;
+	}
+
+	std::string getCurrentTimeWithSeconds()
+	{
+		auto currentTime = std::chrono::system_clock::now();
+		auto seconds = std::chrono::duration_cast<std::chrono::seconds>(currentTime.time_since_epoch()).count();
+
+
+		std::time_t now = std::chrono::system_clock::to_time_t(currentTime);
+		std::tm tm_now = *std::localtime(&now);
+
+		std::stringstream timeString;
+		timeString << std::put_time(&tm_now, "%Y-%m-%d_%H:%M:%S_");
+		
 
 		std::string currentDateTimeWithMillis = timeString.str();
 		return currentDateTimeWithMillis;

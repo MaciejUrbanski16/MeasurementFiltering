@@ -97,17 +97,18 @@ private:
                 //outputFile << ss.str();
             }
             std::string remoteDataAsString(reinterpret_cast<char*>(remoteSensorData), sizeof(remoteSensorData));
+            logReadRemoteData(remoteDataAsString);
 
             const std::vector<std::string> exctractedMeasurements = exctractMeasurements(remoteDataAsString);
 
             MeasurementCustomizator* event = new MeasurementCustomizator(wxEVT_MY_THREAD_EVENT_1);
-            event->SetStringVector(exctractedMeasurements);
+            //event->SetStringVector(exctractedMeasurements);
         
             //event->SetString(strToSendToMainThread);
             //event->Set
-            wxQueueEvent(m_parent, event);
+            //wxQueueEvent(m_parent, event);
 
-            logIntoFile(remoteDataAsString, exctractedMeasurements);
+            //logIntoFile(remoteDataAsString, exctractedMeasurements);
         }
         else
         {
@@ -120,6 +121,7 @@ private:
 
     std::vector<std::string> exctractMeasurements(const std::string& frameWithMeasurements);
     void logIntoFile(const std::string& frameWithMeasurements, const std::vector<std::string>& exctractedMeasurements);
+    void logReadRemoteData(const std::string& frameWithMeasurements);
     void logErrReadRemoteData();
     std::string getCurrentTimeWithMilliSeconds();
 
