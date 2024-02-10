@@ -21,6 +21,7 @@
 #include <boost/bind.hpp>
 
 #include "MeasurementCustomizator.h"
+#include "GpsDataCustomizator.h"
 
 //wxDECLARE_EVENT(wxEVT_MY_THREAD_EVENT, wxThreadEvent);
 
@@ -99,14 +100,14 @@ private:
             std::string remoteDataAsString(reinterpret_cast<char*>(remoteSensorData), sizeof(remoteSensorData));
             logReadRemoteData(remoteDataAsString);
 
-            const std::vector<std::string> exctractedMeasurements = exctractMeasurements(remoteDataAsString);
+            const std::vector<std::string> exctractedMeasurements = exctractGpsData(remoteDataAsString);
 
-            MeasurementCustomizator* event = new MeasurementCustomizator(wxEVT_MY_THREAD_EVENT_1);
-            //event->SetStringVector(exctractedMeasurements);
+            GpsDataCustomizator* event = new GpsDataCustomizator(wxEVT_MY_THREAD_EVENT_1);
+            event->SetStringVector(exctractedMeasurements);
         
             //event->SetString(strToSendToMainThread);
             //event->Set
-            //wxQueueEvent(m_parent, event);
+            wxQueueEvent(m_parent, event);
 
             //logIntoFile(remoteDataAsString, exctractedMeasurements);
         }
@@ -120,6 +121,7 @@ private:
     }
 
     std::vector<std::string> exctractMeasurements(const std::string& frameWithMeasurements);
+    std::vector<std::string>exctractGpsData(const std::string& frameWithMeasurements);
     void logIntoFile(const std::string& frameWithMeasurements, const std::vector<std::string>& exctractedMeasurements);
     void logReadRemoteData(const std::string& frameWithMeasurements);
     void logErrReadRemoteData();

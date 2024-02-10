@@ -22,6 +22,21 @@ std::vector<std::string> SerialComm::exctractMeasurements(const std::string& fra
     return tokens;
 }
 
+std::vector<std::string> SerialComm::exctractGpsData(const std::string& frameWithMeasurements)
+{
+    std::vector<std::string> values;
+    size_t startPos = 0;
+    size_t endPos = frameWithMeasurements.find('_');
+
+    while (endPos != std::string::npos) {
+        std::string substr = frameWithMeasurements.substr(startPos, endPos - startPos);
+        values.push_back(substr);
+        startPos = endPos + 1;
+        endPos = frameWithMeasurements.find('_', startPos);
+    }
+    return values;
+}
+
 void SerialComm::logIntoFile(const std::string& frameWithMeasurements, const std::vector<std::string>& exctractedMeasurements)
 {
     char delimiter = 'X';

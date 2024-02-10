@@ -71,12 +71,10 @@ MyWindow::MyWindow(const wxString& title)
     Centre();
     prepareGui();
 
-    ///THREAD TO RECEIVE DATA
     if (isDataReceptionStarted)
     {
         //createDataReceptionThread();
     }
-
 
     createSensorDataReceptionThread();
     createGpsDataReceptionThread();
@@ -476,7 +474,19 @@ void MyWindow::OnSensorsDataThreadEvent(wxThreadEvent& event) {
 
 void MyWindow::OnGpsDataThreadEvent(wxThreadEvent& event)
 {
+    GpsDataCustomizator* myEvent = dynamic_cast<GpsDataCustomizator*>(&event);
+    if (myEvent)
+    {
+        const std::vector<std::string>& measurements = myEvent->GetStringVector();
 
+        appLogger.logReceivedDataOnMainThread(measurements, "GPS");
+        //processFiltration(measurements, true);
+    }
+    else
+    {
+        const std::string errThreadEvent{ "ERR when handling data from thread - no event received!!!" };
+        appLogger.logErrThreadDataHandling(errThreadEvent);
+    }
 }
 
 void MyWindow::resetChartsAfterCallibration()

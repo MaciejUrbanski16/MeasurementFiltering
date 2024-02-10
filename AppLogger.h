@@ -53,11 +53,11 @@ public:
 		ss << currentTime << " " << msg << '\n';
 		outputFile << ss.str();
 	}
-	void logReceivedDataOnMainThread(const std::vector<std::string>& measurements)
+	void logReceivedDataOnMainThread(const std::vector<std::string>& measurements, const std::string type="")
 	{
 		std::stringstream ss;
 		auto currentTime = getCurrentTimeWithMilliSeconds();
-		ss << currentTime <<" DATA ON MAIN THREAD: ";
+		ss << currentTime << type << " DATA ON MAIN THREAD: ";
 		for (const auto& measurement : measurements)
 		{
 			ss << measurement << " ";
