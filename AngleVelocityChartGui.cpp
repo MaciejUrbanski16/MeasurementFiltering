@@ -19,19 +19,22 @@ void AngleVelocityChartGui::setup(wxNotebook* m_notebook)
     wxStaticText* callibrationMultiplicatorLabel = new wxStaticText(controlPanel, wxID_ANY, "Set callibration multiplicator");
 
     spinCtrlXangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, -18600);
-    spinCtrlXangleVelMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
+    spinCtrlXangleVel->SetIncrement(100);
+    spinCtrlXangleVelMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 100);
     wxStaticText* xAngleVelText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X angle velocity");
     spinCtrlXangleVel->Bind(wxEVT_SPINCTRL, &AngleVelocityChartGui::OnSpinXAngleVelUpdate, this);
     spinCtrlXangleVelMultiplicator->Bind(wxEVT_SPINCTRL, &AngleVelocityChartGui::OnSpinXAnglVelIncrUpdate, this);
 
     spinCtrlYangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 13450);
-    spinCtrlYangleVelMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
+    spinCtrlYangleVel->SetIncrement(100);
+    spinCtrlYangleVelMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 100);
     wxStaticText* yAngleVelText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y angle velocity");
     spinCtrlYangleVel->Bind(wxEVT_SPINCTRL, &AngleVelocityChartGui::OnSpinYAngleVelUpdate, this);
     spinCtrlYangleVelMultiplicator->Bind(wxEVT_SPINCTRL, &AngleVelocityChartGui::OnSpinYAnglVelIncrUpdate, this);
 
     spinCtrlZangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 16500);
-    spinCtrlZangleVelMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
+    spinCtrlZangleVel->SetIncrement(100);
+    spinCtrlZangleVelMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 100);
     wxStaticText* zAngleVelText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Z angle velocity");
     spinCtrlZangleVel->Bind(wxEVT_SPINCTRL, &AngleVelocityChartGui::OnSpinZAngleVelUpdate, this);
     spinCtrlZangleVelMultiplicator->Bind(wxEVT_SPINCTRL, &AngleVelocityChartGui::OnSpinZAnglVelIncrUpdate, this);

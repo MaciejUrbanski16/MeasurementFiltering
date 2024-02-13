@@ -8,6 +8,24 @@
 
 #include "AppLogger.h"
 
+struct CompensatedAccData 
+{
+	double xAcc;
+	double yAcc;
+};
+
+struct CompensatedVelocityData
+{
+	double xVelocity;
+	double yVelocity;
+};
+
+struct CompensatedPositionData
+{
+	double xPosition;
+	double yPosition;
+};
+
 class MeasurementsController
 {
 public:
@@ -88,10 +106,14 @@ public:
 	double getXaccMPerS2() const { return xAccMPerS2; }
 	double getYaccMPerS2() const { return yAccMPerS2; }
 	double getZaccMPerS2() const { return zAccMPerS2; }
+	CompensatedAccData getCompensatedAccData() const { return compensatedAccData; }
+	CompensatedVelocityData getCompensatedVelocityData() const { return compensatedVelocityData; }
+	CompensatedPositionData getCompensatedPositionData() const { return compensatedPositionData; }
+
 	double getXangleVelocityDegreePerS() const { return xAngleVelocityDegPerS; }
 	double getYangleVelocityDegreePerS() const { return yAngleVelocityDegPerS; }
 	double getZangleVelocityDegreePerS() const { return zAngleVelocityDegPerS; }
-	double getAzimuth() const { return orientationDegree; }
+	double getAzimuth() const { return orientationDegree - 38; } //???
 	int16_t getRawXMagn() const { return xMagn; }
 	int16_t getRawYMagn() const { return yMagn; }
 	double getLongitude() const { return longitude; }
@@ -121,6 +143,28 @@ private:
 		xAccMPerS2 = static_cast<double>(xAcc + xBias) * gPhysConst / rawGrawity;
 		yAccMPerS2 = static_cast<double>(yAcc + yBias) * gPhysConst / rawGrawity;
 		zAccMPerS2 = static_cast<double>(zAcc) * gPhysConst / rawGrawity;
+
+		compensateAccData();
+	}
+
+	void compensateAccData()
+	{
+		double gravityMagnitude = std::sqrt(xAccMPerS2 * xAccMPerS2 +
+			yAccMPerS2 * yAccMPerS2 +
+			zAccMPerS2 * zAccMPerS2);
+
+		double gravityX = xAccMPerS2 / gravityMagnitude;
+		double gravityY = yAccMPerS2 / gravityMagnitude;
+		double gravityZ = zAccMPerS2 / gravityMagnitude;
+
+		double compensatedXacc = xAccMPerS2;
+		compensatedXacc -= (gravityX * zAccMPerS2);
+
+		double compensatedYacc = yAccMPerS2;
+		compensatedYacc -= (gravityY * zAccMPerS2);
+
+		compensatedAccData.xAcc = compensatedXacc;
+		compensatedAccData.yAcc = compensatedYacc;
 	}
 
 	void calculateAngleVelocity()
@@ -132,21 +176,39 @@ private:
 
 	void calculateXYvelocity()
 	{
-		const double timeIntervalSec = static_cast<double>(deltaTimeMs)/105;
+		const double timeIntervalSec = static_cast<double>(deltaTimeMs)/1000;
 		xVelocity =  xAccMPerS2 * timeIntervalSec;
 		yVelocity =  yAccMPerS2 * timeIntervalSec;
 
 		previousXvelocity = xVelocity;
 		previousYvelocity = yVelocity;
+
+		calculateCompansatedXYvelocity();
 		// v=a*t  1m/s*s * 0.3s = 
 		//const auto actualSample{ timeIntervalSec * (xAcc + previousxAcc) };
 	}
 
+	void calculateCompansatedXYvelocity()
+	{
+		const double timeIntervalSec = static_cast<double>(deltaTimeMs) / 1000;
+		compensatedVelocityData.xVelocity = xAccMPerS2 * timeIntervalSec;
+		compensatedVelocityData.yVelocity = yAccMPerS2 * timeIntervalSec;
+	}
+
 	void calculateDistance()
 	{
-		const double timeIntervalSec = static_cast<double>(deltaTimeMs)/105;
+		const double timeIntervalSec = static_cast<double>(deltaTimeMs) / 10; //???
 		xDistance = xVelocity * timeIntervalSec;
 		yDistance = yVelocity * timeIntervalSec;
+
+		calculateCompansatedDistance();
+	}
+
+	void calculateCompansatedDistance()
+	{
+		const double timeIntervalSec = static_cast<double>(deltaTimeMs) / 100;
+		compensatedPositionData.xPosition = xVelocity * timeIntervalSec;
+		compensatedPositionData.yPosition = yVelocity * timeIntervalSec;
 	}
 
 	void calculateOrientationDegree()
@@ -237,6 +299,9 @@ private:
 	double xAccMPerS2{ 0.0 };
 	double yAccMPerS2{ 0.0 };
 	double zAccMPerS2{ 0.0 };
+	CompensatedAccData compensatedAccData{ 0.0,0.0 };
+	CompensatedVelocityData compensatedVelocityData{ 0.0,0.0 };
+	CompensatedPositionData compensatedPositionData{ 0.0,0.0 };
 
 	double xAngleVelocityDegPerS{ 0.0 };
 	double yAngleVelocityDegPerS{ 0.0 };
@@ -255,7 +320,7 @@ private:
 	double xDistance{ 0.0 };
 	double yDistance{ 0.0 };
 
-	uint32_t deltaTimeMs{ 0 };
+	uint32_t deltaTimeMs{ 100 };
 	
 	static constexpr double gPhysConst = 9.803;
 	double rawGrawity = 16000.0;
@@ -265,8 +330,6 @@ private:
 	double xAngleVelBias{ -18000.0};
 	double yAngleVelBias{ 12900.0};
 	double zAngleVelBias{15000.0};
-
-
 
 	AppLogger& appLogger;
 };

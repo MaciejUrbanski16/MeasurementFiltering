@@ -45,6 +45,7 @@
 #include "PositionChartGui.h"
 #include "MagnChartGui.h"
 #include "AngleVelocityChartGui.h"
+#include "RollPitchChartGui.h"
 
 #include "kalman_filter/kalman_filter.h"
 
@@ -138,7 +139,7 @@ private:
     {
         kf::Matrix<DIM_X, DIM_X> A;
 
-        double deltaTimeMs = static_cast<double>(deltaTimeUint);
+        double deltaTimeMs = static_cast<double>(deltaTimeUint) / 1000.0;
         A << 1.0F, deltaTimeMs, (deltaTimeMs * deltaTimeMs) / 2, 0.0F, 0.0F, 0.0F,
             0.0F, 1.0F, deltaTimeMs, 0.0F, 0.0F, 0.0F,
             0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F,
@@ -163,7 +164,7 @@ private:
 
     void experimentKfAzimuth(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, const double azimuthFromMagn, const uint32_t deltaTime)
     {
-        double deltaTimeMs = static_cast<double>(deltaTime);
+        double deltaTimeMs = static_cast<double>(deltaTime) / 1000;
 
         kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> A;
         A << 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F, 0.0F,
@@ -183,7 +184,7 @@ private:
 
         kf::Matrix<DIM_Z_azimuth, DIM_X_azimuth> matH;
         matH << 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 1,
+                0, 0, 0, 0, 0, 0,
                 1, 0, 0, 0, 0, 0;
 
         kalmanFilterAzimuth.correctLKF(vecZ, matRAzzFromGui.value(), matH);
@@ -191,14 +192,14 @@ private:
 
     void experimentGyroKf(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, uint32_t deltaTimeMs)
     {
-        //double deltaTimeMs = static_cast<double>(deltaTimeUint) * 10.0F;
+        double deltaTimeSec = static_cast<double>(deltaTimeMs) / 1000.0F;
 
         kf::Matrix<DIM_X_gyro, DIM_X_gyro> A;
-        A << 1.0F, deltaTimeMs, 0.0F, 0.0F, 0.0F, 0.0F,
+        A << 1.0F, deltaTimeSec, 0.0F, 0.0F, 0.0F, 0.0F,
             0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 1.0F, deltaTimeMs, 0.0F, 0.0F,
+            0.0F, 0.0F, 1.0F, deltaTimeSec, 0.0F, 0.0F,
             0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 0.0F, 1.0F, deltaTimeMs,
+            0.0F, 0.0F, 0.0F, 0.0F, 1.0F, deltaTimeSec,
             0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
         double sigma_theta_x_sq = 1;  // Wariancja b³êdu k¹ta w osi x
@@ -230,12 +231,12 @@ private:
 
         kf::Matrix<DIM_Z_gyro, DIM_Z_gyro> matR;
         matR << 0.01F, 0, 0,
-            0, 0.01F, 0,
-            0, 0, 0.01F;
+                0, 0.01F, 0,
+                0, 0, 0.01F;
         kf::Matrix<DIM_Z_gyro, DIM_X_gyro> matH;
         matH << 1, 0, 0, 0, 0, 0,
-            0, 0, 1, 0, 0, 0,
-            0, 0, 0, 0, 1, 0;
+                0, 0, 1, 0, 0, 0,
+                0, 0, 0, 0, 1, 0;
 
         kalmanFilterGyro.correctLKF(vecZ, matR, matH);
     }
@@ -250,7 +251,8 @@ private:
 
     void resetChartsAfterCallibration();
     void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
-        const double filteredXacc, const double filteredYacc,
+        const CompensatedAccData& compensatedAccData,
+        const double filteredXacc, const double filteredYacc, const double xAccGyroCompens, const double yAccGyroCompens,
         const double timeMs, const uint32_t deltaTime);
     //void updateVelChart(const double xVelocity, const double timeMs);
     void updateGpsBasedPositionChart(std::pair<double, double> gpsBasedPosition);
@@ -280,6 +282,7 @@ private:
     PositionChartGui positionChartGui;
     MagnChartGui magnChartGui;
     AngleVelocityChartGui angleVelocityChartGui;
+    RollPitchChartGui rollPitchChartGui;
 
 
 
@@ -366,8 +369,12 @@ private:
     PlotElementsBuffer xAccBuffer;
     PlotElementsBuffer yAccBuffer;
     PlotElementsBuffer zAccBuffer;
+    PlotElementsBuffer compensatedXAccDataBuffer;
+    PlotElementsBuffer compensatedYAccDataBuffer;
     PlotElementsBuffer filteredXaccBuffer;
     PlotElementsBuffer filteredYaccBuffer;
+    PlotElementsBuffer xAccWithGyroCompensation;
+    PlotElementsBuffer yAccWithGyroCompensation;
 
     PlotElementsBuffer xAngleVelocityBuffer;
     PlotElementsBuffer yAngleVelocityBuffer;
@@ -375,6 +382,12 @@ private:
     PlotElementsBuffer filteredZangleVelocityBuffer;
 
     PlotElementsBuffer filteredXAngleVelocityBuffer;
+
+    PlotElementsBuffer rollBuffer;
+    PlotElementsBuffer pitchBuffer;
+
+    double roll{ 0.0 };
+    double pitch{ 0.0 };
     
 
     wxVector <wxRealPoint> filteredXangleVelocity;

@@ -9,21 +9,21 @@ void MagnChartGui::setup(wxNotebook* m_notebook /*, MyWindow* window*/)
 	azimuthChartPanel = new wxChartPanel(azimuthPanelSplitter);
 
 	sizerAzimuthPlot = new wxBoxSizer(wxVERTICAL);
-	azimuthChartPanel->SetMinSize(wxSize(600, 600));
+	azimuthChartPanel->SetMinSize(wxSize(800, 600));
 
 	wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
 
-	spinCtrlXmagn = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 1);
-	wxStaticText* xMagnText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X magn");
+	//spinCtrlXmagn = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 100);
+	//wxStaticText* xMagnText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X magn");
 
-	spinCtrlYmagn = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 2);
-	wxStaticText* yMagnText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y magn");
+	//spinCtrlYmagn = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 100);
+	//wxStaticText* yMagnText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y magn");
 
-	controlPanelSizer->Add(xMagnText, 0, wxALL | wxALIGN_CENTER, 5);
-	controlPanelSizer->Add(spinCtrlXmagn, 0, wxALL | wxALIGN_CENTER, 5);
+	//controlPanelSizer->Add(xMagnText, 0, wxALL | wxALIGN_CENTER, 5);
+	//controlPanelSizer->Add(spinCtrlXmagn, 0, wxALL | wxALIGN_CENTER, 5);
 
-	controlPanelSizer->Add(yMagnText, 0, wxALL | wxALIGN_CENTER, 5);
-	controlPanelSizer->Add(spinCtrlYmagn, 0, wxALL | wxALIGN_CENTER, 5);
+	//controlPanelSizer->Add(yMagnText, 0, wxALL | wxALIGN_CENTER, 5);
+	//controlPanelSizer->Add(spinCtrlYmagn, 0, wxALL | wxALIGN_CENTER, 5);
 
 	wxBoxSizer* azimuthSetupButtonsSizer = new wxBoxSizer(wxHORIZONTAL);
 
@@ -84,8 +84,10 @@ void MagnChartGui::setup(wxNotebook* m_notebook /*, MyWindow* window*/)
 	m_notebook->AddPage(panel, "Azimuth");
 }
 
-void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElementsBuffer& filteredAzimuthBuffer, 
-	const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth, const double timeMs)
+void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElementsBuffer& filteredAzimuthBuffer,
+	PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer,
+	const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth,
+	 const double timeMs)
 {
 	xMagnValue->SetLabel(std::to_string(xMagn));
 	yMagnValue->SetLabel(std::to_string(yMagn));
@@ -96,6 +98,12 @@ void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElement
 
 	XYPlot* plot = new XYPlot();
 	XYSimpleDataset* dataset = new XYSimpleDataset();
+
+	//dataset->AddSerie(new XYSerie(rollBuffer.getBuffer()));
+	//dataset->GetSerie(0)->SetName("roll");
+	//dataset->AddSerie(new XYSerie(pitchBuffer.getBuffer()));
+	//dataset->GetSerie(1)->SetName("pitch");
+
 	if (plotFilteredAzimuth and plotRawAzimuth)
 	{
 		dataset->AddSerie(new XYSerie(magnPointsBuffer.getBuffer()));
@@ -171,3 +179,14 @@ void MagnChartGui::OnFilteredAzimuthCheckBoxClicked(wxCommandEvent& event)
 		wxMessageBox("Filtered azimuth checkbox zosta³ odznaczony!", "Informacja", wxOK | wxICON_INFORMATION, this);
 	}
 }
+
+//void OnSpinMagnUpdate(wxSpinEvent& event)
+//{
+//	const int xAngleVelCtrlValue = spinCtrlMagn->GetValue();
+//	xGyroBias = xAngleVelCtrlValue;
+//}
+//
+//void OnSpinMagnIncrUpdate(wxSpinEvent& event)
+//{
+//
+//}

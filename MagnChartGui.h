@@ -25,13 +25,18 @@ class MagnChartGui : public wxFrame
 public:
 	void setup(wxNotebook* m_notebook/*, MyWindow* window*/);
 	void updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElementsBuffer& filteredAzimuthBuffer,
-		 const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth, const double timeMs);
+		PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer,
+		 const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth,
+		 const double timeMs);
 
 private:
 	void OnResetMagnChart(wxCommandEvent& event);
 	void OnSubmitMagnAdjustments(wxCommandEvent& event);
 	void OnRawAzimuthCheckBoxClicked(wxCommandEvent& event);
 	void OnFilteredAzimuthCheckBoxClicked(wxCommandEvent& event);
+
+	//void OnSpinMagnUpdate(wxSpinEvent& event);
+	//void OnSpinMagnIncrUpdate(wxSpinEvent& event);
 
 	wxChartPanel* azimuthChartPanel = nullptr;
 	wxSplitterWindow* azimuthPanelSplitter = nullptr;

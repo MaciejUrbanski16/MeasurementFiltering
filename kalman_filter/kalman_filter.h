@@ -61,11 +61,11 @@ namespace kf
             if (not isInitializedGyro)
             {
                 vecX() << xAngleVel,
-                          0.0F,
+                          0.0F, //roll
                           yAngleVel,
-                          0.0F,
+                          0.0F, //pitch
                           zAngleVel,
-                          0.0F; // macierz stanu
+                          0.0F; // yaw
 
                 isInitializedGyro = true;
             }

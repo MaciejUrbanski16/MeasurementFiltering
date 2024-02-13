@@ -321,12 +321,14 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
             ////rawMeasurementsSet.push_back(rawMeasurement);
             if (kalmanFilterSetupGui.getIsCallibrationDone() == false)
             {
-                magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer,
+                magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
                     rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), 1.0, totalTimeMs);
                 //updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), 1.0, totalTimeMs);
                 updateAccChart(rawMeasurement.getXaccMPerS2(),
                     rawMeasurement.getYaccMPerS2(),
-                    rawMeasurement.getZaccMPerS2(), 1.0, 1.0,
+                    rawMeasurement.getZaccMPerS2(),
+                    rawMeasurement.getCompensatedAccData(),
+                    1.0, 1.0, 0.01, 0.01,
                     totalTimeMs, deltaTimeMs);
                 ////updateVelChart(rawMeasurement.getXvelocityMperS());
                 ////updatePositionChart(rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
@@ -372,9 +374,27 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 positionChartGui.updateChart(rawPositionBuffer, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
                 //roll (X)
                 const double filteredAzimuth = kalmanFilterAzimuth.vecX()[0];
+                //roll += rawMeasurement.getXangleVelocityDegreePerS() * (deltaTimeMs / 1000.0);
+                //pitch += rawMeasurement.getYangleVelocityDegreePerS() * (deltaTimeMs / 1000.0);
+
+                experimentGyroKf(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(), rawMeasurement.getZangleVelocityDegreePerS()
+                    , deltaTimeMs);
+
+                roll += kalmanFilterGyro.vecX()[1];
+                pitch += kalmanFilterGyro.vecX()[3];
+
+                const double filteredXAngleVel = kalmanFilterAzimuth.vecX()[3];
+                const double filteredYAngleVel = kalmanFilterAzimuth.vecX()[4];
                 const double filteredZAngleVel = kalmanFilterAzimuth.vecX()[5];
 
-                magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer,
+                rollPitchChartGui.updateChart(rollBuffer, pitchBuffer, roll, pitch, totalTimeMs);
+
+                const double xAccGyroCompensation = (rawMeasurement.getXaccMPerS2() * cos(roll)) - (rawMeasurement.getZaccMPerS2() * sin(pitch));
+                const double yAccGyroCompensation = (rawMeasurement.getYaccMPerS2() * cos(pitch)) + (rawMeasurement.getZaccMPerS2() * sin(roll));
+                
+
+
+                magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
                     rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
                 //updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
 
@@ -382,10 +402,11 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                     rawMeasurement.getXangleVelocityDegreePerS(),
                     rawMeasurement.getYangleVelocityDegreePerS(),
                     rawMeasurement.getZangleVelocityDegreePerS(), filteredZAngleVel, totalTimeMs);
+                //roll pitch
 
-                ////kalman filter experiment
-                kalmanFilter.setInitialState(rawMeasurement.getXDistance(), rawMeasurement.getXvelocityMperS(), rawMeasurement.getXaccMPerS2(),
-                    rawMeasurement.getYDistance(), rawMeasurement.getYvelocityMperS(), rawMeasurement.getYaccMPerS2());
+                
+                kalmanFilter.setInitialState(rawMeasurement.getXDistance(), rawMeasurement.getXvelocityMperS(), rawMeasurement.getCompensatedAccData().xAcc,
+                    rawMeasurement.getYDistance(), rawMeasurement.getYvelocityMperS(), rawMeasurement.getCompensatedAccData().yAcc);
 
                 experimentKf(rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
 
@@ -403,7 +424,9 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 //const double filteredVelocityY = kalmanFilter.vecX()(3);
                 updateAccChart(rawMeasurement.getXaccMPerS2(),
                     rawMeasurement.getYaccMPerS2(),
-                    rawMeasurement.getZaccMPerS2(), filteredXacc, filteredYacc,
+                    rawMeasurement.getZaccMPerS2(),
+                    rawMeasurement.getCompensatedAccData(),
+                    filteredXacc, filteredYacc, xAccGyroCompensation, yAccGyroCompensation,
                     totalTimeMs, deltaTimeMs);
 
                 const auto calculatedPosition{ positionUpdater.getCurrentPosition() };
@@ -479,7 +502,8 @@ void MyWindow::OnGpsDataThreadEvent(wxThreadEvent& event)
     {
         const std::vector<std::string>& measurements = myEvent->GetStringVector();
 
-        appLogger.logReceivedDataOnMainThread(measurements, "GPS");
+        appLogger.logReceivedDataOnMainThread(measurements, " GPS");
+        appLogger.logGpsCsvData(measurements);
         //processFiltration(measurements, true);
     }
     else
@@ -497,13 +521,20 @@ void MyWindow::resetChartsAfterCallibration()
     xAccBuffer.Clear();
     yAccBuffer.Clear();
     zAccBuffer.Clear();
+    compensatedXAccDataBuffer.Clear();
+    compensatedYAccDataBuffer.Clear();
     filteredXaccBuffer.Clear();
     filteredYaccBuffer.Clear();
+    xAccWithGyroCompensation.Clear();
+    yAccWithGyroCompensation.Clear();
 
     xAngleVelocityBuffer.Clear();
     yAngleVelocityBuffer.Clear();
     zAngleVelocityBuffer.Clear();
     filteredZangleVelocityBuffer.Clear();
+
+    rollBuffer.Clear();
+    pitchBuffer.Clear();
 
     rawPositionBuffer.Clear();
     filteredPositionBuffer.Clear();
@@ -511,8 +542,10 @@ void MyWindow::resetChartsAfterCallibration()
     gpsBasedPositionBuffer.Clear();
 }
 
-void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2, 
-    const double filteredXacc, const double filteredYacc, const double timeMs, const uint32_t deltaTime)
+void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
+    const CompensatedAccData& compensatedAccData,
+    const double filteredXacc, const double filteredYacc,
+    const double xAccGyroCompens, const double yAccGyroCompens, const double timeMs, const uint32_t deltaTime)
 {
     xAccValue->SetLabel(std::to_string(xAccMPerS2));
     yAccValue->SetLabel(std::to_string(yAccMPerS2));
@@ -525,22 +558,43 @@ void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, 
     yAccBuffer.AddElement(wxRealPoint(timeMs, yAccMPerS2));
     zAccBuffer.AddElement(wxRealPoint(timeMs, zAccMPerS2));
 
+
     filteredXaccBuffer.AddElement(wxRealPoint(timeMs, filteredXacc));
     filteredYaccBuffer.AddElement(wxRealPoint(timeMs, filteredYacc));
+
+    compensatedXAccDataBuffer.AddElement(wxRealPoint(timeMs, compensatedAccData.xAcc));
+    compensatedYAccDataBuffer.AddElement(wxRealPoint(timeMs, compensatedAccData.yAcc));
+
+    xAccWithGyroCompensation.AddElement(wxRealPoint(timeMs, xAccGyroCompens));
+    yAccWithGyroCompensation.AddElement(wxRealPoint(timeMs, yAccGyroCompens));
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
     dataset->AddSerie(new XYSerie(xAccBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(yAccBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(zAccBuffer.getBuffer()));
-    dataset->AddSerie(new XYSerie(filteredXaccBuffer.getBuffer()));
-    dataset->AddSerie(new XYSerie(filteredYaccBuffer.getBuffer()));
+    //dataset->AddSerie(new XYSerie(filteredXaccBuffer.getBuffer()));
+    //dataset->AddSerie(new XYSerie(filteredYaccBuffer.getBuffer()));
+
+    dataset->AddSerie(new XYSerie(compensatedXAccDataBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(compensatedYAccDataBuffer.getBuffer()));
+
+    dataset->AddSerie(new XYSerie(xAccWithGyroCompensation.getBuffer()));
+    dataset->AddSerie(new XYSerie(yAccWithGyroCompensation.getBuffer()));
 
     dataset->GetSerie(0)->SetName("raw X acceleration");
     dataset->GetSerie(1)->SetName("raw Y acceleration");
-    //dataset->GetSerie(2)->SetName("raw Z aceleration");
-    dataset->GetSerie(2)->SetName("filtered X acceleration");
-    dataset->GetSerie(3)->SetName("filtered Y acceleration");
+    dataset->GetSerie(2)->SetName("compensated X acceleration");
+    dataset->GetSerie(3)->SetName("compensated Y acceleration");
+
+    dataset->GetSerie(4)->SetName("gyro compensated X");
+    dataset->GetSerie(5)->SetName("gyro compensated Y");
+
+    //dataset->GetSerie(2)->SetName("filtered X acceleration");
+    //dataset->GetSerie(3)->SetName("filtered Y acceleration");
+
+    //dataset->GetSerie(4)->SetName("compensated X acceleration");
+    //dataset->GetSerie(5)->SetName("compensated Y acceleration");
 
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
@@ -556,7 +610,7 @@ void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, 
     plot->SetLegend(legend);
     plot->AddObjects(dataset, leftAxis, bottomAxis);
 
-    Chart* chart = new Chart(plot, "X Acceleration");
+    Chart* chart = new Chart(plot, "Acceleration");
 
     accChartPanel->SetChart(chart);
 }
@@ -618,9 +672,15 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
     //dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
-    dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
+    //dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(filteredPositionBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(calculatedPositionBuffer.getBuffer()));
+
+    dataset->GetSerie(0)->SetName("filtered position");
+    //dataset->GetSerie(1)->SetName("calculated position");
+    dataset->GetSerie(1)->SetName("raw position");
+    dataset->GetSerie(2)->SetName("calculated position");
 
     //dataset->AddSerie(new XYSerie(yAngleVelocityPoints));
     //dataset->AddSerie(new XYSerie(zAngleVelocityPoints));
@@ -641,9 +701,8 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
 
     DatasetArray datasetArray();
     //datasetArray
-    Legend* lengend = new Legend(10, 10);
-    wxRect rect(wxSize(10, 10));
-    //lengend.Draw(this, rect, datasetArray);
+    Legend* legend = new Legend(wxTOP, wxRIGHT);
+    plot->SetLegend(legend);
 
     plot->AddObjects(dataset, leftAxis, bottomAxis);
     //plot->SetLegend(lengend);
@@ -772,19 +831,22 @@ void MyWindow::prepareAccChart()
     wxBoxSizer* controlPanelSizerForZAdj = new wxBoxSizer(wxHORIZONTAL);
 
     spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 15500);
-    spinCtrlXaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
+    spinCtrlXacc->SetIncrement(100);
+    spinCtrlXaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 100);
     wxStaticText* xAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X acc");
     spinCtrlXacc->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinXAccUpdate, this);
     spinCtrlXaccMultiplicator->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinXAccIncrUpdate, this);
 
     spinCtrlYacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 675);
-    spinCtrlYaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
+    spinCtrlYacc->SetIncrement(100);
+    spinCtrlYaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 100);
     wxStaticText* yAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Y acc");
     spinCtrlYacc->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinYAccUpdate, this);
     spinCtrlYaccMultiplicator->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinYAccIncrUpdate, this);
 
     spinCtrlZacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 16100);
-    spinCtrlZaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 10);
+    spinCtrlZacc->SetIncrement(100);
+    spinCtrlZaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 100);
     wxStaticText* zAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Z acc");
     spinCtrlZacc->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinZAccUpdate, this);
     spinCtrlZaccMultiplicator->Bind(wxEVT_SPINCTRL, &MyWindow::OnSpinZAccIncrUpdate, this);
@@ -931,7 +993,7 @@ void MyWindow::prepareFilteredPositionChart()
 
     filteredPositionChartPanel = new wxChartPanel(splitter);
     sizerPositionPlot = new wxBoxSizer(wxVERTICAL);
-    filteredPositionChartPanel->SetMinSize(wxSize(600, 600));
+    filteredPositionChartPanel->SetMinSize(wxSize(900, 600));
     //filteredVelocityChartPanel->SetSize(200, 200);
     //sizer->Add(filteredPositionChartPanel, 1, wxEXPAND | wxALL, 5);
     wxButton* applyKFtunningChangesButton = new wxButton(controlPanel, wxID_ANY, "Apply changes!");
@@ -1033,10 +1095,10 @@ void MyWindow::prepareFilteredPositionChart()
 void MyWindow::prepareGui()
 {
     m_notebook = new wxNotebook(this, 1);
-    comSetupPanel = new wxPanel(m_notebook);
-    m_notebook->AddPage(comSetupPanel, "Serial port setup");
-    dataReceptionPanel = new wxPanel(m_notebook);
-    m_notebook->AddPage(dataReceptionPanel, "Data reception");
+    //comSetupPanel = new wxPanel(m_notebook);
+    //m_notebook->AddPage(comSetupPanel, "Serial port setup");
+    //dataReceptionPanel = new wxPanel(m_notebook);
+    //m_notebook->AddPage(dataReceptionPanel, "Data reception");
     
     //innerNotebook = new wxNotebook(kalmanParamsSetupPanel, 2);
     //wxPanel* innerPanel = new wxPanel(innerNotebook);
@@ -1058,14 +1120,15 @@ void MyWindow::prepareGui()
     positionChartGui.setup(m_notebook);
     prepareGpsBasedPositionChart();
     angleVelocityChartGui.setup(m_notebook);
+    rollPitchChartGui.setup(m_notebook);
     prepareFilteredPositionChart();
     prepareFilteredVelocityChart();
     prepareFilteredAngleXVelocityChart();
     magnChartGui.setup(m_notebook);
 
     // Add outer tabs to the notebook
-    m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 1"), "Outer Tab 1");
-    m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
+    //m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 1"), "Outer Tab 1");
+   // m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
     //m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
 
 
@@ -1073,58 +1136,58 @@ void MyWindow::prepareGui()
 
     wxBoxSizer* panelSizer = new wxBoxSizer(wxVERTICAL);
 
-    wxStaticText* LBcom = new wxStaticText(comSetupPanel, wxID_ANY, "COM port number:");
-    wxTextCtrl* INcomName = new wxTextCtrl(comSetupPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, size);
-    LBcom->SetPosition({ 40,100 });
-    INcomName->SetPosition({ 200,100 });
+    //wxStaticText* LBcom = new wxStaticText(comSetupPanel, wxID_ANY, "COM port number:");
+    //wxTextCtrl* INcomName = new wxTextCtrl(comSetupPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, size);
+    //LBcom->SetPosition({ 40,100 });
+    //INcomName->SetPosition({ 200,100 });
 
 
-    wxFont font(16, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
-    wxStaticText* LBheaderText = new wxStaticText(comSetupPanel, wxID_ANY, "Enter serial communication settings", wxDefaultPosition, wxDefaultSize);
-    LBheaderText->SetFont(font);
-    LBheaderText->SetPosition({ 50,50 });
+    //wxFont font(16, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+    //wxStaticText* LBheaderText = new wxStaticText(comSetupPanel, wxID_ANY, "Enter serial communication settings", wxDefaultPosition, wxDefaultSize);
+    //LBheaderText->SetFont(font);
+    //LBheaderText->SetPosition({ 50,50 });
 
 
-    wxArrayString baudRateChoices;
-    baudRateChoices.Add("9600");
-    baudRateChoices.Add("115200");
-    baudRateChoices.Add("330400");
-    wxChoice* baudRateChoice = new wxChoice(comSetupPanel, wxID_ANY, wxDefaultPosition, size, baudRateChoices);
-    baudRateChoice->SetPosition({ 200, 150 });
-    baudRateChoice->Bind(wxEVT_CHOICE, &MyWindow::OnBaudRateChoice, this);
+    //wxArrayString baudRateChoices;
+    //baudRateChoices.Add("9600");
+    //baudRateChoices.Add("115200");
+    //baudRateChoices.Add("330400");
+    //wxChoice* baudRateChoice = new wxChoice(comSetupPanel, wxID_ANY, wxDefaultPosition, size, baudRateChoices);
+    //baudRateChoice->SetPosition({ 200, 150 });
+    //baudRateChoice->Bind(wxEVT_CHOICE, &MyWindow::OnBaudRateChoice, this);
 
-    wxStaticText* LBbaudRate = new wxStaticText(comSetupPanel, wxID_ANY, "Baud rate:");
+    //wxStaticText* LBbaudRate = new wxStaticText(comSetupPanel, wxID_ANY, "Baud rate:");
     //wxTextCtrl* INbaudRate = new wxTextCtrl(comSetupPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
-    LBbaudRate->SetPosition({ 40,150 });
+    //LBbaudRate->SetPosition({ 40,150 });
     //INbaudRate->SetPosition({ 200,150 });
 
 
-    wxArrayString stopBitsChoices;
-    stopBitsChoices.Add("0");
-    stopBitsChoices.Add("1");
-    wxChoice* stopBitsChoice = new wxChoice(comSetupPanel, wxID_ANY, wxDefaultPosition, size, stopBitsChoices);
-    stopBitsChoice->SetPosition({ 200, 200 });
-    stopBitsChoice->Bind(wxEVT_CHOICE, &MyWindow::OnStopBitsChoice, this);
-    wxStaticText* LBstopBits = new wxStaticText(comSetupPanel, wxID_ANY, "Stop bits:");
+    //wxArrayString stopBitsChoices;
+    //stopBitsChoices.Add("0");
+    //stopBitsChoices.Add("1");
+    //wxChoice* stopBitsChoice = new wxChoice(comSetupPanel, wxID_ANY, wxDefaultPosition, size, stopBitsChoices);
+    //stopBitsChoice->SetPosition({ 200, 200 });
+    //stopBitsChoice->Bind(wxEVT_CHOICE, &MyWindow::OnStopBitsChoice, this);
+    //wxStaticText* LBstopBits = new wxStaticText(comSetupPanel, wxID_ANY, "Stop bits:");
     //wxTextCtrl* INstopBits = new wxTextCtrl(comSetupPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
-    LBstopBits->SetPosition({ 40,200 });
-    stopBitsChoice->SetPosition({ 200,200 });
+    //LBstopBits->SetPosition({ 40,200 });
+    //stopBitsChoice->SetPosition({ 200,200 });
 
-    wxArrayString parityChoices;
-    parityChoices.Add("NONE");
-    parityChoices.Add("EVEN");
-    parityChoices.Add("ODD");
+    //wxArrayString parityChoices;
+    //parityChoices.Add("NONE");
+    //parityChoices.Add("EVEN");
+    //parityChoices.Add("ODD");
 
-    wxChoice* parityChoice = new wxChoice(comSetupPanel, wxID_ANY, wxDefaultPosition, size, parityChoices);
-    parityChoice->SetPosition({ 200, 250 });
-    parityChoice->Bind(wxEVT_CHOICE, &MyWindow::OnParityChoice, this);
-    wxStaticText* LBparity = new wxStaticText(comSetupPanel, wxID_ANY, "Parity:", wxDefaultPosition, wxDefaultSize);
-    wxTextCtrl* INparity = new wxTextCtrl(comSetupPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
-    LBparity->SetPosition({ 40,250 });
+    //wxChoice* parityChoice = new wxChoice(comSetupPanel, wxID_ANY, wxDefaultPosition, size, parityChoices);
+    //parityChoice->SetPosition({ 200, 250 });
+    //parityChoice->Bind(wxEVT_CHOICE, &MyWindow::OnParityChoice, this);
+    //wxStaticText* LBparity = new wxStaticText(comSetupPanel, wxID_ANY, "Parity:", wxDefaultPosition, wxDefaultSize);
+    //wxTextCtrl* INparity = new wxTextCtrl(comSetupPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
+    //LBparity->SetPosition({ 40,250 });
     //INparity->SetPosition({ 200,250 });
 
-    wxButton* BTconfirmSetupAndStartReception = new wxButton(comSetupPanel, wxID_ANY, "Start data reception");
-    BTconfirmSetupAndStartReception->SetPosition({ 400, 500 });
+    //wxButton* BTconfirmSetupAndStartReception = new wxButton(comSetupPanel, wxID_ANY, "Start data reception");
+    //BTconfirmSetupAndStartReception->SetPosition({ 400, 500 });
     //BTconfirmSetupAndStartReception->Bind(wxEVT_BUTTON, &MyWindow::OnStartReceptionClick, this);
 
     filterFileMeasTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterFileMeasTimer, this);

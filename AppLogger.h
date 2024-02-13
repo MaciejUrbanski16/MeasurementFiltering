@@ -16,8 +16,10 @@ public:
 	{
 		outputFile.open(filePath, std::ios::app);
 		kalmanOutputFile.open(kalmanFilePath, std::ios::app);
-		const auto timeAsString = getCurrentTimeWithSeconds() + measurementsCsvPath;
-
+		auto timeAsString = measurementsCsvPath;// +getCurrentTimeWithSeconds() + ".txt";
+		
+		timeAsString += getCurrentTimeWithSeconds();
+		timeAsString += ".txt";
 		measurementsCsv.open(timeAsString, std::ios::app);
 
 		std::stringstream ssToCsv;
@@ -28,6 +30,16 @@ public:
 			<< "X velocity" << ',' << "Y velocity" << ',' << "X distance" << ',' << "Y distance" << ','
 			<< "Orientation degree" << ',' << "Longitude" << ',' << "Latitude" << ',' << "Delta time ms" << '\n';
 		measurementsCsv << ssToCsv.str();
+
+		auto gpsPathName = gpsCsvPath;
+		gpsPathName += getCurrentTimeWithSeconds();
+		gpsPathName += ".txt";
+		gpsCsv.open(gpsPathName, std::ios::app);
+
+		std::stringstream ssToGpsCsv;
+		ssToGpsCsv << "Current time" << ',' << "Latitude" << ',' << "Longitude" << ',' << "Velocity" << ','
+			<< "Satellites" << '\n';
+		gpsCsv << ssToGpsCsv.str();
 	}
 
 	~AppLogger()
@@ -44,6 +56,10 @@ public:
 		{
 			measurementsCsv.close();
 		}
+		if (gpsCsv.is_open())
+		{
+			gpsCsv.close();
+		}
 	}
 
 	void logSerialCommStartThread(const std::string& msg)
@@ -56,14 +72,30 @@ public:
 	void logReceivedDataOnMainThread(const std::vector<std::string>& measurements, const std::string type="")
 	{
 		std::stringstream ss;
+		
 		auto currentTime = getCurrentTimeWithMilliSeconds();
-		ss << currentTime << type << " DATA ON MAIN THREAD: ";
+		ss << currentTime << " " << type << " DATA ON MAIN THREAD: ";
+		
 		for (const auto& measurement : measurements)
 		{
 			ss << measurement << " ";
+			
 		}
 		ss << '\n';
-		outputFile << ss.str();
+		outputFile << ss.str();		
+	}
+	void logGpsCsvData(const std::vector<std::string>& measurements)
+	{
+		std::stringstream ssToCsv;
+		auto currentTime = getCurrentTimeWithMilliSeconds();
+		ssToCsv << currentTime;
+
+		for (const auto& measurement : measurements)
+		{
+			ssToCsv << ',' << measurement;
+		}
+		ssToCsv << '\n';
+		gpsCsv << ssToCsv.str();
 	}
 	void logErrThreadDataHandling(const std::string& msg)
 	{
@@ -170,7 +202,7 @@ private:
 		std::tm tm_now = *std::localtime(&now);
 
 		std::stringstream timeString;
-		timeString << std::put_time(&tm_now, "%Y-%m-%d_%H:%M:%S_");
+		timeString << std::put_time(&tm_now, "%Y-%m-%d_%H-%M-%S");
 		
 
 		std::string currentDateTimeWithMillis = timeString.str();
@@ -185,7 +217,10 @@ private:
 	std::string kalmanFilePath = "kalmanFilterLogs.txt";
 
 	std::ofstream measurementsCsv;
-	std::string measurementsCsvPath = "measurementsCsv.txt";
+	std::string measurementsCsvPath = "measurementsCsv_";
+
+	std::ofstream gpsCsv;
+	std::string gpsCsvPath = "gpsCsv_";
 };
 //std::string AppLogger::path = "appLogs.txt";
 //std::ofstream AppLogger::outputFile;// = path;

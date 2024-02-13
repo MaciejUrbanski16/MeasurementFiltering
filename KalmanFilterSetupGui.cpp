@@ -834,8 +834,8 @@ void KalmanFilterSetupGui::initPedestrianModelMatrices()
                                 0, 0.1F, 0,
                                 0, 0, 0.1F;
 
-    double process_variance = 0.02F;
-    double deltaTimeMs = 0.1F;
+    double process_variance = 0.0000002F;
+    double deltaTimeMs = 5.0F;
     matQAzimuthPedestrian << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
         pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
         pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
@@ -845,12 +845,12 @@ void KalmanFilterSetupGui::initPedestrianModelMatrices()
 
     matQAzimuthPedestrian *= process_variance;
 
-    matRAccPedestrian << 1.0F, 0.0F,
-        0.0F, 1.0F;
+    matRAccPedestrian << 0.1F, 0.0F,
+                         0.0F, 0.1F;
 
-    double processVarianceAcc = 0.002F;
-    double sCoefficient = 100.0F;
-    sCoefficient = sCoefficient / 100000000.0F;
+    double processVarianceAcc = 0.0002F;
+    double sCoefficient = 10.0F;
+    sCoefficient = sCoefficient / 100.0F;
 
     matQAccPedestrian << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0, 0, 0,
         pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0, 0, 0,
@@ -879,12 +879,12 @@ void KalmanFilterSetupGui::initRcCarModelMatrices()
 
     matQAzimuthRcCar *= process_variance;
 
-    matRAccRcCar << 1.0F, 0.0F,
-                    0.0F, 1.0F;
+    matRAccRcCar << 0.1F, 0.0F,
+                    0.0F, 0.1F;
 
     double processVarianceAcc = 0.002F;
     double sCoefficient = 100.0F;
-    sCoefficient = sCoefficient / 100000000.0F;
+    sCoefficient = sCoefficient / 100000.0F;
 
     matQAccRcCar << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0, 0, 0,
         pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0, 0, 0,
