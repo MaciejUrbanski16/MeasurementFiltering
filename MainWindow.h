@@ -37,6 +37,7 @@
 #include "DeltaTimeCalculator.h"
 #include "RelativePositionCalculator.h"
 #include "PlotElementsBuffer.h"
+#include "GpsDataConverter.h"
 #include "HaversineConverter.h"
 #include "PositionUpdater.h"
 #include "KalmanFilterSetupGui.h"
@@ -267,6 +268,7 @@ private:
     RelativePositionCalculator relativePositionCalculator{};
     std::vector<MeasurementsController> rawMeasurementsSet{};
     HaversineConverter haversineConverter{};
+    GpsDataConverter gpsDataConverter{};
     double longitude{ 52.3244 };
     double latitude{ 19.3243 };
 

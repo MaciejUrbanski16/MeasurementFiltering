@@ -256,10 +256,10 @@ private:
 		try {
 			size_t pos;
 			std::stod(meas, &pos);
-			return pos == meas.length(); // Sprawdzamy, czy ca³y string zosta³ przetworzony
+			return pos == meas.length();
 		}
 		catch (...) {
-			return false; // W przypadku b³êdu rzutowania, string nie jest liczb¹ zmiennoprzecinkow¹
+			return false;
 		}
 	}
 

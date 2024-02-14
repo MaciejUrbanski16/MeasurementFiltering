@@ -113,10 +113,18 @@ void CsvMeasurementLoadGui::OnStartFiltration(wxCommandEvent& event)
         const std::string& filepath{ filePathSensorDataTextCtrl->GetValue().ToStdString() };
         if (not csvMeasurementReader.openFile(filepath))
         {
-            wxMessageBox("File has not been opened!", "Informacja", wxOK | wxICON_INFORMATION);
+            wxMessageBox("Plik z danymi z czujników nie zosta³ otworzony!", "Informacja", wxOK | wxICON_INFORMATION);
             return;
         }
-        
+
+        const std::string& filepathForGps{ filePathGpsDataTextCtrl->GetValue().ToStdString() };
+        if (not csvMeasurementReader.openFileWithGpsData(filepathForGps))
+        {
+            wxMessageBox("Plik z danymi GPS nie zosta³ otworzony!", "Informacja", wxOK | wxICON_INFORMATION);
+            return;
+        }
+
+
         m_filterFileMeasTimer->Start(100);
     }
     else

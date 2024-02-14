@@ -3,9 +3,10 @@
 #include <utility>
 #include "wx/math.h"
 
-struct GPSPoint {
-	double latitude;  // Szerokoœæ geograficzna
-	double longitude; // D³ugoœæ geograficzna
+struct GPSPoint 
+{
+	double latitude;
+	double longitude;
 };
 
 class HaversineConverter

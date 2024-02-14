@@ -337,9 +337,9 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                     rawMeasurement.getYangleVelocityDegreePerS(),
                     rawMeasurement.getZangleVelocityDegreePerS(), 1.0, totalTimeMs);
 
-                latitude = latitude + 0.00003;
-                longitude = longitude - 0.00004;
-                const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(longitude, latitude);
+                const double lon{ gpsDataConverter.getLongitude() };
+                const double lat{ gpsDataConverter.getLatitude() };
+                const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
                 updateGpsBasedPositionChart(gpsBasedPosition);
             }
             else
@@ -472,6 +472,10 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
 void MyWindow::OnFilterFileMeasTimer(wxTimerEvent& event)
 {
     const std::vector<std::string>& measurements = csvMeasurementReader.readCSVrow();
+    const std::vector<std::string>& gpsData = csvMeasurementReader.readCSVrowGpsData();
+
+    gpsDataConverter.handleGpsData(gpsData);
+
     processFiltration(measurements, false);
     //every 100ms
     //read new line
@@ -501,6 +505,9 @@ void MyWindow::OnGpsDataThreadEvent(wxThreadEvent& event)
     if (myEvent)
     {
         const std::vector<std::string>& measurements = myEvent->GetStringVector();
+
+        gpsDataConverter.handleGpsData(measurements);
+
 
         appLogger.logReceivedDataOnMainThread(measurements, " GPS");
         appLogger.logGpsCsvData(measurements);
