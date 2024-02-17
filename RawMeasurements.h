@@ -127,12 +127,12 @@ public:
 
 	double getRollFromAcc() const
 	{
-		return atan2(static_cast<float>(yAcc), static_cast<float>(zAcc)) * (180.0 / M_PI);
+		return atan2(static_cast<float>(yAcc + yBias), static_cast<float>(zAcc)) * (180.0 / M_PI);
 	}
 	double getPitchFromAcc() const
 	{
-		return atan2((static_cast<float>( -xAcc)), 
-			sqrt(static_cast<float>(yAcc) * static_cast<float>(yAcc) + static_cast<float>(zAcc) * static_cast<float>(zAcc))) * (180.0 / M_PI);
+		return atan2((static_cast<float>( -(xAcc+xBias))), 
+			sqrt(static_cast<float>(yAcc + yBias) * static_cast<float>(yAcc + yBias) + static_cast<float>(zAcc) * static_cast<float>(zAcc))) * (180.0 / M_PI);
 	}
 
 

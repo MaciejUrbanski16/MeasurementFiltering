@@ -19,12 +19,14 @@
 #include <wx/spinctrl.h> 
 
 #include "PlotElementsBuffer.h"
+#include "RawMeasurements.h"
 
 class RollPitchChartGui : public wxFrame
 {
 public:
 	void setup(wxNotebook* m_notebook/*, MyWindow* window*/);
-	void updateChart(PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer, const double rollVal, const double pitchVal,
+	void updateChart(const MeasurementsController& rawMeasurement, PlotElementsBuffer& rollBasedonAccBuffer, PlotElementsBuffer& pitchBasedonAccBuffer,
+		PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer, const double rollVal, const double pitchVal,
 		const double timeMs);
 
 private:

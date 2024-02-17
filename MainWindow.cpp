@@ -387,7 +387,7 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 const double filteredYAngleVel = kalmanFilterAzimuth.vecX()[4];
                 const double filteredZAngleVel = kalmanFilterAzimuth.vecX()[5];
 
-                rollPitchChartGui.updateChart(rollBuffer, pitchBuffer, roll, pitch, totalTimeMs);
+                rollPitchChartGui.updateChart(rawMeasurement, rollBasedOnAccBuffer, pitchBasedOnAccBuffer, rollBuffer, pitchBuffer, roll, pitch, totalTimeMs);
 
                 const double xAccGyroCompensation = (rawMeasurement.getXaccMPerS2() * cos(roll)) - (rawMeasurement.getZaccMPerS2() * sin(pitch));
                 const double yAccGyroCompensation = (rawMeasurement.getYaccMPerS2() * cos(pitch)) + (rawMeasurement.getZaccMPerS2() * sin(roll));
@@ -555,6 +555,8 @@ void MyWindow::resetChartsAfterCallibration()
 
     rollBuffer.Clear();
     pitchBuffer.Clear();
+    rollBasedOnAccBuffer.Clear();
+    pitchBasedOnAccBuffer.Clear();
 
     rawPositionBuffer.Clear();
     filteredPositionBuffer.Clear();

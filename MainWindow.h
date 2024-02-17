@@ -388,6 +388,9 @@ private:
     PlotElementsBuffer rollBuffer;
     PlotElementsBuffer pitchBuffer;
 
+    PlotElementsBuffer rollBasedOnAccBuffer;
+    PlotElementsBuffer pitchBasedOnAccBuffer;
+
     double roll{ 0.0 };
     double pitch{ 0.0 };
     

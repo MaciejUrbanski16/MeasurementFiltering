@@ -84,7 +84,9 @@ void RollPitchChartGui::setup(wxNotebook* m_notebook)
 	m_notebook->AddPage(panel, "Roll/pitch");
 }
 
-void RollPitchChartGui::updateChart(PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer,
+void RollPitchChartGui::updateChart(const MeasurementsController& rawMeasurement,
+	PlotElementsBuffer& rollBasedOnAccBuffer, PlotElementsBuffer& pitchBasedOnAccBuffer,
+	PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer,
 	const double rollVal, const double pitchVal, const double timeMs)
 {
 	rollValue->SetLabel(std::to_string(rollVal));
@@ -95,13 +97,20 @@ void RollPitchChartGui::updateChart(PlotElementsBuffer& rollBuffer, PlotElements
 	rollBuffer.AddElement(wxRealPoint(timeMs, rollVal));
 	pitchBuffer.AddElement(wxRealPoint(timeMs, pitchVal));
 
+	rollBasedOnAccBuffer.AddElement(wxRealPoint(timeMs, rawMeasurement.getRollFromAcc()));
+	pitchBasedOnAccBuffer.AddElement(wxRealPoint(timeMs, rawMeasurement.getPitchFromAcc()));
+
 	XYPlot* plot = new XYPlot();
 	XYSimpleDataset* dataset = new XYSimpleDataset();
 
 	dataset->AddSerie(new XYSerie(rollBuffer.getBuffer()));
 	dataset->AddSerie(new XYSerie(pitchBuffer.getBuffer()));
+	dataset->AddSerie(new XYSerie(rollBasedOnAccBuffer.getBuffer()));
+	dataset->AddSerie(new XYSerie(pitchBasedOnAccBuffer.getBuffer()));
 	dataset->GetSerie(0)->SetName("roll");
 	dataset->GetSerie(1)->SetName("pitch");
+	dataset->GetSerie(2)->SetName("roll based on acc");
+	dataset->GetSerie(3)->SetName("pitch based on acc");
 
 	dataset->SetRenderer(new XYLineRenderer());
 	NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
