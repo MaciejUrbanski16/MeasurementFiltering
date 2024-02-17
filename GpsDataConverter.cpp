@@ -5,17 +5,17 @@ void GpsDataConverter::handleGpsData(const std::vector<std::string>& measurement
 	if (measurements.size() == 4)
 	{
 					//latitude					  //longitude					//velocity					//satellites	
-		if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) && isNumber(measurements[3]))
+		if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) /* && isNumber(measurements[3])*/)
 		{
 			latitude = std::stod(measurements[0]);
 			longitude = std::stod(measurements[1]);
 			velocityKmph = std::stod(measurements[2]);
-			satellites = std::stoi(measurements[3]);
+			//satellites = std::stoi(measurements[3]);
 		}
 	}
 	else
 	{
-		//
+		//00
 	}
 }
 

@@ -57,6 +57,15 @@ public:
         return isCallibrationDone;
     }
 
+    bool getIsRestartFiltrationNeeded() const
+    {
+        return isRestartFiltrationNeeded;
+    }
+    void setIsRestartFiltrationNeeded(bool value)
+    {
+        isRestartFiltrationNeeded = value;
+    }
+
     bool getIsFiltrationRestarted() const
     {
         return isFiltrationRestarted;
@@ -135,6 +144,7 @@ private:
     MovementModel movementModel{ MovementModel::NONE };
     MovementModel previousMovementModel{ MovementModel::PEDESTRIAN };
     bool isCallibrationDone = false;
+    bool isRestartFiltrationNeeded = false;
     bool isFiltrationRestarted{ false };
 
 

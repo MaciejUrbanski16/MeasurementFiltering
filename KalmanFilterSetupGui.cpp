@@ -933,10 +933,16 @@ void KalmanFilterSetupGui::initCarModelMatrices()
 void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
 {
     restartFiltrationAfterCallibrationButton->Enable(true);
+    if (isCallibrationDone)
+    {
+        wxMessageBox(wxT("Filtracja danych w toku - nie mozna zmienic wybranego modelu ruchu"));
+        return;
+    }
 
     if (pedestrianModelButton->GetValue())
     {
         isCallibrationDone = true;
+        isRestartFiltrationNeeded = true;
         movementModel = MovementModel::PEDESTRIAN;
 
         handleKfMatricesForPedestrian();
@@ -947,6 +953,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     else if (rcCarModelButton->GetValue())
     {
         isCallibrationDone = true;
+        isRestartFiltrationNeeded = true;
         movementModel = MovementModel::RC_CAR;
 
         handleKfMatricesForRcCar();
@@ -957,6 +964,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     else if (carModelButton->GetValue())
     {
         isCallibrationDone = true;
+        isRestartFiltrationNeeded = true;
         movementModel = MovementModel::CAR;
 
         handleKfMatricesForCar();

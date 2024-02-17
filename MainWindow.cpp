@@ -52,7 +52,7 @@ wxThread::ExitCode GpsDataReceptionThread::Entry()
     //event->SetString("Data from thread");
     //wxQueueEvent(m_parent, event);
 
-    SerialComm serialComm(io, com, m_parent);
+    //SerialComm serialComm(io, com, m_parent);
     //Server server(io, 8081, appLogger, m_parent);
     io.run();
 
@@ -352,21 +352,21 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 }
                 measurementCounter++;
 
-                if (kalmanFilterSetupGui.getIsFiltrationRestarted())
-                {
-                    kalmanFilterSetupGui.setIsFiltrationRestarted(false);
-                    //isFirstMeasurement = true;
-                    resetChartsAfterCallibration();
-                    totalTimeMs = 0;
+                //if (kalmanFilterSetupGui.getIsFiltrationRestarted())
+                //{
+                //    kalmanFilterSetupGui.setIsFiltrationRestarted(false);
+                //    //isFirstMeasurement = true;
+                //    resetChartsAfterCallibration();
+                //    totalTimeMs = 0;
 
-                    kalmanFilter.vecX().setZero();
-                    kalmanFilter.matP().setZero();
-                    kalmanFilterAzimuth.vecX().setZero();
-                    kalmanFilterAzimuth.matP().setZero();
-                    kalmanFilterGyro.vecX().setZero();
-                    kalmanFilterGyro.matP().setZero();
-                    
-                }
+                //    kalmanFilter.vecX().setZero();
+                //    kalmanFilter.matP().setZero();
+                //    kalmanFilterAzimuth.vecX().setZero();
+                //    kalmanFilterAzimuth.matP().setZero();
+                //    kalmanFilterGyro.vecX().setZero();
+                //    kalmanFilterGyro.matP().setZero();
+                //    
+                //}
 
                 kalmanFilterAzimuth.setInitialStateForAzimuth(rawMeasurement.getAzimuth());
                 experimentKfAzimuth(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
@@ -432,6 +432,11 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 const auto calculatedPosition{ positionUpdater.getCurrentPosition() };
 
                 updateFilteredPositionChart(filteredPositionX, filteredPositionY, calculatedPosition, totalTimeMs);
+
+                const double lon{ gpsDataConverter.getLongitude() };
+                const double lat{ gpsDataConverter.getLatitude() };
+                const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
+                updateGpsBasedPositionChart(gpsBasedPosition);
             }
 
 
@@ -471,6 +476,14 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
 
 void MyWindow::OnFilterFileMeasTimer(wxTimerEvent& event)
 {
+    //po wcisnieciu przycisku "Zatwirdz kalibracje - rozpocznij filtracje" wczytywanie danych z plikow od poczatku
+    //reset wykresów, czasu...
+    if (kalmanFilterSetupGui.getIsCallibrationDone() == true && kalmanFilterSetupGui.getIsRestartFiltrationNeeded() == true)
+    {
+        csvMeasurementReader.setReadMeasurementFromBegining();
+        csvMeasurementReader.setReadGpsDataFromBegining();
+        kalmanFilterSetupGui.setIsRestartFiltrationNeeded(false);
+    }
     const std::vector<std::string>& measurements = csvMeasurementReader.readCSVrow();
     const std::vector<std::string>& gpsData = csvMeasurementReader.readCSVrowGpsData();
 
@@ -586,16 +599,16 @@ void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, 
     dataset->AddSerie(new XYSerie(compensatedXAccDataBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(compensatedYAccDataBuffer.getBuffer()));
 
-    dataset->AddSerie(new XYSerie(xAccWithGyroCompensation.getBuffer()));
-    dataset->AddSerie(new XYSerie(yAccWithGyroCompensation.getBuffer()));
+    //dataset->AddSerie(new XYSerie(xAccWithGyroCompensation.getBuffer()));
+    //dataset->AddSerie(new XYSerie(yAccWithGyroCompensation.getBuffer()));
 
     dataset->GetSerie(0)->SetName("raw X acceleration");
     dataset->GetSerie(1)->SetName("raw Y acceleration");
     dataset->GetSerie(2)->SetName("compensated X acceleration");
     dataset->GetSerie(3)->SetName("compensated Y acceleration");
 
-    dataset->GetSerie(4)->SetName("gyro compensated X");
-    dataset->GetSerie(5)->SetName("gyro compensated Y");
+    //dataset->GetSerie(4)->SetName("gyro compensated X");
+    //dataset->GetSerie(5)->SetName("gyro compensated Y");
 
     //dataset->GetSerie(2)->SetName("filtered X acceleration");
     //dataset->GetSerie(3)->SetName("filtered Y acceleration");

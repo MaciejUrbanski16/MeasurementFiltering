@@ -16,30 +16,6 @@ public:
 	{
 		outputFile.open(filePath, std::ios::app);
 		kalmanOutputFile.open(kalmanFilePath, std::ios::app);
-		auto timeAsString = measurementsCsvPath;// +getCurrentTimeWithSeconds() + ".txt";
-		
-		timeAsString += getCurrentTimeWithSeconds();
-		timeAsString += ".txt";
-		measurementsCsv.open(timeAsString, std::ios::app);
-
-		std::stringstream ssToCsv;
-		ssToCsv << "Current time" << ',' << "X acceleration" << ',' << "Y acceleration" << ',' << "Z acceleration" << ','
-			<< "X angle velocity" << ',' << "Y angle velocity" << ',' << "Z angle velocity" << ','
-			<< "X raw magnetometer" << ',' << "Y raw magnetometer" << ','
-			<< "X accel m/s2" << ',' << "Y accel m/s2" << ',' << "Z accel m/s2" << ','
-			<< "X velocity" << ',' << "Y velocity" << ',' << "X distance" << ',' << "Y distance" << ','
-			<< "Orientation degree" << ',' << "Longitude" << ',' << "Latitude" << ',' << "Delta time ms" << '\n';
-		measurementsCsv << ssToCsv.str();
-
-		auto gpsPathName = gpsCsvPath;
-		gpsPathName += getCurrentTimeWithSeconds();
-		gpsPathName += ".txt";
-		gpsCsv.open(gpsPathName, std::ios::app);
-
-		std::stringstream ssToGpsCsv;
-		ssToGpsCsv << "Current time" << ',' << "Latitude" << ',' << "Longitude" << ',' << "Velocity" << ','
-			<< "Satellites" << '\n';
-		gpsCsv << ssToGpsCsv.str();
 	}
 
 	~AppLogger()
@@ -86,6 +62,19 @@ public:
 	}
 	void logGpsCsvData(const std::vector<std::string>& measurements)
 	{
+		if (!gpsCsv.is_open())
+		{
+			auto gpsPathName = gpsCsvPath;
+			gpsPathName += getCurrentTimeWithSeconds();
+			gpsPathName += ".txt";
+			gpsCsv.open(gpsPathName, std::ios::app);
+
+			std::stringstream ssToGpsCsv;
+			ssToGpsCsv << "Current time" << ',' << "Latitude" << ',' << "Longitude" << ',' << "Velocity" << ','
+				<< "Satellites" << '\n';
+			gpsCsv << ssToGpsCsv.str();
+		}
+
 		std::stringstream ssToCsv;
 		auto currentTime = getCurrentTimeWithMilliSeconds();
 		ssToCsv << currentTime;
@@ -127,6 +116,23 @@ public:
 		const double xVelocity, const double yVelocity, const double xDistance, const double yDistance, const double orientationDegree,
 		const double longitude, const double latitude, const uint32_t deltaTimeMs)
 	{
+		if (!measurementsCsv.is_open())
+		{
+			auto timeAsString = measurementsCsvPath;// +getCurrentTimeWithSeconds() + ".txt";
+			timeAsString += getCurrentTimeWithSeconds();
+			timeAsString += ".txt";
+			measurementsCsv.open(timeAsString, std::ios::app);
+
+			std::stringstream ssToCsv;
+			ssToCsv << "Current time" << ',' << "X acceleration" << ',' << "Y acceleration" << ',' << "Z acceleration" << ','
+				<< "X angle velocity" << ',' << "Y angle velocity" << ',' << "Z angle velocity" << ','
+				<< "X raw magnetometer" << ',' << "Y raw magnetometer" << ','
+				<< "X accel m/s2" << ',' << "Y accel m/s2" << ',' << "Z accel m/s2" << ','
+				<< "X velocity" << ',' << "Y velocity" << ',' << "X distance" << ',' << "Y distance" << ','
+				<< "Orientation degree" << ',' << "Longitude" << ',' << "Latitude" << ',' << "Delta time ms" << '\n';
+			measurementsCsv << ssToCsv.str();
+		}
+
 		std::stringstream ssToCsv;
 		auto currentTime = getCurrentTimeWithMilliSeconds();
 		ssToCsv << currentTime << ',' << xAcc << ',' << yAcc << ',' << zAcc << ','

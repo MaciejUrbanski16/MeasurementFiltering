@@ -14,10 +14,13 @@ public:
 
 	std::vector<std::string> readCSVrow(char delimiter = ',');
 	std::vector<std::string> readCSVrowGpsData(char delimiter = ',');
+
+	void setReadMeasurementFromBegining();
+	void setReadGpsDataFromBegining();
 	~CsvMeasurementReader();
 
 private:
-	std::ifstream file;
+	std::ifstream fileMeasurementsData;
 	std::vector<std::string> headers;
 	std::ifstream fileGpsData;
 	std::vector<std::string> headersGpsData;

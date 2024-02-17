@@ -418,6 +418,8 @@ private:
     wxStaticText* deltaTimeValue = nullptr;
     wxStaticText* totalTimeValue = nullptr;
 
+    bool isRestartFiltrationNeeded{ false };
+
     double rawGrawity{ 16100.0 };
     double xBias{ 15500.0 };
     double yBias{ 675.0 };

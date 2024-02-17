@@ -3,14 +3,14 @@
 
 bool CsvMeasurementReader::openFile(const std::string filePath)
 {
-    file.open(filePath);
-    if (!file.is_open())
+    fileMeasurementsData.open(filePath);
+    if (!fileMeasurementsData.is_open())
     {
         return false;
     }
 
     std::string line;
-    if (std::getline(file, line))
+    if (std::getline(fileMeasurementsData, line))
     {
         std::stringstream ss(line);
         std::string header;
@@ -47,9 +47,9 @@ bool CsvMeasurementReader::openFileWithGpsData(const std::string filePath)
 
 CsvMeasurementReader::~CsvMeasurementReader()
 {
-    if (file.is_open())
+    if (fileMeasurementsData.is_open())
     {
-        file.close();
+        fileMeasurementsData.close();
     }
     if (fileGpsData.is_open())
     {
@@ -62,12 +62,12 @@ std::vector<std::string> CsvMeasurementReader::readCSVrow(char delimiter)
     std::vector<std::string> row;
     std::string line;
     
-    if (!file.is_open()) 
+    if (!fileMeasurementsData.is_open())
     {
         return row;
     }
     
-    if (std::getline(file, line))
+    if (std::getline(fileMeasurementsData, line))
     { 
         std::stringstream ss(line);
         std::string cell;
@@ -117,4 +117,16 @@ std::vector<std::string> CsvMeasurementReader::readCSVrowGpsData(char delimiter)
         }
     }
     return row;
+}
+
+void CsvMeasurementReader::setReadMeasurementFromBegining()
+{
+    fileMeasurementsData.clear();
+    fileMeasurementsData.seekg(0, std::ios::beg);
+}
+
+void CsvMeasurementReader::setReadGpsDataFromBegining()
+{
+    fileGpsData.clear();
+    fileGpsData.seekg(0, std::ios::beg);
 }

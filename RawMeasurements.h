@@ -113,7 +113,7 @@ public:
 	double getXangleVelocityDegreePerS() const { return xAngleVelocityDegPerS; }
 	double getYangleVelocityDegreePerS() const { return yAngleVelocityDegPerS; }
 	double getZangleVelocityDegreePerS() const { return zAngleVelocityDegPerS; }
-	double getAzimuth() const { return orientationDegree - 38; } //???
+	double getAzimuth() const { return orientationDegree; } //???
 	int16_t getRawXMagn() const { return xMagn; }
 	int16_t getRawYMagn() const { return yMagn; }
 	double getLongitude() const { return longitude; }
@@ -124,6 +124,16 @@ public:
 
 	double getXDistance() const { return xDistance; }
 	double getYDistance() const { return yDistance; }
+
+	double getRollFromAcc() const
+	{
+		return atan2(static_cast<float>(yAcc), static_cast<float>(zAcc)) * (180.0 / M_PI);
+	}
+	double getPitchFromAcc() const
+	{
+		return atan2((static_cast<float>( -xAcc)), 
+			sqrt(static_cast<float>(yAcc) * static_cast<float>(yAcc) + static_cast<float>(zAcc) * static_cast<float>(zAcc))) * (180.0 / M_PI);
+	}
 
 
 
