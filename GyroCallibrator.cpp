@@ -36,7 +36,7 @@ void GyroCallibrator::collectDataForCallibration(MeasurementsController& rawMeas
 
 	if (counterOfSamples == numberOfSamplesToMonitor)
 	{
-		//tollernace 1.5 1.5 4
+		//tollerance 1.5 1.5 4
 		const double diffInRoll = maxRoll - minRoll;
 		const double diffInPitch = maxPitch - minPitch;
 		const double diffInYaw = maxYaw - minYaw;
@@ -78,9 +78,6 @@ void GyroCallibrator::resetMonitoring()
 	sumXgyro = 0.0;
 	sumYgyro = 0.0;
 	sumZgyro = 0.0;
-	//meanXgyroValue = 0.0;
-	//meanYgyroValue = 0.0;
-	//meanZgyroValue = 0.0;
 
 	counterOfSamples = 0;
 }

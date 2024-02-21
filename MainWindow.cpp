@@ -406,25 +406,29 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 const auto yawFromMagn = rawMeasurement.getAzimuth();
                 gyroCallibrator.collectDataForCallibration(rawMeasurement, rollFromAcc, pitchFromAcc, yawFromMagn);
 
-                kalmanFilterAzimuth.setInitialStateForAzimuth(rawMeasurement.getAzimuth());
-                experimentKfAzimuth(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
+                kalmanFilters.makeAzimuthFitration(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
                     rawMeasurement.getZangleVelocityDegreePerS(), rawMeasurement.getAzimuth(), deltaTimeMs);
+                
+                //experimentKfAzimuth(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
+                //    rawMeasurement.getZangleVelocityDegreePerS(), rawMeasurement.getAzimuth(), deltaTimeMs);
                 positionChartGui.updateChart(rawPositionBuffer, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
                 //roll (X)
-                const double filteredAzimuth = kalmanFilterAzimuth.vecX()[0];
+                const double filteredAzimuth = kalmanFilters.getFilterForAzimuth().vecX()[0];
                 //roll += rawMeasurement.getXangleVelocityDegreePerS() * (deltaTimeMs / 1000.0);
                 //pitch += rawMeasurement.getYangleVelocityDegreePerS() * (deltaTimeMs / 1000.0);
 
-                experimentGyroKf(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(), rawMeasurement.getZangleVelocityDegreePerS()
-                    , deltaTimeMs);
+                kalmanFilters.makeGyroFiltration(rawMeasurement.getXangleVelocityDegreePerS(),
+                    rawMeasurement.getYangleVelocityDegreePerS(),
+                    rawMeasurement.getZangleVelocityDegreePerS(),
+                    deltaTimeMs);
 
-                roll += kalmanFilterGyro.vecX()[1];
-                pitch += kalmanFilterGyro.vecX()[3];
-                yaw += kalmanFilterGyro.vecX()[5];
+                roll += kalmanFilters.getFilterForGyro().vecX()[1];
+                pitch += kalmanFilters.getFilterForGyro().vecX()[3];
+                yaw += kalmanFilters.getFilterForGyro().vecX()[5];
 
-                const double filteredXAngleVel = kalmanFilterAzimuth.vecX()[3];
-                const double filteredYAngleVel = kalmanFilterAzimuth.vecX()[4];
-                const double filteredZAngleVel = kalmanFilterAzimuth.vecX()[5];
+                //const double filteredXAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[3];
+                //const double filteredYAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[4];
+                const double filteredZAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[5];
 
                 rollPitchChartGui.updateChart(rawMeasurement, 
                     rollBasedOnAccBuffer, pitchBasedOnAccBuffer, magnPointsBuffer,
@@ -438,7 +442,7 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
 
                 magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
                     rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
-                //updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
+                
 
                 angleVelocityChartGui.updateChart(xAngleVelocityBuffer, yAngleVelocityBuffer, zAngleVelocityBuffer, filteredZangleVelocityBuffer,
                     rawMeasurement.getXangleVelocityDegreePerS(),
@@ -446,22 +450,17 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                     rawMeasurement.getZangleVelocityDegreePerS(), filteredZAngleVel, totalTimeMs);
                 //roll pitch
 
-                
-                kalmanFilter.setInitialState(rawMeasurement.getXDistance(), rawMeasurement.getXvelocityMperS(), rawMeasurement.getCompensatedAccData().xAcc,
-                    rawMeasurement.getYDistance(), rawMeasurement.getYvelocityMperS(), rawMeasurement.getCompensatedAccData().yAcc);
-
-                experimentKf(rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
+                kalmanFilters.makePositionFiltration(rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
 
                 const TransformedAccel transformedAccel = accelTransform.transform(rawMeasurement);
-
 
                 positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
                     filteredAzimuth);
 
-                filteredPositionX = kalmanFilter.vecX()(0);//PosX
-                filteredPositionY = kalmanFilter.vecX()(3);//PosY
-                const double filteredXacc = kalmanFilter.vecX()(2); //xAcc
-                const double filteredYacc = kalmanFilter.vecX()(5); //yAcc
+                filteredPositionX = kalmanFilters.getFilterForPosition().vecX()(0);//PosX
+                filteredPositionY = kalmanFilters.getFilterForPosition().vecX()(3);//PosY
+                const double filteredXacc = kalmanFilters.getFilterForPosition().vecX()(2); //xAcc
+                const double filteredYacc = kalmanFilters.getFilterForPosition().vecX()(5); //yAcc
                 //const double filteredVelocityX = kalmanFilter.vecX()(1);
                 //const double filteredAccX = kalmanFilter.vecX()(1);
                 

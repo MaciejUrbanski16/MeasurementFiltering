@@ -51,6 +51,7 @@
 #include "RollPitchChartGui.h"
 #include "AccelTransform.h"
 #include "GyroCallibrator.h"
+#include "KalmanFilters.h"
 
 #include "kalman_filter/kalman_filter.h"
 
@@ -140,112 +141,6 @@ private:
 
     void OnApplyKFTunning(wxCommandEvent& event);
 
-    void experimentKf(const double Xacc, const double Yacc, uint32_t deltaTimeUint)
-    {
-        kf::Matrix<DIM_X, DIM_X> A;
-
-        double deltaTimeMs = static_cast<double>(deltaTimeUint) / 1000.0;
-        A << 1.0F, deltaTimeMs, (deltaTimeMs * deltaTimeMs) / 2, 0.0F, 0.0F, 0.0F,
-            0.0F, 1.0F, deltaTimeMs, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 1.0F, deltaTimeMs, (deltaTimeMs * deltaTimeMs) / 2,
-            0.0F, 0.0F, 0.0F, 0.0F, 1.0F, deltaTimeMs,
-            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
-
-        const auto matRFromGui{ kalmanFilterSetupGui.getMatRacc() };
-        const auto matQFromGui{ kalmanFilterSetupGui.getMatQacc() };
-
-        kalmanFilter.predictLKF(A, matQFromGui.value());
-        appLogger.logKalmanFilterPredictionStep(kalmanFilter);
-
-
-        kf::Vector<DIM_Z> vecZ;
-        vecZ << Xacc, Yacc;
-
-        kalmanFilter.correctLKF(vecZ, matRFromGui.value(), matH);
-
-        appLogger.logKalmanFilterCorrectionStep(kalmanFilter);
-    }
-
-    void experimentKfAzimuth(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, const double azimuthFromMagn, const uint32_t deltaTime)
-    {
-        double deltaTimeMs = static_cast<double>(deltaTime) / 1000.0;
-
-        kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> A;
-        A << 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F, 0.0F,
-            0.0F, 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F,
-            0.0F, 0.0F, 1.0F,  0.0F, 0.0F, deltaTimeMs,
-            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
-
-        const auto matRAzzFromGui{ kalmanFilterSetupGui.getMatRazimuth() };
-        const auto matQAzzFromGui{ kalmanFilterSetupGui.getMatQazimuth() };
-
-        kalmanFilterAzimuth.predictLKF(A, matQAzzFromGui.value());
-
-        kf::Vector<DIM_Z_azimuth> vecZ;
-        vecZ <<  xAngleVelocityDegPerSec, zAngleVelocityDegPerSec, azimuthFromMagn;
-
-        kf::Matrix<DIM_Z_azimuth, DIM_X_azimuth> matH;
-        matH << 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0,
-                1, 0, 0, 0, 0, 0;
-
-        kalmanFilterAzimuth.correctLKF(vecZ, matRAzzFromGui.value(), matH);
-    }
-
-    void experimentGyroKf(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, uint32_t deltaTimeMs)
-    {
-        double deltaTimeSec = static_cast<double>(deltaTimeMs) / 1000.0F;
-
-        kf::Matrix<DIM_X_gyro, DIM_X_gyro> A;
-        A << 1.0F, deltaTimeSec, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 1.0F, deltaTimeSec, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 0.0F, 1.0F, deltaTimeSec,
-            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
-
-        double sigma_theta_x_sq = 1;  // Wariancja b³êdu k¹ta w osi x
-        double sigma_theta_dot_x_sq = 10;  // Wariancja b³êdu prêdkoœci k¹towej w osi x
-        double sigma_theta_y_sq = 1;  // Wariancja b³êdu k¹ta w osi y
-        double sigma_theta_dot_y_sq = 10;  // Wariancja b³êdu prêdkoœci k¹towej w osi y
-        double sigma_theta_z_sq = 1;  // Wariancja b³êdu k¹ta w osi z
-        double sigma_theta_dot_z_sq = 10;
-
-        kf::Matrix<DIM_X_gyro, DIM_X_gyro> Q;
-
-        double process_variance = 0.02F;
-        deltaTimeMs = deltaTimeMs / 100.0F;
-        Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
-            pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
-            pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
-            0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
-            0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
-            0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
-
-        //double process_variance = 0.01;
-        Q *= process_variance;
-
-        kalmanFilterGyro.predictLKF(A, Q);
-
-        kf::Vector<DIM_Z_gyro> vecZ;
-
-        vecZ << xAngleVelocityDegPerSec, yAngleVelocityDegPerSec, zAngleVelocityDegPerSec;
-
-        kf::Matrix<DIM_Z_gyro, DIM_Z_gyro> matR;
-        matR << 0.1F, 0, 0,
-                0, 0.1F, 0,
-                0, 0, 0.1F;
-        kf::Matrix<DIM_Z_gyro, DIM_X_gyro> matH;
-        matH << 1, 0, 0, 0, 0, 0,
-                0, 0, 1, 0, 0, 0,
-                0, 0, 0, 0, 1, 0;
-
-        kalmanFilterGyro.correctLKF(vecZ, matR, matH);
-    }
-
     void processFiltration(const std::vector<std::string>& measurements, const bool isRealTimeMeasurement);
 
     void OnSensorsDataThreadEvent(wxThreadEvent& event);
@@ -293,28 +188,13 @@ private:
     AngleVelocityChartGui angleVelocityChartGui;
     RollPitchChartGui rollPitchChartGui;
 
-
-
-    static constexpr size_t DIM_X{ 6 };
-    static constexpr size_t DIM_Z{ 2 };
     kf::Matrix<DIM_X, DIM_X> matQ;
     kf::Matrix<DIM_Z, DIM_Z> matR;
     kf::Matrix<DIM_Z, DIM_X> matH;
 
     bool isDataReceptionStarted{ false };
     wxVector <wxRealPoint> magnPoints;
-
-
-    kf::KalmanFilter<DIM_X, DIM_Z> kalmanFilter;
-
-    static constexpr size_t DIM_X_gyro{ 6 };
-    static constexpr size_t DIM_Z_gyro{ 3 };
-    kf::KalmanFilter<DIM_X_gyro, DIM_Z_gyro> kalmanFilterGyro;
-
-    static constexpr size_t DIM_X_azimuth{ 6 };
-    static constexpr size_t DIM_Z_azimuth{ 3 };
-    kf::KalmanFilter<DIM_X_azimuth, DIM_Z_azimuth> kalmanFilterAzimuth;
-
+    KalmanFilters kalmanFilters{kalmanFilterSetupGui};
 
     bool isFirstMeasurement{ true };
 
@@ -466,7 +346,6 @@ private:
 
     uint32_t measurementCounter{ 0 };
 
-   
     void prepareGui();
     void prepareAccChart();
     void prepareVelChart();
