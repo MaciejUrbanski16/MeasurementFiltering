@@ -28,7 +28,9 @@
 
 #include "SensorDataReceptionThread.h"
 #include "GpsDataReceptionThread.h"
+#include "SensorDataComReceptionThread.h"
 #include "SerialComm.h"
+#include "SerialComSensorDataReceiver.h"
 #include "WifiDataReceiver.h"
 //#include "KalmanFilter.h"
 #include "AppLogger.h"
@@ -47,6 +49,8 @@
 #include "MagnChartGui.h"
 #include "AngleVelocityChartGui.h"
 #include "RollPitchChartGui.h"
+#include "AccelTransform.h"
+#include "GyroCallibrator.h"
 
 #include "kalman_filter/kalman_filter.h"
 
@@ -165,7 +169,7 @@ private:
 
     void experimentKfAzimuth(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, const double zAngleVelocityDegPerSec, const double azimuthFromMagn, const uint32_t deltaTime)
     {
-        double deltaTimeMs = static_cast<double>(deltaTime) / 1000;
+        double deltaTimeMs = static_cast<double>(deltaTime) / 1000.0;
 
         kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> A;
         A << 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F, 0.0F,
@@ -213,7 +217,7 @@ private:
         kf::Matrix<DIM_X_gyro, DIM_X_gyro> Q;
 
         double process_variance = 0.02F;
-        deltaTimeMs = deltaTimeMs / 1000.0F;
+        deltaTimeMs = deltaTimeMs / 100.0F;
         Q << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
             pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
             pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
@@ -231,9 +235,9 @@ private:
         vecZ << xAngleVelocityDegPerSec, yAngleVelocityDegPerSec, zAngleVelocityDegPerSec;
 
         kf::Matrix<DIM_Z_gyro, DIM_Z_gyro> matR;
-        matR << 0.01F, 0, 0,
-                0, 0.01F, 0,
-                0, 0, 0.01F;
+        matR << 0.1F, 0, 0,
+                0, 0.1F, 0,
+                0, 0, 0.1F;
         kf::Matrix<DIM_Z_gyro, DIM_X_gyro> matH;
         matH << 1, 0, 0, 0, 0, 0,
                 0, 0, 1, 0, 0, 0,
@@ -246,12 +250,13 @@ private:
 
     void OnSensorsDataThreadEvent(wxThreadEvent& event);
     void OnGpsDataThreadEvent(wxThreadEvent& event);
+    void OnSensorDataComThreadEvent(wxThreadEvent& event);
 
     void OnFilterFileMeasTimer(wxTimerEvent& event);
 
 
     void resetChartsAfterCallibration();
-    void updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
+    void updateAccChart(const TransformedAccel& transformedAccel, const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
         const CompensatedAccData& compensatedAccData,
         const double filteredXacc, const double filteredYacc, const double xAccGyroCompens, const double yAccGyroCompens,
         const double timeMs, const uint32_t deltaTime);
@@ -272,7 +277,9 @@ private:
     double longitude{ 52.3244 };
     double latitude{ 19.3243 };
 
+    AccelTransform accelTransform{};
     PositionUpdater positionUpdater{};
+    GyroCallibrator gyroCallibrator{};
 
     double filteredPositionX{ 0.0 };
     double filteredPositionY{ 0.0 };
@@ -371,6 +378,10 @@ private:
     PlotElementsBuffer xAccBuffer;
     PlotElementsBuffer yAccBuffer;
     PlotElementsBuffer zAccBuffer;
+    PlotElementsBuffer xAccGravityCompensationBuffer;
+    PlotElementsBuffer yAccGravityCompensationBuffer;
+    PlotElementsBuffer zAccGravityCompensationBuffer;
+
     PlotElementsBuffer compensatedXAccDataBuffer;
     PlotElementsBuffer compensatedYAccDataBuffer;
     PlotElementsBuffer filteredXaccBuffer;
@@ -387,12 +398,14 @@ private:
 
     PlotElementsBuffer rollBuffer;
     PlotElementsBuffer pitchBuffer;
+    PlotElementsBuffer yawBuffer;
 
     PlotElementsBuffer rollBasedOnAccBuffer;
     PlotElementsBuffer pitchBasedOnAccBuffer;
 
     double roll{ 0.0 };
     double pitch{ 0.0 };
+    double yaw{ 0.0 };
     
 
     wxVector <wxRealPoint> filteredXangleVelocity;
@@ -441,6 +454,7 @@ private:
 
     SensorDataReceptionThread* sensorDataReceptionThread = nullptr;
     GpsDataReceptionThread* gpsDataReceptionThread = nullptr;
+    SensorDataComReceptionThread* sensorDataComReceptionThread = nullptr;
 
     wxTimer filterFileMeasTimer;
     double xNewPoint = 0.0;
@@ -464,6 +478,7 @@ private:
 
     void createSensorDataReceptionThread();
     void createGpsDataReceptionThread();
+    void createSensorDataCOMReceptionThread();
 
     AppLogger appLogger;
 };

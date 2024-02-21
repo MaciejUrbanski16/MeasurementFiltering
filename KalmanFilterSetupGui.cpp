@@ -848,9 +848,9 @@ void KalmanFilterSetupGui::initPedestrianModelMatrices()
     matRAccPedestrian << 0.1F, 0.0F,
                          0.0F, 0.1F;
 
-    double processVarianceAcc = 0.0002F;
+    double processVarianceAcc = 200.0F;
     double sCoefficient = 10.0F;
-    sCoefficient = sCoefficient / 100.0F;
+    sCoefficient = sCoefficient / 1000.0F;
 
     matQAccPedestrian << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0, 0, 0,
         pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0, 0, 0,

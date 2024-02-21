@@ -25,8 +25,9 @@ class RollPitchChartGui : public wxFrame
 {
 public:
 	void setup(wxNotebook* m_notebook/*, MyWindow* window*/);
-	void updateChart(const MeasurementsController& rawMeasurement, PlotElementsBuffer& rollBasedonAccBuffer, PlotElementsBuffer& pitchBasedonAccBuffer,
-		PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer, const double rollVal, const double pitchVal,
+	void updateChart(const MeasurementsController& rawMeasurement, PlotElementsBuffer& rollBasedonAccBuffer, PlotElementsBuffer& pitchBasedonAccBuffer, PlotElementsBuffer& magnPointsBuffer,
+		PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer, PlotElementsBuffer& yawBuffer,
+		const double rollVal, const double pitchVal, const double yawVal,
 		const double timeMs);
 
 private:

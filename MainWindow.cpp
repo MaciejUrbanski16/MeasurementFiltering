@@ -64,6 +64,36 @@ wxThread::ExitCode GpsDataReceptionThread::Entry()
 
 ////////////////////////
 
+SensorDataComReceptionThread::SensorDataComReceptionThread(AppLogger& appLogger, wxEvtHandler* parent) : wxThread(), appLogger(appLogger), m_parent(parent)
+{
+    //this->appLogger = appLogger;
+    m_count = 0;
+}
+
+SensorDataComReceptionThread::~SensorDataComReceptionThread()
+{
+
+}
+
+wxThread::ExitCode SensorDataComReceptionThread::Entry()
+{
+    boost::asio::io_context io;
+    std::string com = "COM7";
+
+    //wxThreadEvent* event = new wxThreadEvent(wxEVT_MY_THREAD_EVENT);
+    //event->SetString("Data from thread");
+    //wxQueueEvent(m_parent, event);
+
+    SerialComSensorDataReceiver serialComm(io, com, m_parent);
+    //Server server(io, 8081, appLogger, m_parent);
+    io.run();
+
+    const std::string threadFinished{ "SensorDataComReceptionThread Thread finished successfully.\n" };
+    appLogger.logSerialCommStartThread(threadFinished);
+
+    return NULL;
+}
+
 
 MyWindow::MyWindow(const wxString& title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(1080, 600))
@@ -78,6 +108,7 @@ MyWindow::MyWindow(const wxString& title)
 
     createSensorDataReceptionThread();
     createGpsDataReceptionThread();
+    createSensorDataCOMReceptionThread();
 }
 
 void MyWindow::OnBaudRateChoice(wxCommandEvent& event) 
@@ -324,7 +355,10 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
                     rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), 1.0, totalTimeMs);
                 //updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), 1.0, totalTimeMs);
-                updateAccChart(rawMeasurement.getXaccMPerS2(),
+                TransformedAccel transformedAccel{ 0.0,0.0,0.0 };
+                updateAccChart(
+                    transformedAccel,
+                    rawMeasurement.getXaccMPerS2(),
                     rawMeasurement.getYaccMPerS2(),
                     rawMeasurement.getZaccMPerS2(),
                     rawMeasurement.getCompensatedAccData(),
@@ -367,6 +401,10 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 //    kalmanFilterGyro.matP().setZero();
                 //    
                 //}
+                const auto rollFromAcc = rawMeasurement.getRollFromAcc() * (180.0 / M_PI);
+                const auto pitchFromAcc = rawMeasurement.getPitchFromAcc() * (180.0 / M_PI);
+                const auto yawFromMagn = rawMeasurement.getAzimuth();
+                gyroCallibrator.collectDataForCallibration(rawMeasurement, rollFromAcc, pitchFromAcc, yawFromMagn);
 
                 kalmanFilterAzimuth.setInitialStateForAzimuth(rawMeasurement.getAzimuth());
                 experimentKfAzimuth(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
@@ -382,12 +420,16 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
 
                 roll += kalmanFilterGyro.vecX()[1];
                 pitch += kalmanFilterGyro.vecX()[3];
+                yaw += kalmanFilterGyro.vecX()[5];
 
                 const double filteredXAngleVel = kalmanFilterAzimuth.vecX()[3];
                 const double filteredYAngleVel = kalmanFilterAzimuth.vecX()[4];
                 const double filteredZAngleVel = kalmanFilterAzimuth.vecX()[5];
 
-                rollPitchChartGui.updateChart(rawMeasurement, rollBasedOnAccBuffer, pitchBasedOnAccBuffer, rollBuffer, pitchBuffer, roll, pitch, totalTimeMs);
+                rollPitchChartGui.updateChart(rawMeasurement, 
+                    rollBasedOnAccBuffer, pitchBasedOnAccBuffer, magnPointsBuffer,
+                    rollBuffer, pitchBuffer, yawBuffer,
+                    roll, pitch, yaw, totalTimeMs);
 
                 const double xAccGyroCompensation = (rawMeasurement.getXaccMPerS2() * cos(roll)) - (rawMeasurement.getZaccMPerS2() * sin(pitch));
                 const double yAccGyroCompensation = (rawMeasurement.getYaccMPerS2() * cos(pitch)) + (rawMeasurement.getZaccMPerS2() * sin(roll));
@@ -410,6 +452,8 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
 
                 experimentKf(rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
 
+                const TransformedAccel transformedAccel = accelTransform.transform(rawMeasurement);
+
 
                 positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
                     filteredAzimuth);
@@ -422,7 +466,9 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 //const double filteredAccX = kalmanFilter.vecX()(1);
                 
                 //const double filteredVelocityY = kalmanFilter.vecX()(3);
-                updateAccChart(rawMeasurement.getXaccMPerS2(),
+                updateAccChart(
+                    transformedAccel,
+                    rawMeasurement.getXaccMPerS2(),
                     rawMeasurement.getYaccMPerS2(),
                     rawMeasurement.getZaccMPerS2(),
                     rawMeasurement.getCompensatedAccData(),
@@ -533,6 +579,23 @@ void MyWindow::OnGpsDataThreadEvent(wxThreadEvent& event)
     }
 }
 
+void MyWindow::OnSensorDataComThreadEvent(wxThreadEvent& event)
+{
+    MeasurementCustomizator* myEvent = dynamic_cast<MeasurementCustomizator*>(&event);
+    if (myEvent)
+    {
+        const std::vector<std::string>& measurements = myEvent->GetStringVector();
+
+        appLogger.logReceivedDataOnMainThread(measurements);
+        processFiltration(measurements, true);
+    }
+    else
+    {
+        const std::string errThreadEvent{ "ERR when handling data from thread - no event received!!!" };
+        appLogger.logErrThreadDataHandling(errThreadEvent);
+    }
+}
+
 void MyWindow::resetChartsAfterCallibration()
 {
     magnPointsBuffer.Clear();
@@ -541,6 +604,10 @@ void MyWindow::resetChartsAfterCallibration()
     xAccBuffer.Clear();
     yAccBuffer.Clear();
     zAccBuffer.Clear();
+    xAccGravityCompensationBuffer.Clear();
+    yAccGravityCompensationBuffer.Clear();
+    zAccGravityCompensationBuffer.Clear();
+
     compensatedXAccDataBuffer.Clear();
     compensatedYAccDataBuffer.Clear();
     filteredXaccBuffer.Clear();
@@ -564,7 +631,7 @@ void MyWindow::resetChartsAfterCallibration()
     gpsBasedPositionBuffer.Clear();
 }
 
-void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
+void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
     const CompensatedAccData& compensatedAccData,
     const double filteredXacc, const double filteredYacc,
     const double xAccGyroCompens, const double yAccGyroCompens, const double timeMs, const uint32_t deltaTime)
@@ -579,6 +646,10 @@ void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, 
     xAccBuffer.AddElement(wxRealPoint(timeMs, xAccMPerS2));
     yAccBuffer.AddElement(wxRealPoint(timeMs, yAccMPerS2));
     zAccBuffer.AddElement(wxRealPoint(timeMs, zAccMPerS2));
+
+    xAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.xAcc));
+    yAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.yAcc));
+    zAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.zAcc));
 
 
     filteredXaccBuffer.AddElement(wxRealPoint(timeMs, filteredXacc));
@@ -596,18 +667,23 @@ void MyWindow::updateAccChart(const double xAccMPerS2, const double yAccMPerS2, 
     dataset->AddSerie(new XYSerie(yAccBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(zAccBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(filteredXaccBuffer.getBuffer()));
-    //dataset->AddSerie(new XYSerie(filteredYaccBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(filteredYaccBuffer.getBuffer()));
 
-    dataset->AddSerie(new XYSerie(compensatedXAccDataBuffer.getBuffer()));
-    dataset->AddSerie(new XYSerie(compensatedYAccDataBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(xAccGravityCompensationBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(yAccGravityCompensationBuffer.getBuffer()));
+    //dataset->AddSerie(new XYSerie(zAccGravityCompensationBuffer.getBuffer()));
 
     //dataset->AddSerie(new XYSerie(xAccWithGyroCompensation.getBuffer()));
     //dataset->AddSerie(new XYSerie(yAccWithGyroCompensation.getBuffer()));
 
     dataset->GetSerie(0)->SetName("raw X acceleration");
     dataset->GetSerie(1)->SetName("raw Y acceleration");
-    dataset->GetSerie(2)->SetName("compensated X acceleration");
-    dataset->GetSerie(3)->SetName("compensated Y acceleration");
+    dataset->GetSerie(2)->SetName("filtered Y acceleration");
+    //dataset->GetSerie(2)->SetName("compensated X acceleration");
+    //dataset->GetSerie(3)->SetName("compensated Y acceleration");
+    dataset->GetSerie(3)->SetName("compensated X acceleration");
+    dataset->GetSerie(4)->SetName("compensated Y acceleration");
+   // dataset->GetSerie(4)->SetName("compensated Z acceleration");
 
     //dataset->GetSerie(4)->SetName("gyro compensated X");
     //dataset->GetSerie(5)->SetName("gyro compensated Y");
@@ -832,6 +908,30 @@ void MyWindow::createGpsDataReceptionThread()
             const std::string threadStarted{ "New thread GpsDataReceptionThread started.\n" };
             appLogger.logSerialCommStartThread(threadStarted);
             Bind(wxEVT_MY_THREAD_EVENT_1, &MyWindow::OnGpsDataThreadEvent, this);
+        }
+    }
+}
+
+void MyWindow::createSensorDataCOMReceptionThread()
+{
+    sensorDataComReceptionThread = new SensorDataComReceptionThread(appLogger, this);
+    if (sensorDataComReceptionThread->Create() != wxTHREAD_NO_ERROR)
+    {
+        const std::string threadNotCreated{ "Can't create SensorDataComReceptionThread thread! \n" };
+        appLogger.logSerialCommStartThread(threadNotCreated);
+    }
+    else
+    {
+        if (sensorDataComReceptionThread->Run() != wxTHREAD_NO_ERROR)
+        {
+            const std::string cantStartThread{ "Can't start SensorDataComReceptionThread thread! \n" };
+            appLogger.logSerialCommStartThread(cantStartThread);
+        }
+        else
+        {
+            const std::string threadStarted{ "New thread SensorDataComReceptionThread started.\n" };
+            appLogger.logSerialCommStartThread(threadStarted);
+            Bind(wxEVT_MY_THREAD_EVENT_2, &MyWindow::OnSensorDataComThreadEvent, this);
         }
     }
 }

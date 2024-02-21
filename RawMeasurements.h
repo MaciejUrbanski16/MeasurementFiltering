@@ -7,6 +7,7 @@
 #include <math.h>
 
 #include "AppLogger.h"
+#define M_PI 3.1415926
 
 struct CompensatedAccData 
 {
@@ -103,6 +104,13 @@ public:
 		return false;
 	}
 
+	void correctGyroData(const double xGyroInStableState, const double yGyroInStableState, const double zGyroInStableState)
+	{
+		correctXGyro = xGyroInStableState;
+		correctYGyro = yGyroInStableState;
+		correctZGyro = zGyroInStableState;
+	}
+
 	double getXaccMPerS2() const { return xAccMPerS2; }
 	double getYaccMPerS2() const { return yAccMPerS2; }
 	double getZaccMPerS2() const { return zAccMPerS2; }
@@ -110,9 +118,9 @@ public:
 	CompensatedVelocityData getCompensatedVelocityData() const { return compensatedVelocityData; }
 	CompensatedPositionData getCompensatedPositionData() const { return compensatedPositionData; }
 
-	double getXangleVelocityDegreePerS() const { return xAngleVelocityDegPerS; }
-	double getYangleVelocityDegreePerS() const { return yAngleVelocityDegPerS; }
-	double getZangleVelocityDegreePerS() const { return zAngleVelocityDegPerS; }
+	double getXangleVelocityDegreePerS() const { return xAngleVelocityDegPerS - correctXGyro; }
+	double getYangleVelocityDegreePerS() const { return yAngleVelocityDegPerS - correctYGyro; }
+	double getZangleVelocityDegreePerS() const { return zAngleVelocityDegPerS - correctZGyro; }
 	double getAzimuth() const { return orientationDegree; } //???
 	int16_t getRawXMagn() const { return xMagn; }
 	int16_t getRawYMagn() const { return yMagn; }
@@ -127,12 +135,12 @@ public:
 
 	double getRollFromAcc() const
 	{
-		return atan2(static_cast<float>(yAcc + yBias), static_cast<float>(zAcc)) * (180.0 / M_PI);
+		return atan2(static_cast<float>(yAcc + yBias), static_cast<float>(zAcc));// *(180.0 / M_PI);
 	}
 	double getPitchFromAcc() const
 	{
-		return atan2((static_cast<float>( -(xAcc+xBias))), 
-			sqrt(static_cast<float>(yAcc + yBias) * static_cast<float>(yAcc + yBias) + static_cast<float>(zAcc) * static_cast<float>(zAcc))) * (180.0 / M_PI);
+		return atan2((static_cast<float>(-(xAcc + xBias))),
+			sqrt(static_cast<float>(yAcc + yBias) * static_cast<float>(yAcc + yBias) + static_cast<float>(zAcc) * static_cast<float>(zAcc)));// *(180.0 / M_PI);
 	}
 
 
@@ -340,6 +348,10 @@ private:
 	double xAngleVelBias{ -18000.0};
 	double yAngleVelBias{ 12900.0};
 	double zAngleVelBias{15000.0};
+
+	double correctXGyro{ 0.0 };
+	double correctYGyro{ 0.0 };
+	double correctZGyro{ 0.0 };
 
 	AppLogger& appLogger;
 };
