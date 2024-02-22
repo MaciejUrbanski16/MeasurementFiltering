@@ -317,7 +317,7 @@ private:
     bool isRestartFiltrationNeeded{ false };
 
     double rawGrawity{ 16100.0 };
-    double xBias{ 15500.0 };
+    double xBias{ 600.0 };
     double yBias{ 675.0 };
 
     double totalTimeMs{ 0.0 };

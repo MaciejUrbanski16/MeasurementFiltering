@@ -1,6 +1,6 @@
 #include "KalmanFilters.h"
 
-void KalmanFilters::makePositionFiltration(const double Xacc, const double Yacc, uint32_t deltaTimeUint)
+void KalmanFilters::makePositionFiltration(std::pair<double, double> gpsBasedPosition, const double Xacc, const double Yacc, uint32_t deltaTimeUint)
 {
     kf::Matrix<DIM_X, DIM_X> A;
 
@@ -23,7 +23,7 @@ void KalmanFilters::makePositionFiltration(const double Xacc, const double Yacc,
     kf::Matrix<DIM_Z, DIM_X> matH;
             //acc vel  pos    acc   vel   pos
     matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F;
+            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F;
 
     kalmanFilterForPosition.correctLKF(vecZ, matRFromGui.value(), matH);
 }

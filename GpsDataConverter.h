@@ -21,5 +21,7 @@ private:
 	double velocityKmph{ 0.0 };
 	double velocityMperS{ 0.0 };
 	uint8_t satellites{ 0 };
+
+	bool isNewGpsData{ false };
 };
 

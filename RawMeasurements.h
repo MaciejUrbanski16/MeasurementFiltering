@@ -143,6 +143,10 @@ public:
 			sqrt(static_cast<float>(yAcc + yBias) * static_cast<float>(yAcc + yBias) + static_cast<float>(zAcc) * static_cast<float>(zAcc)));// *(180.0 / M_PI);
 	}
 
+	int16_t getRawXacc() const { return xAcc; }
+	int16_t getRawYacc() const { return yAcc; }
+	int16_t getRawZacc() const { return zAcc; }
+
 
 
 private:
@@ -215,7 +219,7 @@ private:
 
 	void calculateDistance()
 	{
-		const double timeIntervalSec = static_cast<double>(deltaTimeMs) / 10; //???
+		const double timeIntervalSec = static_cast<double>(deltaTimeMs) / 1000; //???
 		xDistance = xVelocity * timeIntervalSec;
 		yDistance = yVelocity * timeIntervalSec;
 

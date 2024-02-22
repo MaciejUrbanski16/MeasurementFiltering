@@ -52,7 +52,7 @@ wxThread::ExitCode GpsDataReceptionThread::Entry()
     //event->SetString("Data from thread");
     //wxQueueEvent(m_parent, event);
 
-    //SerialComm serialComm(io, com, m_parent);
+    SerialComm serialComm(io, com, m_parent);
     //Server server(io, 8081, appLogger, m_parent);
     io.run();
 
@@ -409,6 +409,9 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 kalmanFilters.makeAzimuthFitration(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
                     rawMeasurement.getZangleVelocityDegreePerS(), rawMeasurement.getAzimuth(), deltaTimeMs);
                 
+                const TransformedAccel transformedAccel = accelTransform.transform(rawMeasurement);
+                const XyDistance xyDistance = accelTransform.getXyDistance(deltaTimeMs);
+
                 //experimentKfAzimuth(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
                 //    rawMeasurement.getZangleVelocityDegreePerS(), rawMeasurement.getAzimuth(), deltaTimeMs);
                 positionChartGui.updateChart(rawPositionBuffer, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
@@ -450,9 +453,14 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                     rawMeasurement.getZangleVelocityDegreePerS(), filteredZAngleVel, totalTimeMs);
                 //roll pitch
 
-                kalmanFilters.makePositionFiltration(rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
+                const double lon{ gpsDataConverter.getLongitude() };
+                const double lat{ gpsDataConverter.getLatitude() };
+                const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
+                updateGpsBasedPositionChart(gpsBasedPosition);
 
-                const TransformedAccel transformedAccel = accelTransform.transform(rawMeasurement);
+                kalmanFilters.makePositionFiltration(gpsBasedPosition, rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
+
+                
 
                 positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
                     filteredAzimuth);
@@ -477,11 +485,6 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 const auto calculatedPosition{ positionUpdater.getCurrentPosition() };
 
                 updateFilteredPositionChart(filteredPositionX, filteredPositionY, calculatedPosition, totalTimeMs);
-
-                const double lon{ gpsDataConverter.getLongitude() };
-                const double lat{ gpsDataConverter.getLatitude() };
-                const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
-                updateGpsBasedPositionChart(gpsBasedPosition);
             }
 
 
@@ -644,21 +647,21 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
 
     xAccBuffer.AddElement(wxRealPoint(timeMs, xAccMPerS2));
     yAccBuffer.AddElement(wxRealPoint(timeMs, yAccMPerS2));
-    zAccBuffer.AddElement(wxRealPoint(timeMs, zAccMPerS2));
+    //zAccBuffer.AddElement(wxRealPoint(timeMs, zAccMPerS2));
 
     xAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.xAcc));
     yAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.yAcc));
-    zAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.zAcc));
+    //zAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.zAcc));
 
 
-    filteredXaccBuffer.AddElement(wxRealPoint(timeMs, filteredXacc));
+    //filteredXaccBuffer.AddElement(wxRealPoint(timeMs, filteredXacc));
     filteredYaccBuffer.AddElement(wxRealPoint(timeMs, filteredYacc));
 
-    compensatedXAccDataBuffer.AddElement(wxRealPoint(timeMs, compensatedAccData.xAcc));
-    compensatedYAccDataBuffer.AddElement(wxRealPoint(timeMs, compensatedAccData.yAcc));
+    //compensatedXAccDataBuffer.AddElement(wxRealPoint(timeMs, compensatedAccData.xAcc));
+    //compensatedYAccDataBuffer.AddElement(wxRealPoint(timeMs, compensatedAccData.yAcc));
 
-    xAccWithGyroCompensation.AddElement(wxRealPoint(timeMs, xAccGyroCompens));
-    yAccWithGyroCompensation.AddElement(wxRealPoint(timeMs, yAccGyroCompens));
+    //xAccWithGyroCompensation.AddElement(wxRealPoint(timeMs, xAccGyroCompens));
+    //yAccWithGyroCompensation.AddElement(wxRealPoint(timeMs, yAccGyroCompens));
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
@@ -666,7 +669,7 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
     dataset->AddSerie(new XYSerie(yAccBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(zAccBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(filteredXaccBuffer.getBuffer()));
-    dataset->AddSerie(new XYSerie(filteredYaccBuffer.getBuffer()));
+    //dataset->AddSerie(new XYSerie(filteredYaccBuffer.getBuffer()));
 
     dataset->AddSerie(new XYSerie(xAccGravityCompensationBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(yAccGravityCompensationBuffer.getBuffer()));
@@ -677,11 +680,11 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
 
     dataset->GetSerie(0)->SetName("raw X acceleration");
     dataset->GetSerie(1)->SetName("raw Y acceleration");
-    dataset->GetSerie(2)->SetName("filtered Y acceleration");
+    //dataset->GetSerie(2)->SetName("filtered Y acceleration");
     //dataset->GetSerie(2)->SetName("compensated X acceleration");
-    //dataset->GetSerie(3)->SetName("compensated Y acceleration");
-    dataset->GetSerie(3)->SetName("compensated X acceleration");
-    dataset->GetSerie(4)->SetName("compensated Y acceleration");
+    dataset->GetSerie(2)->SetName("compensated X acceleration");
+    dataset->GetSerie(3)->SetName("compensated Y acceleration");
+    //dataset->GetSerie(4)->SetName("compensated Y acceleration");
    // dataset->GetSerie(4)->SetName("compensated Z acceleration");
 
     //dataset->GetSerie(4)->SetName("gyro compensated X");
@@ -951,7 +954,7 @@ void MyWindow::prepareAccChart()
     wxBoxSizer* controlPanelSizerForYAdj = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* controlPanelSizerForZAdj = new wxBoxSizer(wxHORIZONTAL);
 
-    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 15500);
+    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 600);
     spinCtrlXacc->SetIncrement(100);
     spinCtrlXaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 100);
     wxStaticText* xAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X acc");

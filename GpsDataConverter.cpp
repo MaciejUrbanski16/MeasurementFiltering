@@ -7,6 +7,7 @@ void GpsDataConverter::handleGpsData(const std::vector<std::string>& measurement
 					//latitude					  //longitude					//velocity					//satellites	
 		if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) /* && isNumber(measurements[3])*/)
 		{
+			isNewGpsData = true;
 			latitude = std::stod(measurements[0]);
 			longitude = std::stod(measurements[1]);
 			velocityKmph = std::stod(measurements[2]);
