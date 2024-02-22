@@ -18,12 +18,14 @@ void KalmanFilters::makePositionFiltration(std::pair<double, double> gpsBasedPos
     kalmanFilterForPosition.predictLKF(A, matQFromGui.value());
 
     kf::Vector<DIM_Z> vecZ;
-    vecZ << Xacc, Yacc;
+    vecZ << Xacc, Yacc, gpsBasedPosition.first, gpsBasedPosition.second;
 
     kf::Matrix<DIM_Z, DIM_X> matH;
             //acc vel  pos    acc   vel   pos
     matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F;
+            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
     kalmanFilterForPosition.correctLKF(vecZ, matRFromGui.value(), matH);
 }

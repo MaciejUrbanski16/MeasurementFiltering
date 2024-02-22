@@ -701,7 +701,9 @@ void KalmanFilterSetupGui::createAndFillMatrixHPositionGrid()
 
     kf::Matrix<DIM_Z, DIM_X> matH;
     matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F;
+            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
     matrixHPositionGrid->CreateGrid(matH.rows(), matH.cols());
 
@@ -845,8 +847,10 @@ void KalmanFilterSetupGui::initPedestrianModelMatrices()
 
     matQAzimuthPedestrian *= process_variance;
 
-    matRAccPedestrian << 0.1F, 0.0F,
-                         0.0F, 0.1F;
+    matRAccPedestrian << 0.1F, 0.0F, 0.0F, 0.0F,
+                         0.0F, 0.1F, 0.0F, 0.0F,
+                         0.0F, 0.0F, 0.1F, 0.0F,
+                         0.0F, 0.0F, 0.0F, 0.1F;
 
     double processVarianceAcc = 200.0F;
     double sCoefficient = 10.0F;
@@ -879,8 +883,10 @@ void KalmanFilterSetupGui::initRcCarModelMatrices()
 
     matQAzimuthRcCar *= process_variance;
 
-    matRAccRcCar << 0.1F, 0.0F,
-                    0.0F, 0.1F;
+    matRAccRcCar << 0.1F, 0.0F, 0.0F, 0.0F,
+        0.0F, 0.1F, 0.0F, 0.0F,
+        0.0F, 0.0F, 0.1F, 0.0F,
+        0.0F, 0.0F, 0.0F, 0.1F;
 
     double processVarianceAcc = 0.002F;
     double sCoefficient = 100.0F;
@@ -913,8 +919,10 @@ void KalmanFilterSetupGui::initCarModelMatrices()
 
     matQAzimuthCar *= process_variance;
 
-    matRAccCar << 1.0F, 0.0F,
-        0.0F, 1.0F;
+    matRAccCar << 1.0F, 0.0F, 0.0F, 0.0F,
+        0.0F, 1.0F, 0.0F, 0.0F,
+        0.0F, 0.0F, 1.0F, 0.0F,
+        0.0F, 0.0F, 0.0F, 1.0F;
 
     double processVarianceAcc = 0.002F;
     double sCoefficient = 100.0F;

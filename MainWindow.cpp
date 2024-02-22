@@ -204,127 +204,6 @@ void MyWindow::OnSpinZAccUpdate(wxSpinEvent& event)
     rawGrawity = zAccCtrlValue;
 }
 
-
-//void MyWindow::OnSubmitAngleVelAdjustments(wxCommandEvent& event)
-//{
-//    const int xAngleVelCtrlValue = spinCtrlXangleVel->GetValue();
-//    const int yAngleVelCtrlValue = spinCtrlYangleVel->GetValue();
-//    const int zAngleVelCtrlValue = spinCtrlZangleVel->GetValue();
-//
-//    xGyroBias = xAngleVelCtrlValue;
-//    yGyroBias = yAngleVelCtrlValue;
-//    zGyroBias = zAngleVelCtrlValue;
-//    wxLogMessage("New acc adj X:%d Y:%d Z:%d!", xAngleVelCtrlValue, yAngleVelCtrlValue, zAngleVelCtrlValue);
-//}
-//
-//void MyWindow::OnSpinXAnglVelIncrUpdate(wxSpinEvent& event)
-//{
-//    const int newIncrement = spinCtrlXangleVelMultiplicator->GetValue();
-//    spinCtrlXangleVel->SetIncrement(newIncrement);
-//}
-//
-//void MyWindow::OnSpinXAngleVelUpdate(wxSpinEvent& event)
-//{
-//    const int xAngleVelCtrlValue = spinCtrlXangleVel->GetValue();
-//    xGyroBias = xAngleVelCtrlValue;
-//}
-//
-//void MyWindow::OnSpinYAnglVelIncrUpdate(wxSpinEvent& event)
-//{
-//    const int newIncrement = spinCtrlYangleVelMultiplicator->GetValue();
-//    spinCtrlYangleVel->SetIncrement(newIncrement);
-//}
-//
-//void MyWindow::OnSpinYAngleVelUpdate(wxSpinEvent& event)
-//{
-//    const int yAngleVelCtrlValue = spinCtrlYangleVel->GetValue();
-//    yGyroBias = yAngleVelCtrlValue;
-//}
-//
-//void MyWindow::OnSpinZAnglVelIncrUpdate(wxSpinEvent& event)
-//{
-//    const int newIncrement = spinCtrlZangleVelMultiplicator->GetValue();
-//    spinCtrlZangleVel->SetIncrement(newIncrement);
-//}
-//
-//void MyWindow::OnSpinZAngleVelUpdate(wxSpinEvent& event)
-//{
-//    const int zAngleVelCtrlValue = spinCtrlZangleVel->GetValue();
-//    zGyroBias = zAngleVelCtrlValue;
-//}
-
-void MyWindow::OnApplyKFTunning(wxCommandEvent& event)
-{
-    bool conversionOK = true;
-   
-    for (int i = 0; i < DIM_Z; i++)
-    {
-        for (int j = 0; j < DIM_Z; j++)
-        {
-            wxString cellValue = matrixRCovariance->GetCellValue(i, j);
-            double cellValueAsDouble{ 0.0 };
-            if (cellValue.ToDouble(&cellValueAsDouble)) 
-            {
-                //wxPrintf("Double value: %lf\n", cellValueAsDouble);
-                matR(i * DIM_Z + j) = cellValueAsDouble;    
-            }
-            else 
-            {
-                conversionOK = false;
-                wxLogError("Wiersz %d kolumna %d z wartoscia: %s dla macierzy R nie moze zostac przekonwertowana na liczbe zmiennoprzecinkowa!", i, j, cellValue);
-            }
-            
-        }
-    }
-    if (conversionOK)
-    {
-        std::stringstream msgToLog;
-        msgToLog << "Apply KF tunning for R matrix";
-
-        for (int i = 0; i < DIM_Z * DIM_Z; i++)
-        {
-            msgToLog << " matR[" << i << "]: " << matR(i);
-        }
-        wxString wxStringValue(msgToLog.str());
-        wxLogMessage(wxStringValue);
-    }
-
-    bool conversionHOK = true;
-
-    for (int i = 0; i < DIM_Z; i++)
-    {
-        for (int j = 0; j < DIM_X; j++)
-        {
-            wxString cellValue = matrixH->GetCellValue(i, j);
-            double cellValueAsDouble{ 0.0 };
-            if (cellValue.ToDouble(&cellValueAsDouble))
-            {
-                //wxPrintf("Double value: %lf\n", cellValueAsDouble);
-                matH(i * DIM_Z + j) = cellValueAsDouble;
-            }
-            else
-            {
-                conversionHOK = false;
-                wxLogError("Wiersz %d kolumna %d dla macierzy H z wartoscia: %s nie moze zostac przekonwertowana na liczbe zmiennoprzecinkowa!", i, j, cellValue);
-            }
-
-        }
-    }
-    if (conversionHOK)
-    {
-        std::stringstream msgToLog;
-        msgToLog << "Apply KF tunning for H matrix";
-
-        for (int i = 0; i < DIM_X * DIM_Z; i++)
-        {
-            msgToLog << " matH[" << i << "]: " << matH(i);
-        }
-        wxString wxStringValue(msgToLog.str());
-        wxLogMessage(wxStringValue);
-    }
-}
-
-/// <summary>
 void MyWindow::processFiltration(const std::vector<std::string>& measurements, const bool isRealTimeMeasurement)
 {
     if (measurements.size() == 10)
@@ -715,26 +594,6 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
     accChartPanel->SetChart(chart);
 }
 
-//void MyWindow::updateVelChart(const double xVelocity)
-//{
-//    velPoints.push_back(wxRealPoint(xNewPoint, xVelocity));
-//    xNewPoint += 1;
-//    yNewPoint = static_cast<double>(xVelocity);
-//    XYPlot* plot = new XYPlot();
-//    XYSimpleDataset* dataset = new XYSimpleDataset();
-//    dataset->AddSerie(new XYSerie(velPoints));
-//    dataset->SetRenderer(new XYLineRenderer());
-//    NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
-//    NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
-//    leftAxis->SetTitle(wxT("X velocity [m/s]"));
-//    bottomAxis->SetTitle(wxT("time [ms]"));
-//    plot->AddObjects(dataset, leftAxis, bottomAxis);
-//
-//    Chart* chart = new Chart(plot, "X Velocity");
-//
-//    velChartPanel->SetChart(chart);
-//}
-
 void MyWindow::updateGpsBasedPositionChart(std::pair<double, double> gpsBasedPosition)
 {
     XYPlot* plot = new XYPlot();
@@ -766,8 +625,6 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
     filteredPositionBuffer.AddElement(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
     calculatedPositionBuffer.AddElement(wxRealPoint(calculatedPosition.first, calculatedPosition.second));
 
-
-    //updateMatQGrid();
 
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
@@ -861,11 +718,6 @@ void MyWindow::updateFilteredAngleXVelocityChart(const double filteredXangle, co
     Chart* chart = new Chart(plot, "Filtered/measured angle velocity");
 
     filteredAngleXVelocity->SetChart(chart);
-}
-
-void MyWindow::updateFilteredVelocityChart(const double filteredVelocityX, const double filteredVelocityY, const double timeMs)
-{
-
 }
 
 void MyWindow::createSensorDataReceptionThread()
@@ -1105,113 +957,19 @@ void MyWindow::prepareFilteredPositionChart()
     wxPanel* panel = new wxPanel(m_notebook, wxID_ANY);
     splitter = new wxSplitterWindow(panel, wxID_ANY);
 
-    matR << 1.0F, 0.0F,
-            0.0F, 1.0F;
-            //acc vel  pos
-    matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F;
-
-    // Create two panels to be placed in the splitter window
-    //wxPanel* panel1 = new wxPanel(splitter, wxID_ANY);
     wxPanel* controlPanel = new wxPanel(splitter, wxID_ANY);
 
     filteredPositionChartPanel = new wxChartPanel(splitter);
     sizerPositionPlot = new wxBoxSizer(wxVERTICAL);
-    filteredPositionChartPanel->SetMinSize(wxSize(900, 600));
-    //filteredVelocityChartPanel->SetSize(200, 200);
-    //sizer->Add(filteredPositionChartPanel, 1, wxEXPAND | wxALL, 5);
-    wxButton* applyKFtunningChangesButton = new wxButton(controlPanel, wxID_ANY, "Apply changes!");
-    //sizerPositionPlot->Add(button, 0, wxALIGN_RIGHT | wxALL, 5);
+    filteredPositionChartPanel->SetMinSize(wxSize(1000, 600));
     wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
-    wxSpinCtrl* spinCtrlPCoefficient = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 0);
-    wxStaticText* pCoefficientText = new wxStaticText(controlPanel, wxID_ANY, "Spin Control for p coefficient:");
 
-    wxSpinCtrl* spinCtrlSCoefficient = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 6);
-    wxStaticText* sCoefficientText = new wxStaticText(controlPanel, wxID_ANY, "Spin Control for s coefficient:");
-
-
-    wxStaticText* qMatrixText = new wxStaticText(controlPanel, wxID_ANY, "Matrix Q");
-    wxStaticText* rMatrixText = new wxStaticText(controlPanel, wxID_ANY, "Matrix R");
-    wxStaticText* hMatrixText = new wxStaticText(controlPanel, wxID_ANY, "Matrix H");
-
-    matrixGrid = new wxGrid(controlPanel, wxID_ANY);
-    matrixGrid->CreateGrid(DIM_X, DIM_X);
-
-    matrixGrid->HideRowLabels();
-    matrixGrid->HideColLabels();
-    matrixGrid->SetSize(100, 100);
-
-
-    updateMatQGrid();
-
-
-    for (int i = 0; i < DIM_X; ++i) {
-        matrixGrid->SetRowSize(i, 20);  // Set the height of each row
-        matrixGrid->SetColSize(i, 50);  // Set the width of each column
-    }
-
-    matrixRCovariance = new wxGrid(controlPanel, wxID_ANY);
-    matrixRCovariance->CreateGrid(DIM_Z, DIM_Z);
-
-    matrixRCovariance->HideRowLabels();
-    matrixRCovariance->HideColLabels();
-    matrixGrid->SetSize(100, 100);
-
-    for (int i = 0; i < DIM_Z; ++i) {
-        for (int j = 0; j < DIM_Z; ++j) {
-            matrixRCovariance->SetCellValue(i, j, wxString::Format("%f", matR(i*DIM_Z+j)));
-        }
-    }
-
-    for (int i = 0; i < DIM_Z; ++i) {
-        matrixRCovariance->SetRowSize(i, 20);  // Set the height of each row
-        matrixRCovariance->SetColSize(i, 50);  // Set the width of each column
-    }
-
-
-
-    matrixH = new wxGrid(controlPanel, wxID_ANY);
-    matrixH->CreateGrid(DIM_Z, DIM_X);
-
-    matrixH->HideRowLabels();
-    matrixH->HideColLabels();
-    matrixH->SetSize(100, 100);
-
-    for (int i = 0; i < DIM_Z; ++i) {
-        for (int j = 0; j < DIM_X; ++j) {
-            matrixH->SetCellValue(i, j, wxString::Format("%f", matH(j * DIM_Z + i)));
-        }
-    }
-
-    for (int i = 0; i < DIM_Z; ++i) {
-        matrixH->SetRowSize(i, 20);  // Set the height of each row
-        matrixH->SetColSize(i, 50);  // Set the width of each column
-    }
-
-
-
-    applyKFtunningChangesButton->Bind(wxEVT_BUTTON, &MyWindow::OnApplyKFTunning, this);
-
-    controlPanelSizer->Add(pCoefficientText, 0, wxALL, 5);
-    controlPanelSizer->Add(spinCtrlPCoefficient, 0, wxALL | wxALIGN_RIGHT, 5);
-    controlPanelSizer->Add(sCoefficientText, 0, wxALL, 5);
-    controlPanelSizer->Add(spinCtrlSCoefficient, 0, wxALL | wxALIGN_RIGHT, 5);
-    controlPanelSizer->Add(qMatrixText, 0, wxALIGN_CENTER|wxALL, 5);
-    controlPanelSizer->Add(matrixGrid, 0, wxALIGN_CENTER | wxALL, 5);
-    controlPanelSizer->Add(rMatrixText, 0, wxALIGN_CENTER|wxALL, 5);
-    controlPanelSizer->Add(matrixRCovariance, 0, wxALIGN_CENTER | wxALL, 5);
-    controlPanelSizer->Add(hMatrixText, 0, wxALIGN_CENTER | wxALL, 5);
-    controlPanelSizer->Add(matrixH, 0, wxALIGN_CENTER | wxALL, 5);
-    controlPanelSizer->Add(applyKFtunningChangesButton, 0, wxALIGN_CENTER|wxALL, 3);
     controlPanel->SetSizer(controlPanelSizer);
 
 
     splitter->SplitVertically(filteredPositionChartPanel, controlPanel);
     sizerPositionPlot->Add(splitter, 1, wxEXPAND | wxALL, 5);
 
-
-    //CreateStatusBar();
-    //SetStatusText("wxWidgets Splitter Example");
     panel->SetSizer(sizerPositionPlot);
     m_notebook->AddPage(panel, "Filtered position");
 }
@@ -1234,10 +992,6 @@ void MyWindow::prepareGui()
     csvMeasurementLoadPanel = new wxPanel(m_notebook);
     m_notebook->AddPage(csvMeasurementLoadPanel, "Load CSV");
     csvMeasurementLoadGui.setup(csvMeasurementLoadPanel, &filterFileMeasTimer);
-    
-    
-
-    //splitter = new wxSplitterWindow(, wxID_ANY);
 
     prepareAccChart();
     prepareVelChart();
@@ -1249,11 +1003,6 @@ void MyWindow::prepareGui()
     prepareFilteredVelocityChart();
     prepareFilteredAngleXVelocityChart();
     magnChartGui.setup(m_notebook);
-
-    // Add outer tabs to the notebook
-    //m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 1"), "Outer Tab 1");
-   // m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
-    //m_notebook->AddPage(new OuterTab(m_notebook, "Outer Tab 2"), "Outer Tab 2");
 
 
     wxSize size(100, 20);
@@ -1315,13 +1064,4 @@ void MyWindow::prepareGui()
     //BTconfirmSetupAndStartReception->Bind(wxEVT_BUTTON, &MyWindow::OnStartReceptionClick, this);
 
     filterFileMeasTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterFileMeasTimer, this);
-}
-
-void MyWindow::updateMatQGrid()
-{
-    for (int i = 0; i < DIM_X; ++i) {
-        for (int j = 0; j < DIM_X; ++j) {
-            matrixGrid->SetCellValue(i, j, wxString::Format("%f", matQ(i * DIM_X + j)));
-        }
-    }
 }

@@ -52,66 +52,11 @@
 #include "AccelTransform.h"
 #include "GyroCallibrator.h"
 #include "KalmanFilters.h"
-
 #include "kalman_filter/kalman_filter.h"
-
 #include <chrono>
-
-
-//#include "wx/wx.h"
 #include <stdio.h>
 
 using namespace std;
-
-class InnerTab : public wxPanel {
-public:
-    InnerTab(wxWindow* parent, const wxString& label)
-        : wxPanel(parent, wxID_ANY)
-    {
-        // Add controls or content for the inner tab
-        wxStaticText* text = new wxStaticText(this, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE);
-
-        wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
-        sizer->Add(text, 1, wxEXPAND | wxALL, 10);
-        SetSizerAndFit(sizer);
-    }
-};
-
-class OuterTab : public wxPanel {
-public:
-    OuterTab(wxWindow* parent, const wxString& label)
-        : wxPanel(parent, wxID_ANY)
-    {
-        // Create a notebook for inner tabs
-        wxNotebook* innerNotebook = new wxNotebook(this, wxID_ANY);
-
-        // Add inner tabs to the notebook
-        innerNotebook->AddPage(new InnerTab(innerNotebook, "Inner Tab 1"), "Inner Tab 1");
-        innerNotebook->AddPage(new InnerTab(innerNotebook, "Inner Tab 2"), "Inner Tab 2");
-
-        // Add more inner tabs as needed
-
-        wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
-        sizer->Add(innerNotebook, 1, wxEXPAND | wxALL, 10);
-        SetSizerAndFit(sizer);
-    }
-};
-
-class MyTabPanel : public wxPanel {
-public:
-    MyTabPanel(wxWindow* parent) {
-        // Create a wxMathPlot component
-        //mpWindow* graph = new mpWindow(parent, wxID_ANY);
-        //graph->EnableDoubleBuffer(true);
-    }
-
-    // Other functions and variables you may need
-};
-
-
-
-
-
 
 class MyWindow : public wxFrame
 {
@@ -188,10 +133,6 @@ private:
     AngleVelocityChartGui angleVelocityChartGui;
     RollPitchChartGui rollPitchChartGui;
 
-    kf::Matrix<DIM_X, DIM_X> matQ;
-    kf::Matrix<DIM_Z, DIM_Z> matR;
-    kf::Matrix<DIM_Z, DIM_X> matH;
-
     bool isDataReceptionStarted{ false };
     wxVector <wxRealPoint> magnPoints;
     KalmanFilters kalmanFilters{kalmanFilterSetupGui};
@@ -206,11 +147,9 @@ private:
     wxPanel* kalmanParamsSetupPanel = nullptr;
     wxPanel* csvMeasurementLoadPanel = nullptr;
 
-    //wxChartPanel* azimuthChartPanel = nullptr;
     wxChartPanel* gpsBasedPositionChartPanel = nullptr;
     wxChartPanel* accChartPanel = nullptr;
     wxChartPanel* velChartPanel = nullptr;
-    //wxChartPanel* positionChartPanel = nullptr;
     
 
     wxChartPanel* filteredPositionChartPanel = nullptr;
