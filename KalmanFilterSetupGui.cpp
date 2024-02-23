@@ -951,6 +951,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     {
         isCallibrationDone = true;
         filterReceivedDataProcessingTimer.Start(100);
+        filterReceivedGpsProcessingTimer.Start(1000);
         isRestartFiltrationNeeded = true;
         movementModel = MovementModel::PEDESTRIAN;
 
@@ -963,6 +964,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     {
         isCallibrationDone = true;
         filterReceivedDataProcessingTimer.Start(100);
+        filterReceivedGpsProcessingTimer.Start(1000);
         isRestartFiltrationNeeded = true;
         movementModel = MovementModel::RC_CAR;
 
@@ -975,6 +977,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     {
         isCallibrationDone = true;
         filterReceivedDataProcessingTimer.Start(100);
+        filterReceivedGpsProcessingTimer.Start(1000);
         isRestartFiltrationNeeded = true;
         movementModel = MovementModel::CAR;
 

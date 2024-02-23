@@ -1,6 +1,6 @@
 #include "GpsDataConverter.h"
 
-void GpsDataConverter::handleGpsData(const std::vector<std::string>& measurements)
+bool GpsDataConverter::handleGpsData(const std::vector<std::string>& measurements)
 {
 	if (measurements.size() == 4)
 	{
@@ -12,12 +12,11 @@ void GpsDataConverter::handleGpsData(const std::vector<std::string>& measurement
 			longitude = std::stod(measurements[1]);
 			velocityKmph = std::stod(measurements[2]);
 			//satellites = std::stoi(measurements[3]);
+			return true;
 		}
+		return false;
 	}
-	else
-	{
-		//00
-	}
+	return false;
 }
 
 bool GpsDataConverter::isNumber(const std::string& meas)

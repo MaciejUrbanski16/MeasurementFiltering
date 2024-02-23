@@ -31,7 +31,11 @@ enum class MovementModel
 class KalmanFilterSetupGui
 {
 public:
-    KalmanFilterSetupGui(wxTimer& filterReceivedDataProcessingTimer) : filterReceivedDataProcessingTimer(filterReceivedDataProcessingTimer){}
+    KalmanFilterSetupGui(wxTimer& filterReceivedDataProcessingTimer, wxTimer& filterReceivedGpsProcessingTimer) 
+        : 
+        filterReceivedDataProcessingTimer(filterReceivedDataProcessingTimer),
+        filterReceivedGpsProcessingTimer(filterReceivedGpsProcessingTimer)
+        {}
 
     std::optional<kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth>> getMatRazimuth();
     std::optional<kf::Matrix<DIM_X_azimuth, DIM_X_azimuth>> getMatQazimuth();
@@ -94,6 +98,7 @@ private:
     void OnRadioButtonClicked(wxCommandEvent& event);
 
     wxTimer& filterReceivedDataProcessingTimer;
+    wxTimer& filterReceivedGpsProcessingTimer;
 
     wxPanel* kalmanParamsSetupPanel = nullptr;
 	wxButton* confirmCallibrationButton = nullptr;

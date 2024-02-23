@@ -94,6 +94,7 @@ private:
 
     void OnFilterFileMeasTimer(wxTimerEvent& event);
     void OnFilterReceivedDataProcessingTimer(wxTimerEvent& event);
+    void OnFilterReceivedGpsProcessingTimer(wxTimerEvent& event);
 
 
     void resetChartsAfterCallibration();
@@ -110,7 +111,8 @@ private:
 
     void updateMatQGrid();
 
-    std::pair<bool, std::vector<std::string>> currentMeasurements{ true, std::vector<std::string>{} };
+    std::pair<bool, std::vector<std::string>> currentSensorMeasurements{ true, std::vector<std::string>{} };
+    std::pair<bool, std::vector<std::string>> currentGpsMeasurements{ false, std::vector<std::string>{} };
 
     DeltaTimeCalculator deltaTimeCalculator;
     RelativePositionCalculator relativePositionCalculator{};
@@ -129,8 +131,9 @@ private:
 
     wxTimer filterFileMeasTimer;
     wxTimer filterReceivedDataProcessingTimer;
+    wxTimer filterReceivedGpsProcessingTimer;
 
-    KalmanFilterSetupGui kalmanFilterSetupGui{ filterReceivedDataProcessingTimer };
+    KalmanFilterSetupGui kalmanFilterSetupGui{ filterReceivedDataProcessingTimer, filterReceivedGpsProcessingTimer };
     CsvMeasurementReader csvMeasurementReader;
     CsvMeasurementLoadGui csvMeasurementLoadGui{ csvMeasurementReader };
 

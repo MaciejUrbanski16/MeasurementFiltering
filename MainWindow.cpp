@@ -334,12 +334,18 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
                     rawMeasurement.getZangleVelocityDegreePerS(), filteredZAngleVel, totalTimeMs);
                 //roll pitch
 
-                const double lon{ gpsDataConverter.getLongitude() };
-                const double lat{ gpsDataConverter.getLatitude() };
-                const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
-                updateGpsBasedPositionChart(gpsBasedPosition);
+                std::optional<std::pair<double, double>>gpsBasedPositionOpt = std::nullopt;
+                if(currentGpsMeasurements.first == true) //nowe dane z GPSu dostepne
+                {
+                    const double lon{ gpsDataConverter.getLongitude() };
+                    const double lat{ gpsDataConverter.getLatitude() };
+                    const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
+                    gpsBasedPositionOpt.value() = gpsBasedPosition;
+                    updateGpsBasedPositionChart(gpsBasedPosition);
+                    currentGpsMeasurements.first = false;
+                }
 
-                kalmanFilters.makePositionFiltration(gpsBasedPosition, transformedAccel, rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
+                kalmanFilters.makePositionFiltration(gpsBasedPositionOpt, transformedAccel, rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
 
                 positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
                     filteredAzimuth);
@@ -411,20 +417,42 @@ void MyWindow::OnFilterReceivedDataProcessingTimer(wxTimerEvent& event)
             angleVelocityChartGui.getZgyroBias());
         const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
         totalTimeMs += static_cast<double>(deltaTimeMs);
-        if (currentMeasurements.first == false && rawMeasurement.assign(currentMeasurements.second, 100, true))
+        if (currentSensorMeasurements.first && rawMeasurement.assign(currentSensorMeasurements.second, deltaTimeMs, true))
         {
             processFiltration(rawMeasurement, deltaTimeMs, true);
-            currentMeasurements.first = true;
+            currentSensorMeasurements.first = false;
+            if (currentGpsMeasurements.first)
+            {
+                currentGpsMeasurements.first = false; //wait for new valid GPS data
+            }
         }
         else
         {
             //process filtration without measurements.. - macierz H na zera
             // set correct matrix H
-            ///processFiltration(rawMeasurement, deltaTimeMs, true);
+            processFiltration(rawMeasurement, deltaTimeMs, true);
 
             const std::string errThreadEvent{ "INF timer expired - no valid measurements data available for current filtration cycle - only estimation based on previous system state" };
             appLogger.logErrThreadDataHandling(errThreadEvent);
         }
+    }
+}
+
+void MyWindow::OnFilterReceivedGpsProcessingTimer(wxTimerEvent& event)
+{
+    //every 1000ms
+    if (currentGpsMeasurements.first) //new GPS data available
+    {
+        if (not gpsDataConverter.handleGpsData(currentGpsMeasurements.second))
+        {
+            const std::string errThreadEvent{ "ERR timer expired - no valid GPS data available for current filtration cycle - only estimation based on previous system state" };
+            appLogger.logErrThreadDataHandling(errThreadEvent);
+        }
+    }
+    else
+    {
+        const std::string errThreadEvent{ "INF timer expired - no new GPS data available for current filtration cycle - only estimation based on previous system state" };
+        appLogger.logErrThreadDataHandling(errThreadEvent);
     }
 }
 
@@ -447,7 +475,7 @@ void MyWindow::OnFilterFileMeasTimer(wxTimerEvent& event)
         angleVelocityChartGui.getXgyroBias(),
         angleVelocityChartGui.getYgyroBias(),
         angleVelocityChartGui.getZgyroBias());
-    if (rawMeasurement.assign(currentMeasurements.second, 100, true))
+    if (rawMeasurement.assign(currentSensorMeasurements.second, 100, true))
     {
         processFiltration(rawMeasurement, 100, false);
     }
@@ -497,9 +525,9 @@ void MyWindow::OnSensorsDataThreadEvent(wxThreadEvent& event)
         }
         else //AFTER CALLIBRATION
         {
-            //save data for timer expiration
-            currentMeasurements.first = false;
-            currentMeasurements.second = measurements;
+            //new data available for processing, save data for timer expiration
+            currentSensorMeasurements.first = true;
+            currentSensorMeasurements.second = measurements;
         }
     }
     else
@@ -516,7 +544,19 @@ void MyWindow::OnGpsDataThreadEvent(wxThreadEvent& event)
     {
         const std::vector<std::string>& measurements = myEvent->GetStringVector();
 
-        gpsDataConverter.handleGpsData(measurements);
+        if (not kalmanFilterSetupGui.getIsCallibrationDone())
+        {
+            if (not gpsDataConverter.handleGpsData(measurements))
+            {
+                const std::string errThreadEvent{ "ERR during handling GPS data on callibration process!!!" };
+                appLogger.logErrThreadDataHandling(errThreadEvent);
+            }
+        }
+        else
+        {
+            currentGpsMeasurements.first = true; //new GPS data ready for processing
+            currentGpsMeasurements.second = measurements;
+        }
 
 
         appLogger.logReceivedDataOnMainThread(measurements, " GPS");
@@ -570,9 +610,9 @@ void MyWindow::OnSensorDataComThreadEvent(wxThreadEvent& event)
         }
         else //AFTER CALLIBRATION
         {
-            //save data for timer expiration
-            currentMeasurements.first = false;
-            currentMeasurements.second = measurements;
+            //new sensor data available, save data for timer expiration
+            currentSensorMeasurements.first = true;
+            currentSensorMeasurements.second = measurements;
         }
     }
     else
@@ -1170,4 +1210,5 @@ void MyWindow::prepareGui()
 
     filterFileMeasTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterFileMeasTimer, this);
     filterReceivedDataProcessingTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterReceivedDataProcessingTimer, this);
+    filterReceivedGpsProcessingTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterReceivedGpsProcessingTimer, this);
 }

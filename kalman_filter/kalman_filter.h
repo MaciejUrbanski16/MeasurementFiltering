@@ -39,6 +39,11 @@ namespace kf
                 //      0.0F, 0.0F, 0.0F, 0.0F; 0.0F, 0.1F;
         }
 
+        void setMatH(const Matrix<DIM_Z, DIM_X>& newMatH)
+        {
+            m_matH = newMatH;
+        }
+
         void setInitialState(const double xDist, const double xVel, const double xAcc,
                              const double yDist, const double yVel, const double yAcc)
         {
@@ -117,14 +122,14 @@ namespace kf
         /// @param matR measurement noise covariance matrix
         /// @param matH measurement transition matrix (measurement model)
         ///
-        void correctLKF(const Vector<DIM_Z> & vecZ, const Matrix<DIM_Z, DIM_Z> & matR, const Matrix<DIM_Z, DIM_X> & matH)
+        void correctLKF(const Vector<DIM_Z> & vecZ, const Matrix<DIM_Z, DIM_Z> & matR)
         {
             const Matrix<DIM_X, DIM_X> matI{ Matrix<DIM_X, DIM_X>::Identity() }; // Identity matrix
-            const Matrix<DIM_Z, DIM_Z> matSk{ matH * m_matP * matH.transpose() + matR }; // Innovation covariance
-            const Matrix<DIM_X, DIM_Z> matKk{ m_matP * matH.transpose() * matSk.inverse() }; // Kalman Gain
+            const Matrix<DIM_Z, DIM_Z> matSk{ m_matH * m_matP * m_matH.transpose() + matR }; // Innovation covariance
+            const Matrix<DIM_X, DIM_Z> matKk{ m_matP * m_matH.transpose() * matSk.inverse() }; // Kalman Gain
 
-            m_vecX = m_vecX + matKk * (vecZ - (matH * m_vecX));
-            m_matP = (matI - matKk * matH) * m_matP;
+            m_vecX = m_vecX + matKk * (vecZ - (m_matH * m_vecX));
+            m_matP = (matI - matKk * m_matH) * m_matP;
         }
 
         ///
@@ -161,6 +166,7 @@ namespace kf
     protected:
         Vector<DIM_X> m_vecX{ Vector<DIM_X>::Zero() }; /// @brief estimated state vector
         Matrix<DIM_X, DIM_X> m_matP{ Matrix<DIM_X, DIM_X>::Zero() }; /// @brief state covariance matrix
+        Matrix<DIM_Z, DIM_X> m_matH{ Matrix<DIM_Z, DIM_X>::Zero() };
 
 
 

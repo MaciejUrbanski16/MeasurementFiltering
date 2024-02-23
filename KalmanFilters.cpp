@@ -1,6 +1,6 @@
 #include "KalmanFilters.h"
 
-void KalmanFilters::makePositionFiltration(std::pair<double, double> gpsBasedPosition, const TransformedAccel& transformedAccel, const double Xacc, const double Yacc, uint32_t deltaTimeUint)
+void KalmanFilters::makePositionFiltration(const std::optional<std::pair<double, double>> gpsBasedPosition, const TransformedAccel& transformedAccel, const double Xacc, const double Yacc, uint32_t deltaTimeUint)
 {
 
     kf::Matrix<DIM_X, DIM_X> A;
@@ -18,17 +18,29 @@ void KalmanFilters::makePositionFiltration(std::pair<double, double> gpsBasedPos
 
     kalmanFilterForPosition.predictLKF(A, matQFromGui.value());
 
-    kf::Vector<DIM_Z> vecZ;
-    vecZ << transformedAccel.xAcc, transformedAccel.yAcc, gpsBasedPosition.first, gpsBasedPosition.second;
-
     kf::Matrix<DIM_Z, DIM_X> matH;
-            //accX velX posX  accY  velY  posY
-    matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z GPS to zero
-            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F; //
+    kf::Vector<DIM_Z> vecZ;
+    if (gpsBasedPosition)
+    {
+                //accX velX posX  accY  velY  posY
+        matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z sensorów to zero
+                0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+                0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z GPS to zero
+                0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F; //
+        vecZ << transformedAccel.xAcc, transformedAccel.yAcc, gpsBasedPosition.value().first, gpsBasedPosition.value().second;
+    }
+    else
+    {
+                //accX velX posX  accY  velY  posY
+        matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z sensorów to zero
+                0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+                0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z GPS to zero
+                0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F; //
+        vecZ << transformedAccel.xAcc, transformedAccel.yAcc, 0, 0;
+    }
 
-    kalmanFilterForPosition.correctLKF(vecZ, matRFromGui.value(), matH);
+    kalmanFilterForPosition.setMatH(matH);
+    kalmanFilterForPosition.correctLKF(vecZ, matRFromGui.value());
 }
 
 void KalmanFilters::makeAzimuthFitration(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, 
@@ -57,7 +69,8 @@ void KalmanFilters::makeAzimuthFitration(const double xAngleVelocityDegPerSec, c
         0, 0, 0, 0, 0, 0,
         1, 0, 0, 0, 0, 0;
 
-    kalmanFilterForAzimuth.correctLKF(vecZ, matRAzzFromGui.value(), matH);
+    kalmanFilterForAzimuth.setMatH(matH);
+    kalmanFilterForAzimuth.correctLKF(vecZ, matRAzzFromGui.value());
 }
 
 void KalmanFilters::makeGyroFiltration(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec,
@@ -102,5 +115,6 @@ void KalmanFilters::makeGyroFiltration(const double xAngleVelocityDegPerSec, con
             0, 0, 1, 0, 0, 0,
             0, 0, 0, 0, 1, 0;
 
-    kalmanFilterForGyro.correctLKF(vecZ, matR, matH);
+    kalmanFilterForGyro.setMatH(matH);
+    kalmanFilterForGyro.correctLKF(vecZ, matR);
 }

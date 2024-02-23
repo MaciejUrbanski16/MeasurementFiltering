@@ -6,7 +6,7 @@
 class GpsDataConverter
 {
 public:
-	void handleGpsData(const std::vector<std::string>& measurements);
+	bool handleGpsData(const std::vector<std::string>& measurements);
 	double getLatitude() const { return latitude; }
 	double getLongitude() const { return longitude; }
 	double getVelocityKmph() const { return velocityKmph; }
