@@ -86,13 +86,14 @@ private:
 
     void OnApplyKFTunning(wxCommandEvent& event);
 
-    void processFiltration(const std::vector<std::string>& measurements, const bool isRealTimeMeasurement);
+    void processFiltration(MeasurementsController& rawMeasurement, const uint32_t deltaTimeMs, const bool isRealTimeMeasurement);
 
     void OnSensorsDataThreadEvent(wxThreadEvent& event);
     void OnGpsDataThreadEvent(wxThreadEvent& event);
     void OnSensorDataComThreadEvent(wxThreadEvent& event);
 
     void OnFilterFileMeasTimer(wxTimerEvent& event);
+    void OnFilterReceivedDataProcessingTimer(wxTimerEvent& event);
 
 
     void resetChartsAfterCallibration();
@@ -109,6 +110,8 @@ private:
 
     void updateMatQGrid();
 
+    std::pair<bool, std::vector<std::string>> currentMeasurements{ true, std::vector<std::string>{} };
+
     DeltaTimeCalculator deltaTimeCalculator;
     RelativePositionCalculator relativePositionCalculator{};
     std::vector<MeasurementsController> rawMeasurementsSet{};
@@ -124,7 +127,10 @@ private:
     double filteredPositionX{ 0.0 };
     double filteredPositionY{ 0.0 };
 
-    KalmanFilterSetupGui kalmanFilterSetupGui;
+    wxTimer filterFileMeasTimer;
+    wxTimer filterReceivedDataProcessingTimer;
+
+    KalmanFilterSetupGui kalmanFilterSetupGui{ filterReceivedDataProcessingTimer };
     CsvMeasurementReader csvMeasurementReader;
     CsvMeasurementLoadGui csvMeasurementLoadGui{ csvMeasurementReader };
 
@@ -275,7 +281,6 @@ private:
     GpsDataReceptionThread* gpsDataReceptionThread = nullptr;
     SensorDataComReceptionThread* sensorDataComReceptionThread = nullptr;
 
-    wxTimer filterFileMeasTimer;
     double xNewPoint = 0.0;
     double yNewPoint = 36.0;
 

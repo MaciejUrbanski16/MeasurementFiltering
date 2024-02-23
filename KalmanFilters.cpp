@@ -1,10 +1,11 @@
 #include "KalmanFilters.h"
 
-void KalmanFilters::makePositionFiltration(std::pair<double, double> gpsBasedPosition, const double Xacc, const double Yacc, uint32_t deltaTimeUint)
+void KalmanFilters::makePositionFiltration(std::pair<double, double> gpsBasedPosition, const TransformedAccel& transformedAccel, const double Xacc, const double Yacc, uint32_t deltaTimeUint)
 {
+
     kf::Matrix<DIM_X, DIM_X> A;
 
-    double deltaTimeMs = static_cast<double>(deltaTimeUint) / 1000.0;
+    const double deltaTimeMs = static_cast<double>(deltaTimeUint) / 1000.0;
     A << 1.0F, deltaTimeMs, (deltaTimeMs * deltaTimeMs) / 2, 0.0F, 0.0F, 0.0F,
         0.0F, 1.0F, deltaTimeMs, 0.0F, 0.0F, 0.0F,
         0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F,
@@ -18,14 +19,14 @@ void KalmanFilters::makePositionFiltration(std::pair<double, double> gpsBasedPos
     kalmanFilterForPosition.predictLKF(A, matQFromGui.value());
 
     kf::Vector<DIM_Z> vecZ;
-    vecZ << Xacc, Yacc, gpsBasedPosition.first, gpsBasedPosition.second;
+    vecZ << transformedAccel.xAcc, transformedAccel.yAcc, gpsBasedPosition.first, gpsBasedPosition.second;
 
     kf::Matrix<DIM_Z, DIM_X> matH;
-            //acc vel  pos    acc   vel   pos
+            //accX velX posX  accY  velY  posY
     matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
             0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
+            0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z GPS to zero
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F; //
 
     kalmanFilterForPosition.correctLKF(vecZ, matRFromGui.value(), matH);
 }
@@ -96,6 +97,7 @@ void KalmanFilters::makeGyroFiltration(const double xAngleVelocityDegPerSec, con
             0, 0.1F, 0,
             0, 0, 0.1F;
     kf::Matrix<DIM_Z_gyro, DIM_X_gyro> matH;
+            
     matH << 1, 0, 0, 0, 0, 0,
             0, 0, 1, 0, 0, 0,
             0, 0, 0, 0, 1, 0;

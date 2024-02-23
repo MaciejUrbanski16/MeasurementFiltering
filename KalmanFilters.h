@@ -1,6 +1,7 @@
 #pragma once
 
 #include "KalmanFilterSetupGui.h"
+#include "AccelTransform.h"
 #include "AppLogger.h"
 #include "kalman_filter/kalman_filter.h"
 
@@ -9,7 +10,8 @@ class KalmanFilters
 public:
     KalmanFilters(KalmanFilterSetupGui& kalmanFilterSetupGui) : kalmanFilterSetupGui(kalmanFilterSetupGui){}
 
-    void makePositionFiltration(std::pair<double, double> gpsBasedPosition, const double Xacc, const double Yacc, uint32_t deltaTimeUint);
+    void makePositionFiltration(std::pair<double, double> gpsBasedPosition, const TransformedAccel& transformedAccel,
+                                const double Xacc, const double Yacc, uint32_t deltaTimeUint);
     void makeAzimuthFitration(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec,
                               const double zAngleVelocityDegPerSec, const double azimuthFromMagn, const uint32_t deltaTime);
     void makeGyroFiltration(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec,

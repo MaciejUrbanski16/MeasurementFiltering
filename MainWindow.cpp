@@ -204,23 +204,23 @@ void MyWindow::OnSpinZAccUpdate(wxSpinEvent& event)
     rawGrawity = zAccCtrlValue;
 }
 
-void MyWindow::processFiltration(const std::vector<std::string>& measurements, const bool isRealTimeMeasurement)
+void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const uint32_t deltaTimeMs, const bool isRealTimeMeasurement)
 {
-    if (measurements.size() == 10)
+//    if (measurements.size() == 10)
     {
-        if (isFirstMeasurement)
-        {
-            deltaTimeCalculator.startTimer();
-            isFirstMeasurement = false;
-            return;
-        }
-        const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
-        MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
-            angleVelocityChartGui.getXgyroBias(),
-            angleVelocityChartGui.getYgyroBias(),
-            angleVelocityChartGui.getZgyroBias());
-        totalTimeMs += static_cast<double>(deltaTimeMs);
-        if (rawMeasurement.assign(measurements, deltaTimeMs, isRealTimeMeasurement))
+        //if (isFirstMeasurement)
+        //{
+        //    deltaTimeCalculator.startTimer();
+        //    isFirstMeasurement = false;
+        //    return;
+        //}
+        //const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
+        //MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
+        //    angleVelocityChartGui.getXgyroBias(),
+        //    angleVelocityChartGui.getYgyroBias(),
+        //    angleVelocityChartGui.getZgyroBias());
+        //totalTimeMs += static_cast<double>(deltaTimeMs);
+ //       if (rawMeasurement.assign(measurements, deltaTimeMs, isRealTimeMeasurement))
         {
 
             //const uint32_t totalTimeMs = deltaTimeCalculator.getTotalTimeMs();
@@ -250,6 +250,8 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                     rawMeasurement.getYangleVelocityDegreePerS(),
                     rawMeasurement.getZangleVelocityDegreePerS(), 1.0, totalTimeMs);
 
+
+                //jesli GPS nowe dane to policz gps basedd position i u¿yj drugiej wersji macierzy H
                 const double lon{ gpsDataConverter.getLongitude() };
                 const double lat{ gpsDataConverter.getLatitude() };
                 const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
@@ -310,7 +312,7 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
 
                 //const double filteredXAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[3];
                 //const double filteredYAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[4];
-                const double filteredZAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[5];
+                const double filteredZAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[4];
 
                 rollPitchChartGui.updateChart(rawMeasurement, 
                     rollBasedOnAccBuffer, pitchBasedOnAccBuffer, magnPointsBuffer,
@@ -337,17 +339,15 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
                 const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
                 updateGpsBasedPositionChart(gpsBasedPosition);
 
-                kalmanFilters.makePositionFiltration(gpsBasedPosition, rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
-
-                
+                kalmanFilters.makePositionFiltration(gpsBasedPosition, transformedAccel, rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
 
                 positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
                     filteredAzimuth);
 
-                filteredPositionX = kalmanFilters.getFilterForPosition().vecX()(0);//PosX
-                filteredPositionY = kalmanFilters.getFilterForPosition().vecX()(3);//PosY
-                const double filteredXacc = kalmanFilters.getFilterForPosition().vecX()(2); //xAcc
-                const double filteredYacc = kalmanFilters.getFilterForPosition().vecX()(5); //yAcc
+                filteredPositionX = kalmanFilters.getFilterForPosition().vecX()(2);//PosX
+                filteredPositionY = kalmanFilters.getFilterForPosition().vecX()(5);//PosY
+                const double filteredXacc = kalmanFilters.getFilterForPosition().vecX()(0); //xAcc
+                const double filteredYacc = kalmanFilters.getFilterForPosition().vecX()(3); //yAcc
                 //const double filteredVelocityX = kalmanFilter.vecX()(1);
                 //const double filteredAccX = kalmanFilter.vecX()(1);
                 
@@ -394,10 +394,37 @@ void MyWindow::processFiltration(const std::vector<std::string>& measurements, c
             //VelocityCalculator velocityCalculator;
         }
     }
-    else
+
+}
+
+void MyWindow::OnFilterReceivedDataProcessingTimer(wxTimerEvent& event)
+{
+    //co 100ms
+    if (kalmanFilterSetupGui.getIsCallibrationDone())
     {
-        const std::string errThreadEvent{ "ERR when handling data from thread/timer - wrong size of data - should be 10!!!" };
-        appLogger.logErrThreadDataHandling(errThreadEvent);
+        //filter data in synchronized manner
+        //check if new data available
+        //set properly matrix H
+        MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
+            angleVelocityChartGui.getXgyroBias(),
+            angleVelocityChartGui.getYgyroBias(),
+            angleVelocityChartGui.getZgyroBias());
+        const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
+        totalTimeMs += static_cast<double>(deltaTimeMs);
+        if (currentMeasurements.first == false && rawMeasurement.assign(currentMeasurements.second, 100, true))
+        {
+            processFiltration(rawMeasurement, deltaTimeMs, true);
+            currentMeasurements.first = true;
+        }
+        else
+        {
+            //process filtration without measurements.. - macierz H na zera
+            // set correct matrix H
+            ///processFiltration(rawMeasurement, deltaTimeMs, true);
+
+            const std::string errThreadEvent{ "INF timer expired - no valid measurements data available for current filtration cycle - only estimation based on previous system state" };
+            appLogger.logErrThreadDataHandling(errThreadEvent);
+        }
     }
 }
 
@@ -416,21 +443,64 @@ void MyWindow::OnFilterFileMeasTimer(wxTimerEvent& event)
 
     gpsDataConverter.handleGpsData(gpsData);
 
-    processFiltration(measurements, false);
+    MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
+        angleVelocityChartGui.getXgyroBias(),
+        angleVelocityChartGui.getYgyroBias(),
+        angleVelocityChartGui.getZgyroBias());
+    if (rawMeasurement.assign(currentMeasurements.second, 100, true))
+    {
+        processFiltration(rawMeasurement, 100, false);
+    }
+
     //every 100ms
     //read new line
     //call filtration
 }
 
-void MyWindow::OnSensorsDataThreadEvent(wxThreadEvent& event) {
-
+//every time when sensors data received throughout WIFI
+void MyWindow::OnSensorsDataThreadEvent(wxThreadEvent& event) 
+{
     MeasurementCustomizator* myEvent = dynamic_cast<MeasurementCustomizator*>(&event);
     if (myEvent)
     {
         const std::vector<std::string>& measurements = myEvent->GetStringVector();
 
         appLogger.logReceivedDataOnMainThread(measurements);
-        processFiltration(measurements, true);
+        //DURING CALLIBRATION
+        if (not kalmanFilterSetupGui.getIsCallibrationDone())
+        {
+            if (measurements.size() == 10)
+            {
+                if (isFirstMeasurement)
+                {
+                    deltaTimeCalculator.startTimer();
+                    isFirstMeasurement = false;
+                    return;
+                }
+                const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
+                MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
+                    angleVelocityChartGui.getXgyroBias(),
+                    angleVelocityChartGui.getYgyroBias(),
+                    angleVelocityChartGui.getZgyroBias());
+                totalTimeMs += static_cast<double>(deltaTimeMs);
+                if (rawMeasurement.assign(measurements, deltaTimeMs, true))
+                {
+                    processFiltration(rawMeasurement, deltaTimeMs, true);
+                }
+            }
+            else
+            {
+                const std::string errThreadEvent{ "ERR when handling data from thread/timer during callibration process for WIFI reception - wrong size of data - should be 10!!! Currently the size is "
+                    + std::to_string(measurements.size())};
+                appLogger.logErrThreadDataHandling(errThreadEvent);
+            }
+        }
+        else //AFTER CALLIBRATION
+        {
+            //save data for timer expiration
+            currentMeasurements.first = false;
+            currentMeasurements.second = measurements;
+        }
     }
     else
     {
@@ -460,6 +530,7 @@ void MyWindow::OnGpsDataThreadEvent(wxThreadEvent& event)
     }
 }
 
+//every time when sensors data received throughout COM port
 void MyWindow::OnSensorDataComThreadEvent(wxThreadEvent& event)
 {
     MeasurementCustomizator* myEvent = dynamic_cast<MeasurementCustomizator*>(&event);
@@ -468,7 +539,41 @@ void MyWindow::OnSensorDataComThreadEvent(wxThreadEvent& event)
         const std::vector<std::string>& measurements = myEvent->GetStringVector();
 
         appLogger.logReceivedDataOnMainThread(measurements);
-        processFiltration(measurements, true);
+        //DURING CALLIBRATION
+        if (not kalmanFilterSetupGui.getIsCallibrationDone())
+        {
+            if (measurements.size() == 10)
+            {
+                if (isFirstMeasurement)
+                {
+                    deltaTimeCalculator.startTimer();
+                    isFirstMeasurement = false;
+                    return;
+                }
+                const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
+                MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
+                    angleVelocityChartGui.getXgyroBias(),
+                    angleVelocityChartGui.getYgyroBias(),
+                    angleVelocityChartGui.getZgyroBias());
+                totalTimeMs += static_cast<double>(deltaTimeMs);
+                if (rawMeasurement.assign(measurements, deltaTimeMs, true))
+                {
+                    processFiltration(rawMeasurement, deltaTimeMs, true);
+                }
+            }
+            else
+            {
+                const std::string errThreadEvent{ "ERR when handling data from thread/timer during callibration process for COM port reception - wrong size of data - should be 10!!! Currently the size is "
+                    + std::to_string(measurements.size()) };
+                appLogger.logErrThreadDataHandling(errThreadEvent);
+            }
+        }
+        else //AFTER CALLIBRATION
+        {
+            //save data for timer expiration
+            currentMeasurements.first = false;
+            currentMeasurements.second = measurements;
+        }
     }
     else
     {
@@ -1064,4 +1169,5 @@ void MyWindow::prepareGui()
     //BTconfirmSetupAndStartReception->Bind(wxEVT_BUTTON, &MyWindow::OnStartReceptionClick, this);
 
     filterFileMeasTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterFileMeasTimer, this);
+    filterReceivedDataProcessingTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterReceivedDataProcessingTimer, this);
 }

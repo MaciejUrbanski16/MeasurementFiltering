@@ -847,14 +847,14 @@ void KalmanFilterSetupGui::initPedestrianModelMatrices()
 
     matQAzimuthPedestrian *= process_variance;
 
-    matRAccPedestrian << 0.1F, 0.0F, 0.0F, 0.0F,
-                         0.0F, 0.1F, 0.0F, 0.0F,
+    matRAccPedestrian << 0.01F, 0.0F, 0.0F, 0.0F,
+                         0.0F, 0.01F, 0.0F, 0.0F,
                          0.0F, 0.0F, 0.1F, 0.0F,
                          0.0F, 0.0F, 0.0F, 0.1F;
 
-    double processVarianceAcc = 200.0F;
+    double processVarianceAcc = 2000.0F;
     double sCoefficient = 10.0F;
-    sCoefficient = sCoefficient / 1000.0F;
+    sCoefficient = sCoefficient / 50.0F;
 
     matQAccPedestrian << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0, 0, 0,
         pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0, 0, 0,
@@ -950,6 +950,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     if (pedestrianModelButton->GetValue())
     {
         isCallibrationDone = true;
+        filterReceivedDataProcessingTimer.Start(100);
         isRestartFiltrationNeeded = true;
         movementModel = MovementModel::PEDESTRIAN;
 
@@ -961,6 +962,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     else if (rcCarModelButton->GetValue())
     {
         isCallibrationDone = true;
+        filterReceivedDataProcessingTimer.Start(100);
         isRestartFiltrationNeeded = true;
         movementModel = MovementModel::RC_CAR;
 
@@ -972,6 +974,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     else if (carModelButton->GetValue())
     {
         isCallibrationDone = true;
+        filterReceivedDataProcessingTimer.Start(100);
         isRestartFiltrationNeeded = true;
         movementModel = MovementModel::CAR;
 

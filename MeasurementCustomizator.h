@@ -12,18 +12,30 @@ public:
     MeasurementCustomizator(wxEventType eventType, int id = wxID_ANY)
         : wxThreadEvent(eventType, id) {}
 
-    void SetStringVector(const std::vector<std::string>& strings) {
+    void SetStringVector(const std::vector<std::string>& strings)
+    {
         measurements = strings;
     }
 
-    const std::vector<std::string>& GetStringVector() const {
+    const std::vector<std::string>& GetStringVector() const 
+    {
         return measurements;
     }
 
-    wxEvent* Clone() const override {
+    wxEvent* Clone() const override
+    {
         return new MeasurementCustomizator(*this);
+    }
+    void setNewDataIndicator(const bool value)
+    {
+        newDataIndicator = value;
+    }
+    bool getCurrentDataIndicator() const
+    {
+        return newDataIndicator;
     }
 
 private:
     std::vector<std::string> measurements;
+    bool newDataIndicator{ false };
 };

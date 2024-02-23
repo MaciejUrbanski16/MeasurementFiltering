@@ -81,7 +81,7 @@ void RollPitchChartGui::setup(wxNotebook* m_notebook)
 	sizerRollPitchPlot->Add(rollPitchPanelSplitter, 1, wxEXPAND | wxALL, 5);
 	panel->SetSizer(sizerRollPitchPlot);
 
-	m_notebook->AddPage(panel, "Roll/pitch");
+	m_notebook->AddPage(panel, "Roll/pitch/yaw");
 }
 
 void RollPitchChartGui::updateChart(const MeasurementsController& rawMeasurement,
@@ -115,6 +115,7 @@ void RollPitchChartGui::updateChart(const MeasurementsController& rawMeasurement
 	//dataset->GetSerie(2)->SetName("yaw");
 	dataset->GetSerie(0)->SetName("roll based on acc");
 	dataset->GetSerie(1)->SetName("pitch based on acc");
+	dataset->GetSerie(2)->SetName("yaw based on magn");
 
 	dataset->SetRenderer(new XYLineRenderer());
 	NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);

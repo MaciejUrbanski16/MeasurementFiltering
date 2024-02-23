@@ -8,7 +8,7 @@ TransformedAccel AccelTransform::transform(const MeasurementsController& rawMeas
 
     Eigen::Vector3d accelAfterLocalCoordTransformed(0.0,0.0,0.0);
 
-    if (counterOfSamples % 2 == 0)
+    if (counterOfSamples % 4 == 0)
     {
         const double r = sqrtf(xAccMPerS2 * xAccMPerS2 + yAccMPerS2 * yAccMPerS2 + zAccMPerS2 * zAccMPerS2);
         const double x = xAccMPerS2 / r;
