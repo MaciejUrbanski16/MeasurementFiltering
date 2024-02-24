@@ -232,7 +232,7 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
             if (kalmanFilterSetupGui.getIsCallibrationDone() == false)
             {
                 magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
-                    rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), 1.0, totalTimeMs);
+                    rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getYawFromMagn()*180/M_PI, 1.0, totalTimeMs);
                 //updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), 1.0, totalTimeMs);
                 TransformedAccel transformedAccel{ 0.0,0.0,0.0 };
                 updateAccChart(
@@ -282,6 +282,7 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
                 //    kalmanFilterGyro.matP().setZero();
                 //    
                 //}
+
                 const auto rollFromAcc = rawMeasurement.getRollFromAcc() * (180.0 / M_PI);
                 const auto pitchFromAcc = rawMeasurement.getPitchFromAcc() * (180.0 / M_PI);
                 const auto yawFromMagn = rawMeasurement.getAzimuth();
@@ -411,10 +412,13 @@ void MyWindow::OnFilterReceivedDataProcessingTimer(wxTimerEvent& event)
         //filter data in synchronized manner
         //check if new data available
         //set properly matrix H
+        const int16_t xMagnOffset = magnetometerCallibrator.getXoffset();
+        const int16_t yMagnOffset = magnetometerCallibrator.getYoffset();
+
         MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
             angleVelocityChartGui.getXgyroBias(),
             angleVelocityChartGui.getYgyroBias(),
-            angleVelocityChartGui.getZgyroBias());
+            angleVelocityChartGui.getZgyroBias(), xMagnOffset, yMagnOffset);
         const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
         totalTimeMs += static_cast<double>(deltaTimeMs);
         if (currentSensorMeasurements.first && rawMeasurement.assign(currentSensorMeasurements.second, deltaTimeMs, true))
@@ -471,10 +475,13 @@ void MyWindow::OnFilterFileMeasTimer(wxTimerEvent& event)
 
     gpsDataConverter.handleGpsData(gpsData);
 
+    const int16_t xMagnOffset = magnetometerCallibrator.getXoffset();
+    const int16_t yMagnOffset = magnetometerCallibrator.getYoffset();
+
     MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
         angleVelocityChartGui.getXgyroBias(),
         angleVelocityChartGui.getYgyroBias(),
-        angleVelocityChartGui.getZgyroBias());
+        angleVelocityChartGui.getZgyroBias(), xMagnOffset, yMagnOffset);
     if (rawMeasurement.assign(currentSensorMeasurements.second, 100, true))
     {
         processFiltration(rawMeasurement, 100, false);
@@ -506,10 +513,12 @@ void MyWindow::OnSensorsDataThreadEvent(wxThreadEvent& event)
                     return;
                 }
                 const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
+                const int16_t xMagnOffset = magnetometerCallibrator.getXoffset();
+                const int16_t yMagnOffset = magnetometerCallibrator.getYoffset();
                 MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
                     angleVelocityChartGui.getXgyroBias(),
                     angleVelocityChartGui.getYgyroBias(),
-                    angleVelocityChartGui.getZgyroBias());
+                    angleVelocityChartGui.getZgyroBias(), xMagnOffset, yMagnOffset);
                 totalTimeMs += static_cast<double>(deltaTimeMs);
                 if (rawMeasurement.assign(measurements, deltaTimeMs, true))
                 {
@@ -582,7 +591,7 @@ void MyWindow::OnSensorDataComThreadEvent(wxThreadEvent& event)
         //DURING CALLIBRATION
         if (not kalmanFilterSetupGui.getIsCallibrationDone())
         {
-            if (measurements.size() == 10)
+            if (measurements.size() == 9)
             {
                 if (isFirstMeasurement)
                 {
@@ -591,10 +600,12 @@ void MyWindow::OnSensorDataComThreadEvent(wxThreadEvent& event)
                     return;
                 }
                 const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
+                const int16_t xMagnOffset = magnetometerCallibrator.getXoffset();
+                const int16_t yMagnOffset = magnetometerCallibrator.getYoffset();
                 MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
                     angleVelocityChartGui.getXgyroBias(),
                     angleVelocityChartGui.getYgyroBias(),
-                    angleVelocityChartGui.getZgyroBias());
+                    angleVelocityChartGui.getZgyroBias(), xMagnOffset, yMagnOffset);
                 totalTimeMs += static_cast<double>(deltaTimeMs);
                 if (rawMeasurement.assign(measurements, deltaTimeMs, true))
                 {
@@ -603,7 +614,7 @@ void MyWindow::OnSensorDataComThreadEvent(wxThreadEvent& event)
             }
             else
             {
-                const std::string errThreadEvent{ "ERR when handling data from thread/timer during callibration process for COM port reception - wrong size of data - should be 10!!! Currently the size is "
+                const std::string errThreadEvent{ "ERR when handling data from thread/timer during callibration process for COM port reception - wrong size of data - should be 9!!! Currently the size is "
                     + std::to_string(measurements.size()) };
                 appLogger.logErrThreadDataHandling(errThreadEvent);
             }

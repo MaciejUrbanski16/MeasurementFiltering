@@ -133,12 +133,14 @@ private:
     wxTimer filterReceivedDataProcessingTimer;
     wxTimer filterReceivedGpsProcessingTimer;
 
-    KalmanFilterSetupGui kalmanFilterSetupGui{ filterReceivedDataProcessingTimer, filterReceivedGpsProcessingTimer };
+    MagnetometerCallibrator magnetometerCallibrator{};
+    MagnChartGui magnChartGui{ magnetometerCallibrator };
+    KalmanFilterSetupGui kalmanFilterSetupGui{ filterReceivedDataProcessingTimer, filterReceivedGpsProcessingTimer, magnChartGui };
     CsvMeasurementReader csvMeasurementReader;
     CsvMeasurementLoadGui csvMeasurementLoadGui{ csvMeasurementReader };
 
     PositionChartGui positionChartGui;
-    MagnChartGui magnChartGui;
+
     AngleVelocityChartGui angleVelocityChartGui;
     RollPitchChartGui rollPitchChartGui;
 

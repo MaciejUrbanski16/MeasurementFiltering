@@ -31,7 +31,8 @@ class MeasurementsController
 {
 public:
 	MeasurementsController(AppLogger& appLogger, const double newRawGrawity, const double newXBias, const double newYBias,
-		const double newXGyroBias, const double newYGyroBias, const double newZGyroBias): appLogger(appLogger)
+		const double newXGyroBias, const double newYGyroBias, const double newZGyroBias, 
+		const int16_t xMagnOffset, const int16_t yMagnOffset): appLogger(appLogger)
 	{
 		setRawGrawity(newRawGrawity);
 		setXBias(newXBias);
@@ -41,18 +42,20 @@ public:
 		setYGyroBias(newYGyroBias);
 		setZGyroBias(newZGyroBias);
 
+		this->xMagnOffset = xMagnOffset;
+		this->yMagnOffset = yMagnOffset;
+
 		//assign(measurements);
 	}
 
 	bool assign(const std::vector<std::string>& measurements, const uint32_t deltaTimeMs, const bool isRealTimeMeasurement)
 	{
-		if (measurements.size() == 10)
+		if (measurements.size() == 9)
 		{
 			//const auto isMagnetometr = isMagn(measurements[6]);
 			if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) &&
 				isNumber(measurements[3]) && isNumber(measurements[4]) && isNumber(measurements[5]) &&
-				isNumber(measurements[6]) && isNumber(measurements[7]) && 
-				isFloat(measurements[8]) && isFloat(measurements[9]))
+				isNumber(measurements[6]) && isNumber(measurements[7]) && isNumber(measurements[8]))
 
 			{
 				xAcc = std::stoi(measurements[0]);
@@ -63,13 +66,12 @@ public:
 				yGyro = std::stoi(measurements[4]);
 				zGyro = std::stoi(measurements[5]);
 
-				//
-				//magn = std::stoi(measurements[6]);
 				xMagn = std::stoi(measurements[6]);
 				yMagn = std::stoi(measurements[7]);
+				zMagn = std::stoi(measurements[8]);
 
-				convertGpsDataToDouble(measurements[8], measurements[9]);
-
+				xMagn = xMagn - xMagnOffset;
+				yMagn = yMagn - yMagnOffset;
 
 
 				this->deltaTimeMs = deltaTimeMs;
@@ -99,7 +101,7 @@ public:
 			appLogger.logErrMeasurementConversion(errMeasConversion);
 			return false;
 		}
-		const std::string errMeasConversion{ "ERR when measurement conversion from string to int16_t" };
+		const std::string errMeasConversion{ "ERR when measurement conversion from string to int16_t - incorrect size of measuremets struct!!" };
 		appLogger.logErrMeasurementConversion(errMeasConversion);
 		return false;
 	}
@@ -133,6 +135,7 @@ public:
 	double getXDistance() const { return xDistance; }
 	double getYDistance() const { return yDistance; }
 
+	//radians
 	double getRollFromAcc() const
 	{
 		return atan2(static_cast<float>(yAcc + yBias), static_cast<float>(zAcc));// *(180.0 / M_PI);
@@ -141,6 +144,15 @@ public:
 	{
 		return atan2((static_cast<float>(-(xAcc + xBias))),
 			sqrt(static_cast<float>(yAcc + yBias) * static_cast<float>(yAcc + yBias) + static_cast<float>(zAcc) * static_cast<float>(zAcc)));// *(180.0 / M_PI);
+	}
+	double getYawFromMagn()
+	{
+		double roll = getRollFromAcc() - M_PI;
+		double pitch = getPitchFromAcc() - M_PI;
+		double compensatedX = static_cast<double>(xMagn * cos(pitch)) - static_cast<double>(yMagn * sin(roll) * sin(pitch)) + static_cast<double>(zMagn * cos(roll) * sin(pitch));
+		double compensatedY = (static_cast<double>(yMagn * cos(roll)) + static_cast<double>(zMagn * sin(roll)));
+		yawCompensated = atan2(compensatedY, compensatedX);
+		return yawCompensated;
 	}
 
 	int16_t getRawXacc() const { return xAcc; }
@@ -239,26 +251,6 @@ private:
 			static_cast<double>(xMagn)) * (180.0f / M_PI);
 	}
 
-	void convertGpsDataToDouble(const std::string& longitudeAsString, const std::string& latitudeAsString)
-	{
-		try
-		{
-			longitude = std::stod(longitudeAsString);
-		}
-		catch (...) 
-		{
-			longitude = 999.999;
-		}
-		try
-		{
-			latitude = std::stod(latitudeAsString);
-		}
-		catch (...)
-		{
-			latitude = 999.999;
-		}
-	}
-
 	bool isNumber(const std::string& meas)
 	{
 		for (const char c : meas)
@@ -312,11 +304,16 @@ private:
 	int16_t zGyro{ 0xFF };
 	int16_t xMagn{ 0xFF };
 	int16_t yMagn{ 0xFF };
+	int16_t zMagn{ 0xFF };
+
+	int16_t xMagnOffset{ 0 };
+	int16_t yMagnOffset{ 0 };
 
 	double longitude{ 0.0 };
 	double latitude{ 0.0 };
 
 	int16_t magn{ 0xFF };
+	double yawCompensated{ 0.0 };
 
 	double xAccMPerS2{ 0.0 };
 	double yAccMPerS2{ 0.0 };

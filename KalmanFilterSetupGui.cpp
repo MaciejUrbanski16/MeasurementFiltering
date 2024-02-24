@@ -941,6 +941,11 @@ void KalmanFilterSetupGui::initCarModelMatrices()
 void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
 {
     restartFiltrationAfterCallibrationButton->Enable(true);
+    //if (not magnChartGui.checkIfMagnCalibrationDone())
+    //{
+    //    wxMessageBox(wxT("Magnetometer callibration was not done!"));
+    //    return;
+    //}
     if (isCallibrationDone)
     {
         wxMessageBox(wxT("Filtracja danych w toku - nie mozna zmienic wybranego modelu ruchu"));

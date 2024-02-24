@@ -27,24 +27,31 @@ void MagnChartGui::setup(wxNotebook* m_notebook /*, MyWindow* window*/)
 
 	wxBoxSizer* azimuthSetupButtonsSizer = new wxBoxSizer(wxHORIZONTAL);
 
-	wxButton* resetButton = new wxButton(controlPanel, wxID_ANY, "Reset chart");
-	azimuthSetupButtonsSizer->Add(resetButton, 0, wxALL | wxALIGN_LEFT, 5);
-	resetButton->Bind(wxEVT_BUTTON, &MagnChartGui::OnResetMagnChart, this);
+	startCallibrationButton = new wxButton(controlPanel, wxID_ANY, "Start callibration");
+	azimuthSetupButtonsSizer->Add(startCallibrationButton, 0, wxALL | wxALIGN_LEFT, 5);
+	startCallibrationButton->Bind(wxEVT_BUTTON, &MagnChartGui::OnStartMagnCallibration, this);
 
-	wxButton* submitButton = new wxButton(controlPanel, wxID_ANY, "Submit adjustments");
-	azimuthSetupButtonsSizer->Add(submitButton, 0, wxALL | wxALIGN_LEFT, 5);
-	submitButton->Bind(wxEVT_BUTTON, &MagnChartGui::OnSubmitMagnAdjustments, this);
+	stopCallibrationButton = new wxButton(controlPanel, wxID_ANY, "Stop callibration");
+	azimuthSetupButtonsSizer->Add(stopCallibrationButton, 0, wxALL | wxALIGN_LEFT, 5);
+	stopCallibrationButton->Bind(wxEVT_BUTTON, &MagnChartGui::OnStopMagnCallibration, this);
+	stopCallibrationButton->Enable(false);
 
 	wxBoxSizer* xMagnLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* yMagnLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* xOffsetSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* yOffsetSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* orientationSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* checkBoxSizer = new wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* xMagnName = new wxStaticText(controlPanel, wxID_ANY, "Current X magn: ");
 	wxStaticText* yMagnName = new wxStaticText(controlPanel, wxID_ANY, "Current Y magn: ");
+	wxStaticText* xOffsetName = new wxStaticText(controlPanel, wxID_ANY, "Calculated X offset: ");
+	wxStaticText* yOffsetName = new wxStaticText(controlPanel, wxID_ANY, "Calculated Y offset: ");
 	wxStaticText* orientationName = new wxStaticText(controlPanel, wxID_ANY, "Orientation [deg]: ");
 	xMagnValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	yMagnValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+	calculatedXoffsetValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+	calculatedYoffsetValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	orientationValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 
 	rawAzimuthCheckbox = new wxCheckBox(controlPanel, wxID_ANY, wxT("Plot raw azimuth"));
@@ -62,11 +69,19 @@ void MagnChartGui::setup(wxNotebook* m_notebook /*, MyWindow* window*/)
 	yMagnLabelsSizer->Add(yMagnName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	yMagnLabelsSizer->Add(yMagnValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	controlPanelSizer->Add(yMagnLabelsSizer, 0, wxALL, 5);
+	controlPanelSizer->AddSpacer(10);
+	xOffsetSizer->Add(xOffsetName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	xOffsetSizer->Add(calculatedXoffsetValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	controlPanelSizer->Add(xOffsetSizer, 0, wxALL, 5);
 
+	yOffsetSizer->Add(yOffsetName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	yOffsetSizer->Add(calculatedYoffsetValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	controlPanelSizer->Add(yOffsetSizer, 0, wxALL, 5);
+	controlPanelSizer->AddSpacer(10);
 	orientationSizer->Add(orientationName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	orientationSizer->Add(orientationValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	controlPanelSizer->Add(orientationSizer, 0, wxALL, 5);
-
+	controlPanelSizer->AddSpacer(10);
 	controlPanelSizer->Add(azimuthSetupButtonsSizer, 0, wxALL, 5);
 
 	controlPanelSizer->AddSpacer(10);
@@ -89,11 +104,17 @@ void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElement
 	const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth,
 	 const double timeMs)
 {
+	if (wasCallibrationStarted)
+	{
+		magnetometerCallibrator.collectData(xMagn, yMagn);
+	}
+
+	const double azimuthInDegrees{ azimuth };
 	xMagnValue->SetLabel(std::to_string(xMagn));
 	yMagnValue->SetLabel(std::to_string(yMagn));
-	orientationValue->SetLabel(std::to_string(azimuth));
+	orientationValue->SetLabel(std::to_string(azimuthInDegrees));
 
-	magnPointsBuffer.AddElement(wxRealPoint(timeMs, azimuth));
+	magnPointsBuffer.AddElement(wxRealPoint(timeMs, azimuthInDegrees));
 	filteredAzimuthBuffer.AddElement(wxRealPoint(timeMs, filteredAzimuth));
 
 	XYPlot* plot = new XYPlot();
@@ -141,15 +162,28 @@ void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElement
 	azimuthChartPanel->SetChart(chart);
 }
 
-
-void MagnChartGui::OnResetMagnChart(wxCommandEvent& event)
+void MagnChartGui::setCalculatedOffsetValues()
 {
-	wxMessageBox("OnResetMagnChart was clicked", "Informacja", wxOK | wxICON_INFORMATION);
+	calculatedXoffsetValue->SetLabel(std::to_string(magnetometerCallibrator.getXoffset()));
+	calculatedYoffsetValue->SetLabel(std::to_string(magnetometerCallibrator.getYoffset()));
 }
 
-void MagnChartGui::OnSubmitMagnAdjustments(wxCommandEvent& event)
+void MagnChartGui::OnStartMagnCallibration(wxCommandEvent& event)
 {
-	wxMessageBox("OnSubmitMagnAdjustments was clicked", "Informacja", wxOK | wxICON_INFORMATION);
+	wasCallibrationStarted = true;
+	startCallibrationButton->Enable(false);
+	stopCallibrationButton->Enable(true);
+	wxMessageBox("Callibration has been started, rotate device to collect data", "Informacja", wxOK | wxICON_INFORMATION);
+}
+
+void MagnChartGui::OnStopMagnCallibration(wxCommandEvent& event)
+{
+	wasCallibrationStarted = false;
+	wasMagnCallibrationDone = true;
+	magnetometerCallibrator.callibrate();
+	setCalculatedOffsetValues();
+	stopCallibrationButton->Enable(false);
+	wxMessageBox("Callibration has been finished", "Informacja", wxOK | wxICON_INFORMATION);
 }
 
 void MagnChartGui::OnRawAzimuthCheckBoxClicked(wxCommandEvent& event)

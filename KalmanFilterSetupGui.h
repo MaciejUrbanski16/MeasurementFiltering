@@ -12,6 +12,7 @@
 #include "kalman_filter/kalman_filter.h"
 
 #include <optional>
+#include "MagnChartGui.h"
 
 static constexpr size_t DIM_X_azimuth{ 6 };
 static constexpr size_t DIM_Z_azimuth{ 3 };
@@ -31,10 +32,12 @@ enum class MovementModel
 class KalmanFilterSetupGui
 {
 public:
-    KalmanFilterSetupGui(wxTimer& filterReceivedDataProcessingTimer, wxTimer& filterReceivedGpsProcessingTimer) 
+    KalmanFilterSetupGui(wxTimer& filterReceivedDataProcessingTimer, wxTimer& filterReceivedGpsProcessingTimer,
+        MagnChartGui& magnChartGui)
         : 
         filterReceivedDataProcessingTimer(filterReceivedDataProcessingTimer),
-        filterReceivedGpsProcessingTimer(filterReceivedGpsProcessingTimer)
+        filterReceivedGpsProcessingTimer(filterReceivedGpsProcessingTimer),
+        magnChartGui(magnChartGui)
         {}
 
     std::optional<kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth>> getMatRazimuth();
@@ -99,6 +102,7 @@ private:
 
     wxTimer& filterReceivedDataProcessingTimer;
     wxTimer& filterReceivedGpsProcessingTimer;
+    MagnChartGui& magnChartGui;
 
     wxPanel* kalmanParamsSetupPanel = nullptr;
 	wxButton* confirmCallibrationButton = nullptr;

@@ -19,22 +19,25 @@
 #include <wx/spinctrl.h> 
 
 #include "PlotElementsBuffer.h"
+#include "MagnetometerCallibrator.h"
 
 class MagnChartGui : public wxFrame
 {
 public:
+	MagnChartGui(MagnetometerCallibrator& magnetometerCallibrator) : magnetometerCallibrator(magnetometerCallibrator){}
 	void setup(wxNotebook* m_notebook/*, MyWindow* window*/);
 	void updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElementsBuffer& filteredAzimuthBuffer,
 		PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer,
 		 const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth,
 		 const double timeMs);
+	bool checkIfMagnCalibrationDone() const { return wasMagnCallibrationDone; }
 
 private:
-	void OnResetMagnChart(wxCommandEvent& event);
-	void OnSubmitMagnAdjustments(wxCommandEvent& event);
+	void OnStartMagnCallibration(wxCommandEvent& event);
+	void OnStopMagnCallibration(wxCommandEvent& event);
 	void OnRawAzimuthCheckBoxClicked(wxCommandEvent& event);
 	void OnFilteredAzimuthCheckBoxClicked(wxCommandEvent& event);
-
+	void setCalculatedOffsetValues();
 	//void OnSpinMagnUpdate(wxSpinEvent& event);
 	//void OnSpinMagnIncrUpdate(wxSpinEvent& event);
 
@@ -45,10 +48,20 @@ private:
 	wxSpinCtrl* spinCtrlYmagn = nullptr;
 	wxStaticText* xMagnValue = nullptr;
 	wxStaticText* yMagnValue = nullptr;
+	wxStaticText* calculatedXoffsetValue = nullptr;
+	wxStaticText* calculatedYoffsetValue = nullptr;
 	wxStaticText* orientationValue = nullptr;
 	wxCheckBox* rawAzimuthCheckbox = nullptr;
 	wxCheckBox* filteredAzimuthCheckbox = nullptr;
 
+	wxButton* startCallibrationButton = nullptr;
+	wxButton* stopCallibrationButton = nullptr;
+
 	bool plotRawAzimuth{ true };
 	bool plotFilteredAzimuth{ true };
+
+	bool wasCallibrationStarted{ false };
+	bool wasMagnCallibrationDone{ false };
+	MagnetometerCallibrator& magnetometerCallibrator;
+
 };
