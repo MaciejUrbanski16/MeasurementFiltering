@@ -341,7 +341,7 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
                     const double lon{ gpsDataConverter.getLongitude() };
                     const double lat{ gpsDataConverter.getLatitude() };
                     const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
-                    gpsBasedPositionOpt.value() = gpsBasedPosition;
+                    gpsBasedPositionOpt = gpsBasedPosition;
                     updateGpsBasedPositionChart(gpsBasedPosition);
                     currentGpsMeasurements.first = false;
                 }
@@ -418,7 +418,7 @@ void MyWindow::OnFilterReceivedDataProcessingTimer(wxTimerEvent& event)
         MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
             angleVelocityChartGui.getXgyroBias(),
             angleVelocityChartGui.getYgyroBias(),
-            angleVelocityChartGui.getZgyroBias(), xMagnOffset, yMagnOffset);
+            angleVelocityChartGui.getZgyroBias(), magnetometerCallibrator);
         const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
         totalTimeMs += static_cast<double>(deltaTimeMs);
         if (currentSensorMeasurements.first && rawMeasurement.assign(currentSensorMeasurements.second, deltaTimeMs, true))
@@ -481,7 +481,7 @@ void MyWindow::OnFilterFileMeasTimer(wxTimerEvent& event)
     MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
         angleVelocityChartGui.getXgyroBias(),
         angleVelocityChartGui.getYgyroBias(),
-        angleVelocityChartGui.getZgyroBias(), xMagnOffset, yMagnOffset);
+        angleVelocityChartGui.getZgyroBias(), magnetometerCallibrator);
     if (rawMeasurement.assign(currentSensorMeasurements.second, 100, true))
     {
         processFiltration(rawMeasurement, 100, false);
@@ -518,7 +518,7 @@ void MyWindow::OnSensorsDataThreadEvent(wxThreadEvent& event)
                 MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
                     angleVelocityChartGui.getXgyroBias(),
                     angleVelocityChartGui.getYgyroBias(),
-                    angleVelocityChartGui.getZgyroBias(), xMagnOffset, yMagnOffset);
+                    angleVelocityChartGui.getZgyroBias(), magnetometerCallibrator);
                 totalTimeMs += static_cast<double>(deltaTimeMs);
                 if (rawMeasurement.assign(measurements, deltaTimeMs, true))
                 {
@@ -565,11 +565,12 @@ void MyWindow::OnGpsDataThreadEvent(wxThreadEvent& event)
         {
             currentGpsMeasurements.first = true; //new GPS data ready for processing
             currentGpsMeasurements.second = measurements;
+            appLogger.logGpsCsvData(measurements);
         }
 
 
         appLogger.logReceivedDataOnMainThread(measurements, " GPS");
-        appLogger.logGpsCsvData(measurements);
+
         //processFiltration(measurements, true);
     }
     else
@@ -605,9 +606,9 @@ void MyWindow::OnSensorDataComThreadEvent(wxThreadEvent& event)
                 MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
                     angleVelocityChartGui.getXgyroBias(),
                     angleVelocityChartGui.getYgyroBias(),
-                    angleVelocityChartGui.getZgyroBias(), xMagnOffset, yMagnOffset);
+                    angleVelocityChartGui.getZgyroBias(), magnetometerCallibrator);
                 totalTimeMs += static_cast<double>(deltaTimeMs);
-                if (rawMeasurement.assign(measurements, deltaTimeMs, true))
+                if (rawMeasurement.assign(measurements, deltaTimeMs, false))
                 {
                     processFiltration(rawMeasurement, deltaTimeMs, true);
                 }

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <math.h>
 
+#include "MagnetometerCallibrator.h"
 #include "AppLogger.h"
 #define M_PI 3.1415926
 
@@ -32,7 +33,7 @@ class MeasurementsController
 public:
 	MeasurementsController(AppLogger& appLogger, const double newRawGrawity, const double newXBias, const double newYBias,
 		const double newXGyroBias, const double newYGyroBias, const double newZGyroBias, 
-		const int16_t xMagnOffset, const int16_t yMagnOffset): appLogger(appLogger)
+		MagnetometerCallibrator& magnetometerCallibrator): appLogger(appLogger), magnetometerCallibrator(magnetometerCallibrator)
 	{
 		setRawGrawity(newRawGrawity);
 		setXBias(newXBias);
@@ -42,8 +43,8 @@ public:
 		setYGyroBias(newYGyroBias);
 		setZGyroBias(newZGyroBias);
 
-		this->xMagnOffset = xMagnOffset;
-		this->yMagnOffset = yMagnOffset;
+		this->xMagnOffset = magnetometerCallibrator.getXoffset();
+		this->yMagnOffset = magnetometerCallibrator.getYoffset();
 
 		//assign(measurements);
 	}
@@ -123,9 +124,6 @@ public:
 	double getXangleVelocityDegreePerS() const { return xAngleVelocityDegPerS - correctXGyro; }
 	double getYangleVelocityDegreePerS() const { return yAngleVelocityDegPerS - correctYGyro; }
 	double getZangleVelocityDegreePerS() const { return zAngleVelocityDegPerS - correctZGyro; }
-	double getAzimuth() const { return orientationDegree; } //???
-	int16_t getRawXMagn() const { return xMagn; }
-	int16_t getRawYMagn() const { return yMagn; }
 	double getLongitude() const { return longitude; }
 	double getLatitude() const { return latitude; }
 
@@ -154,6 +152,25 @@ public:
 		yawCompensated = atan2(compensatedY, compensatedX);
 		return yawCompensated;
 	}
+
+	//degrees
+	double getAzimuth() const 
+	{
+		const int16_t magnBiasToNorthInDegrees{ magnetometerCallibrator.getBiasToNorth() };
+		double orientationInDegreeWithBias{ orientationDegree + static_cast<double>(magnBiasToNorthInDegrees) };
+		if (orientationInDegreeWithBias > 180.0)
+		{
+			orientationInDegreeWithBias = orientationInDegreeWithBias - 360.0;
+		}
+		if (orientationInDegreeWithBias < -179.99)
+		{
+			orientationInDegreeWithBias = orientationInDegreeWithBias + 360.0;
+		}
+		magnetometerCallibrator.setCurrentAzimuth(orientationInDegreeWithBias);
+		return orientationInDegreeWithBias;
+	}
+	int16_t getRawXMagn() const { return xMagn; }
+	int16_t getRawYMagn() const { return yMagn; }
 
 	int16_t getRawXacc() const { return xAcc; }
 	int16_t getRawYacc() const { return yAcc; }
@@ -355,4 +372,5 @@ private:
 	double correctZGyro{ 0.0 };
 
 	AppLogger& appLogger;
+	MagnetometerCallibrator& magnetometerCallibrator;
 };

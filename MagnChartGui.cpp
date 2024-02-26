@@ -40,6 +40,8 @@ void MagnChartGui::setup(wxNotebook* m_notebook /*, MyWindow* window*/)
 	wxBoxSizer* yMagnLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* xOffsetSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* yOffsetSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* callibrateToNorthSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* callibrateToNorthValuesSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* orientationSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* checkBoxSizer = new wxBoxSizer(wxVERTICAL);
 
@@ -47,9 +49,14 @@ void MagnChartGui::setup(wxNotebook* m_notebook /*, MyWindow* window*/)
 	wxStaticText* yMagnName = new wxStaticText(controlPanel, wxID_ANY, "Current Y magn: ");
 	wxStaticText* xOffsetName = new wxStaticText(controlPanel, wxID_ANY, "Calculated X offset: ");
 	wxStaticText* yOffsetName = new wxStaticText(controlPanel, wxID_ANY, "Calculated Y offset: ");
+	wxStaticText* callibrateToNorthName = new wxStaticText(controlPanel, wxID_ANY, "North: ");
+	wxStaticText* northName = new wxStaticText(controlPanel, wxID_ANY, "Callibrate to NORTH: ");
 	wxStaticText* orientationName = new wxStaticText(controlPanel, wxID_ANY, "Orientation [deg]: ");
+	spinCtrlCallibrateToNorth = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -180, 180, 0);
+	spinCtrlCallibrateToNorth->Bind(wxEVT_SPINCTRL, &MagnChartGui::OnSpinToNorthCallibrate, this);
 	xMagnValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	yMagnValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+	callibrateToNothValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	calculatedXoffsetValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	calculatedYoffsetValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	orientationValue = new wxStaticText(controlPanel, wxID_ANY, "0");
@@ -78,8 +85,17 @@ void MagnChartGui::setup(wxNotebook* m_notebook /*, MyWindow* window*/)
 	yOffsetSizer->Add(calculatedYoffsetValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	controlPanelSizer->Add(yOffsetSizer, 0, wxALL, 5);
 	controlPanelSizer->AddSpacer(10);
+
+	callibrateToNorthSizer->Add(callibrateToNorthName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	callibrateToNorthSizer->Add(spinCtrlCallibrateToNorth, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
+	callibrateToNorthValuesSizer->Add(northName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	callibrateToNorthValuesSizer->Add(callibrateToNothValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
 	orientationSizer->Add(orientationName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	orientationSizer->Add(orientationValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	controlPanelSizer->Add(callibrateToNorthSizer, 0, wxALL, 5);
+	controlPanelSizer->Add(callibrateToNorthValuesSizer, 0, wxALL, 5);
 	controlPanelSizer->Add(orientationSizer, 0, wxALL, 5);
 	controlPanelSizer->AddSpacer(10);
 	controlPanelSizer->Add(azimuthSetupButtonsSizer, 0, wxALL, 5);
@@ -110,9 +126,20 @@ void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElement
 	}
 
 	const double azimuthInDegrees{ azimuth };
+	currentAzimuth = azimuth;
 	xMagnValue->SetLabel(std::to_string(xMagn));
 	yMagnValue->SetLabel(std::to_string(yMagn));
 	orientationValue->SetLabel(std::to_string(azimuthInDegrees));
+	double callibratedToNorth{ azimuth + biasToNorth };
+	if (azimuth + biasToNorth > 180.0)
+	{
+		callibratedToNorth = azimuth + biasToNorth - 360.0;
+	}
+	if (azimuth + biasToNorth < -180.0)
+	{
+		callibratedToNorth = azimuth + biasToNorth + 360.0;
+	}
+	callibrateToNothValue->SetLabel(std::to_string(callibratedToNorth));
 
 	magnPointsBuffer.AddElement(wxRealPoint(timeMs, azimuthInDegrees));
 	filteredAzimuthBuffer.AddElement(wxRealPoint(timeMs, filteredAzimuth));
@@ -166,6 +193,20 @@ void MagnChartGui::setCalculatedOffsetValues()
 {
 	calculatedXoffsetValue->SetLabel(std::to_string(magnetometerCallibrator.getXoffset()));
 	calculatedYoffsetValue->SetLabel(std::to_string(magnetometerCallibrator.getYoffset()));
+}
+void MagnChartGui::OnSpinToNorthCallibrate(wxSpinEvent& event)
+{
+	if (not wasCallibrationStarted)
+	{
+		const int bias = spinCtrlCallibrateToNorth->GetValue();
+		biasToNorth = bias;
+		magnetometerCallibrator.setBiasToNorth(biasToNorth);
+	}
+	else
+	{
+		wxMessageBox("magnetometer offsets have not been calculated yet.", "Informacja", wxOK | wxICON_INFORMATION);
+	}
+
 }
 
 void MagnChartGui::OnStartMagnCallibration(wxCommandEvent& event)

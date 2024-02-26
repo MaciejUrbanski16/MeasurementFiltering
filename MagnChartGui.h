@@ -37,6 +37,7 @@ private:
 	void OnStopMagnCallibration(wxCommandEvent& event);
 	void OnRawAzimuthCheckBoxClicked(wxCommandEvent& event);
 	void OnFilteredAzimuthCheckBoxClicked(wxCommandEvent& event);
+	void OnSpinToNorthCallibrate(wxSpinEvent& event);
 	void setCalculatedOffsetValues();
 	//void OnSpinMagnUpdate(wxSpinEvent& event);
 	//void OnSpinMagnIncrUpdate(wxSpinEvent& event);
@@ -46,6 +47,8 @@ private:
 	wxBoxSizer* sizerAzimuthPlot = nullptr;
 	wxSpinCtrl* spinCtrlXmagn = nullptr;
 	wxSpinCtrl* spinCtrlYmagn = nullptr;
+	wxSpinCtrl* spinCtrlCallibrateToNorth = nullptr;
+	wxStaticText* callibrateToNothValue = nullptr;
 	wxStaticText* xMagnValue = nullptr;
 	wxStaticText* yMagnValue = nullptr;
 	wxStaticText* calculatedXoffsetValue = nullptr;
@@ -62,6 +65,8 @@ private:
 
 	bool wasCallibrationStarted{ false };
 	bool wasMagnCallibrationDone{ false };
+	double currentAzimuth{ 0.0 };
+	int16_t biasToNorth{ 0 };
 	MagnetometerCallibrator& magnetometerCallibrator;
 
 };

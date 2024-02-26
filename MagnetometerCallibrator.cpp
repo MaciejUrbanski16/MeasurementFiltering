@@ -31,3 +31,13 @@ void MagnetometerCallibrator::callibrate()
 
 
 }
+
+void MagnetometerCallibrator::setBiasToNorth(const int16_t bias)
+{
+	biasToNorth = bias;
+}
+
+void MagnetometerCallibrator::setCurrentAzimuth(const double azimuth)
+{
+	currentAzimuth = azimuth;
+}
