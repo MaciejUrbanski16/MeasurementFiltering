@@ -7,8 +7,9 @@
 #include <math.h>
 
 #include "MagnetometerCallibrator.h"
-#include "AppLogger.h"
+#include "AppLogger.h"  
 #define M_PI 3.1415926
+#define EXPECTED_FRAME_SIZE 9
 
 struct CompensatedAccData 
 {
@@ -49,14 +50,14 @@ public:
 		//assign(measurements);
 	}
 
-	bool assign(const std::vector<std::string>& measurements, const uint32_t deltaTimeMs, const bool isRealTimeMeasurement)
+	bool assign(const std::vector<std::string>& measurements, const uint32_t deltaTimeMs, const bool isRealTimeMeasurement, const bool isGpsComing)
 	{
-		if (measurements.size() == 9)
+		if (measurements.size() == EXPECTED_FRAME_SIZE)
 		{
 			//const auto isMagnetometr = isMagn(measurements[6]);
 			if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) &&
 				isNumber(measurements[3]) && isNumber(measurements[4]) && isNumber(measurements[5]) &&
-				isNumber(measurements[6]) && isNumber(measurements[7]) && isNumber(measurements[8]))
+				isNumber(measurements[6]) && isNumber(measurements[7]))
 
 			{
 				xAcc = std::stoi(measurements[0]);
@@ -69,11 +70,36 @@ public:
 
 				xMagn = std::stoi(measurements[6]);
 				yMagn = std::stoi(measurements[7]);
-				zMagn = std::stoi(measurements[8]);
-
-				xMagn = xMagn - xMagnOffset;
-				yMagn = yMagn - yMagnOffset;
-
+				if (isRealTimeMeasurement)
+				{
+					zMagn = std::stoi(measurements[8]);
+					xMagn = xMagn - xMagnOffset;
+					yMagn = yMagn - yMagnOffset;
+					calculateOrientationDegree();
+				}
+				else
+				{
+					try
+					{
+						orientationDegree = std::stod(measurements[8]);
+					}
+					catch (const std::invalid_argument& ia) 
+					{
+						const std::string errMeasConversion{ "ERR when measurement conversion from string to double - some measurement is not double!!" };
+						appLogger.logErrMeasurementConversion(errMeasConversion);
+					}
+					catch (const std::out_of_range& oor) 
+					{
+						const std::string errMeasConversion{ "ERR when measurement conversion from string to double - some measurement is out of range!!" };
+						appLogger.logErrMeasurementConversion(errMeasConversion);
+					}
+					catch (const std::exception& e) 
+					{
+						const std::string errMeasConversion{ "ERR when measurement conversion from string to double!!" };
+						appLogger.logErrMeasurementConversion(errMeasConversion);
+					}
+					
+				}
 
 				this->deltaTimeMs = deltaTimeMs;
 
@@ -83,17 +109,16 @@ public:
 				calculateXYvelocity();
 				calculateDistance();
 
-				calculateOrientationDegree();
-
 				appLogger.logHandledMeas(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, xMagn, yMagn,
 					xAccMPerS2, yAccMPerS2, zAccMPerS2, xVelocity, yVelocity,
 					xDistance, yDistance, orientationDegree, longitude, latitude, deltaTimeMs);
 
 				if (isRealTimeMeasurement)
 				{
+					const double orientationDegreeWithCallibration = getAzimuth();
 					appLogger.logHandledMeasIntoCSV(xAcc, yAcc, zAcc, xGyro, yGyro, zGyro, xMagn, yMagn,
 						xAccMPerS2, yAccMPerS2, zAccMPerS2, xVelocity, yVelocity,
-						xDistance, yDistance, orientationDegree, longitude, latitude, deltaTimeMs);
+						xDistance, yDistance, orientationDegree, orientationDegreeWithCallibration, isGpsComing, deltaTimeMs);
 				}
 
 				return true;
@@ -145,24 +170,28 @@ public:
 	}
 	double getYawFromMagn()
 	{
-		double roll = getRollFromAcc() - M_PI;
-		double pitch = getPitchFromAcc() - M_PI;
+		double roll = getRollFromAcc();
+		double pitch = getPitchFromAcc();
 		double compensatedX = static_cast<double>(xMagn * cos(pitch)) - static_cast<double>(yMagn * sin(roll) * sin(pitch)) + static_cast<double>(zMagn * cos(roll) * sin(pitch));
 		double compensatedY = (static_cast<double>(yMagn * cos(roll)) + static_cast<double>(zMagn * sin(roll)));
 		yawCompensated = atan2(compensatedY, compensatedX);
+		if (yawCompensated < 0.0)
+		{
+			yawCompensated += (2.0 * M_PI);
+		}
 		return yawCompensated;
 	}
 
 	//degrees
-	double getAzimuth() const 
+	double getAzimuth()
 	{
 		const int16_t magnBiasToNorthInDegrees{ magnetometerCallibrator.getBiasToNorth() };
-		double orientationInDegreeWithBias{ orientationDegree + static_cast<double>(magnBiasToNorthInDegrees) };
-		if (orientationInDegreeWithBias > 180.0)
+		double orientationInDegreeWithBias{ (getYawFromMagn()*360.0)/(2*M_PI) + static_cast<double>(magnBiasToNorthInDegrees)};
+		if (orientationInDegreeWithBias > 360.0)
 		{
 			orientationInDegreeWithBias = orientationInDegreeWithBias - 360.0;
 		}
-		if (orientationInDegreeWithBias < -179.99)
+		if (orientationInDegreeWithBias < 0)
 		{
 			orientationInDegreeWithBias = orientationInDegreeWithBias + 360.0;
 		}
@@ -265,7 +294,7 @@ private:
 	void calculateOrientationDegree()
 	{
 		orientationDegree = atan2(static_cast<double>(yMagn),
-			static_cast<double>(xMagn)) * (180.0f / M_PI);
+			static_cast<double>(xMagn)) * (360.0f /(2.0 * M_PI));
 	}
 
 	bool isNumber(const std::string& meas)

@@ -33,6 +33,7 @@ public:
 private:
 	wxStaticText* rollValue = nullptr;
 	wxStaticText* pitchValue = nullptr;
+	wxStaticText* yawValue = nullptr;
 
 	wxChartPanel* rollPitchChartPanel = nullptr;
 	wxSplitterWindow* rollPitchPanelSplitter = nullptr;

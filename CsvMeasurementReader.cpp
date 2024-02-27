@@ -80,12 +80,17 @@ std::vector<std::string> CsvMeasurementReader::readCSVrow(char delimiter)
                 //int16_t value = std::stoi(cell);
                 row.push_back(cell);
             }
+            if (cellNr == 17)
+            {
+                row.push_back(cell);
+            }
+            if (cellNr == 18)
+            {
+                row.push_back(cell);
+            }
             cellNr++;
         }
 
-        //GPS
-        row.push_back("70.342");
-        row.push_back("30.342");
     }
     return row;
 }
@@ -108,7 +113,7 @@ std::vector<std::string> CsvMeasurementReader::readCSVrowGpsData(char delimiter)
 
         while (std::getline(ss, cell, delimiter))
         {
-            if (cellNr >= 1 && cellNr < 5)
+            if (cellNr >= 1 && cellNr < 6)
             {
                 //int16_t value = std::stoi(cell);
                 row.push_back(cell);

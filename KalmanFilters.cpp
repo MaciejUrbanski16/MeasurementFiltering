@@ -1,6 +1,6 @@
 #include "KalmanFilters.h"
 
-void KalmanFilters::makePositionFiltration(const std::optional<std::pair<double, double>> gpsBasedPosition, const TransformedAccel& transformedAccel, const double Xacc, const double Yacc, uint32_t deltaTimeUint)
+void KalmanFilters::makePositionFiltration(const std::optional<GpsDistanceAngular> gpsBasedPosition, const TransformedAccel& transformedAccel, const double Xacc, const double Yacc, uint32_t deltaTimeUint)
 {
 
     kf::Matrix<DIM_X, DIM_X> A;
@@ -27,7 +27,7 @@ void KalmanFilters::makePositionFiltration(const std::optional<std::pair<double,
                 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
                 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z GPS to zero
                 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F; //
-        vecZ << transformedAccel.xAcc, transformedAccel.yAcc, gpsBasedPosition.value().first, gpsBasedPosition.value().second;
+        vecZ << transformedAccel.xAcc, transformedAccel.yAcc, gpsBasedPosition.value().xPosition, gpsBasedPosition.value().yPosition;
     }
     else
     {
@@ -43,34 +43,61 @@ void KalmanFilters::makePositionFiltration(const std::optional<std::pair<double,
     kalmanFilterForPosition.correctLKF(vecZ, matRFromGui.value());
 }
 
-void KalmanFilters::makeAzimuthFitration(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec, 
+void KalmanFilters::makeAzimuthFitration(const std::optional<GpsDistanceAngular> gpsBasedPosition,
                                          const double zAngleVelocityDegPerSec, const double azimuthFromMagn, const uint32_t deltaTime)
 {
-    double deltaTimeMs = static_cast<double>(deltaTime) / 1000.0;
+    //X = [yaw,
+    //     dYaw]       
+
+    double deltaTimeSec = static_cast<double>(deltaTime) / 1000.0;
 
     kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> A;
-    A << 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F, 0.0F,
-        0.0F, 1.0F, 0.0F, 0.0F, deltaTimeMs, 0.0F,
-        0.0F, 0.0F, 1.0F, 0.0F, 0.0F, deltaTimeMs,
-        0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
-        0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F,
-        0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
+    A << 1.0F, deltaTimeSec,
+         0.0F, 1.0F;
 
-    const auto matRAzzFromGui{ kalmanFilterSetupGui.getMatRazimuth() };
-    const auto matQAzzFromGui{ kalmanFilterSetupGui.getMatQazimuth() };
 
-    kalmanFilterForAzimuth.predictLKF(A, matQAzzFromGui.value());
+    //const auto matRAzzFromGui{ kalmanFilterSetupGui.getMatRazimuth() };
+    //const auto matQAzzFromGui{ kalmanFilterSetupGui.getMatQazimuth() };
+    kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matRAzimuthPedestrian;
+    kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> matQAzimuthPedestrian;
+    matRAzimuthPedestrian << 
+        0.001F, 0, 0,
+        0, 0.01F, 0,
+        0, 0, 0.1F;
+
+    double process_variance = 0.00002F;
+    double coefficient = 5.0F;
+    matQAzimuthPedestrian << 
+        coefficient, 0.0F,
+        0.0F, coefficient;
+
+    matQAzimuthPedestrian *= process_variance;
+
+    kalmanFilterForAzimuth.predictLKF(A, matQAzimuthPedestrian);
+    kf::Matrix<DIM_Z_azimuth, DIM_X_azimuth> matH;
+
 
     kf::Vector<DIM_Z_azimuth> vecZ;
-    vecZ << xAngleVelocityDegPerSec, zAngleVelocityDegPerSec, azimuthFromMagn;
-
-    kf::Matrix<DIM_Z_azimuth, DIM_X_azimuth> matH;
-    matH << 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0, 0;
+    if (gpsBasedPosition)
+    {
+        //when gps angle available
+        vecZ << zAngleVelocityDegPerSec, azimuthFromMagn, gpsBasedPosition.value().angle;
+        matH <<
+            0, 1,
+            1, 0,
+            1, 0;
+    }
+    else
+    {
+        vecZ << zAngleVelocityDegPerSec, azimuthFromMagn, 0.0F;
+        matH <<
+            0, 1,
+            1, 0,
+            0, 0;
+    }
 
     kalmanFilterForAzimuth.setMatH(matH);
-    kalmanFilterForAzimuth.correctLKF(vecZ, matRAzzFromGui.value());
+    kalmanFilterForAzimuth.correctLKF(vecZ, matRAzimuthPedestrian);
 }
 
 void KalmanFilters::makeGyroFiltration(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec,

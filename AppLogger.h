@@ -70,7 +70,7 @@ public:
 			gpsCsv.open(gpsPathName, std::ios::app);
 
 			std::stringstream ssToGpsCsv;
-			ssToGpsCsv << "Current time" << ',' << "Latitude" << ',' << "Longitude" << ',' << "Velocity" << ','
+			ssToGpsCsv << "Current time" << ',' << "Latitude" << ',' << "Longitude" << ',' << "Orientation" << ',' << "Velocity" << ','
 				<< "Satellites" << '\n';
 			gpsCsv << ssToGpsCsv.str();
 		}
@@ -114,7 +114,7 @@ public:
 		const int16_t zAcc, const int16_t xGyro, const int16_t yGyro, const int16_t zGyro,
 		const int16_t xMagn, const int16_t yMagn, const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
 		const double xVelocity, const double yVelocity, const double xDistance, const double yDistance, const double orientationDegree,
-		const double longitude, const double latitude, const uint32_t deltaTimeMs)
+		const double orientationDegreeWithCallibration, const bool isGpsComing, const uint32_t deltaTimeMs)
 	{
 		if (!measurementsCsv.is_open())
 		{
@@ -129,7 +129,7 @@ public:
 				<< "X raw magnetometer" << ',' << "Y raw magnetometer" << ','
 				<< "X accel m/s2" << ',' << "Y accel m/s2" << ',' << "Z accel m/s2" << ','
 				<< "X velocity" << ',' << "Y velocity" << ',' << "X distance" << ',' << "Y distance" << ','
-				<< "Orientation degree" << ',' << "Longitude" << ',' << "Latitude" << ',' << "Delta time ms" << '\n';
+				<< "Orientation degree" << ',' << "Orientation degree with callibration" << ',' << "Gps available" << ',' << "Delta time ms" << '\n';
 			measurementsCsv << ssToCsv.str();
 		}
 
@@ -139,7 +139,7 @@ public:
 			<< xGyro << ',' << yGyro << ',' << zGyro << ',' << xMagn << ',' << yMagn << ','
 			<< xAccMPerS2 << ',' << yAccMPerS2 << ',' << zAccMPerS2 << ','
 			<< xVelocity << ',' << yVelocity << ',' << xDistance << ',' << yDistance << ','
-			<< orientationDegree << ',' << longitude << ',' << latitude << ',' << deltaTimeMs << '\n';
+			<< orientationDegree << ',' << orientationDegreeWithCallibration << ',' << isGpsComing << ',' << deltaTimeMs << '\n';
 		measurementsCsv << ssToCsv.str();
 	}
 

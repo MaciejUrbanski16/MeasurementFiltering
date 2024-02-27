@@ -18,7 +18,7 @@ private:
 
 	constexpr static double thresholdForXCallibration{ 1.5 };
 	constexpr static double thresholdForYCallibration{ 1.5 };
-	constexpr static double thresholdForZCallibration{ 4.0 };
+	constexpr static double thresholdForZCallibration{ 6.0 };
 
 	bool isGyroXcallibPossible{ false };
 	bool isGyroYcallibPossible{ false };

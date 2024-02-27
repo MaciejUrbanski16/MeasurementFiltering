@@ -2,21 +2,22 @@
 
 bool GpsDataConverter::handleGpsData(const std::vector<std::string>& measurements)
 {
-	if (measurements.size() == 4)
+	if (measurements.size() >= 4)
 	{
-					//latitude					  //longitude					//velocity					//satellites	
-		if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) /* && isNumber(measurements[3])*/)
+					//latitude					  //longitude					//degree			//velocity					//satellites	
+		if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) && isNumber(measurements[3])  )
 		{
 			isNewGpsData = true;
 			latitude = std::stod(measurements[0]);
 			longitude = std::stod(measurements[1]);
-			velocityKmph = std::stod(measurements[2]);
-			//satellites = std::stoi(measurements[3]);
+			gpsOrientationDegree = std::stod(measurements[2]);
+			velocityKmph = std::stod(measurements[3]);
+			//satellites = std::stoi(measurements[4]);
 			return true;
 		}
 		return false;
 	}
-	return false;
+	//return false;
 }
 
 bool GpsDataConverter::isNumber(const std::string& meas)

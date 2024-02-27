@@ -10,11 +10,11 @@
 class CsvMeasurementLoadGui
 {
 public:
-	CsvMeasurementLoadGui(CsvMeasurementReader& csvMeasurementReader) : 
-		csvMeasurementReader(csvMeasurementReader)
+	CsvMeasurementLoadGui(CsvMeasurementReader& csvMeasurementReader, wxTimer& filterFileMeasTimer, wxTimer& filterFileGpsTimer) :
+		csvMeasurementReader(csvMeasurementReader), filterFileMeasTimer(filterFileMeasTimer), filterFileGpsTimer(filterFileGpsTimer)
 	{}
 
-	void setup(wxPanel* kalmanParamsSetupPanel, wxTimer* filterFileMeasTimer);
+	void setup(wxPanel* kalmanParamsSetupPanel);
 
 private:
 	void OnLoadSensorData(wxCommandEvent& event);
@@ -31,7 +31,8 @@ private:
 	wxTextCtrl* filePathGpsDataTextCtrl = nullptr;
 	wxFileDialog* openFileDialog = nullptr;
 
-	wxTimer* m_filterFileMeasTimer = nullptr;
+	wxTimer& filterFileMeasTimer;
+	wxTimer& filterFileGpsTimer;
 	CsvMeasurementReader& csvMeasurementReader;
 
 	bool sensorDataPathGiven{ false };

@@ -87,6 +87,7 @@ std::optional<kf::Matrix<DIM_X, DIM_X>> KalmanFilterSetupGui::getMatQacc()
 void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
 {
     wxBoxSizer* leftVerticalSizer = new wxBoxSizer(wxVERTICAL);
+    //wxBoxSizer* measurementsTypeChooseVerticalSizer = new wxBoxSizer(wxVERTICAL);
     leftPanel = new wxPanel(mainPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_SIMPLE);
 
     chooseModel = new wxStaticText(leftPanel, wxID_ANY, "Ustawienie filtracji dla modeli ruchu");
@@ -95,9 +96,15 @@ void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
     rcCarModelButton = new wxRadioButton(leftPanel, wxID_ANY, wxT("RC car model"));
     carModelButton = new wxRadioButton(leftPanel, wxID_ANY, wxT("Car model"));
 
+    //realTimeMeasurementsButton = new wxRadioButton(leftPanel, wxID_ANY, wxT("Real time measurements"));
+    //fromFileMeasurements = new wxRadioButton(leftPanel, wxID_ANY, wxT("From file measurements"));
+
     pedestrianModelButton->Bind(wxEVT_RADIOBUTTON, &KalmanFilterSetupGui::OnRadioButtonClicked, this);
     rcCarModelButton->Bind(wxEVT_RADIOBUTTON, &KalmanFilterSetupGui::OnRadioButtonClicked, this);
     carModelButton->Bind(wxEVT_RADIOBUTTON, &KalmanFilterSetupGui::OnRadioButtonClicked, this);
+
+    //realTimeMeasurementsButton->Bind(wxEVT_RADIOBUTTON, &KalmanFilterSetupGui::OnRadioButtonRealTimeMeasurementsClicked, this);
+    //fromFileMeasurements->Bind(wxEVT_RADIOBUTTON, &KalmanFilterSetupGui::OnRadioButtonRealTimeMeasurementsClicked, this);
 
 
     confirmCallibrationButton = new wxButton(leftPanel, wxID_ANY, wxT("ZatwierdŸ kalibracjê - rozpocznij filtracjê"));
@@ -107,6 +114,8 @@ void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
     restartFiltrationAfterCallibrationButton = new wxButton(leftPanel, wxID_ANY, wxT("Restart filtracji po kalibracji"));
     restartFiltrationAfterCallibrationButton->SetMinSize(wxSize(300, 100));
     restartFiltrationAfterCallibrationButton->SetBackgroundColour(wxColour(64, 255, 255));
+
+    confirmMeasurementsTypeButton = new wxButton(leftPanel, wxID_ANY, wxT("ZatwierdŸ"));
 
     wxBoxSizer* mainSizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* leftSizer = new wxBoxSizer(wxVERTICAL);
@@ -147,6 +156,9 @@ void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
     mainSizer->Add(leftSizer, 0, wxALL, 5);
     mainSizer->Add(rightSizer, 0, wxALL, 5);
 
+    //measurementsTypeChooseVerticalSizer->Add(realTimeMeasurementsButton, 0, wxALL, 5);
+    //measurementsTypeChooseVerticalSizer->Add(fromFileMeasurements, 0, wxALL, 5);
+
     leftVerticalSizer->Add(chooseModel, 0, wxALL | wxALIGN_CENTER, 5);
     leftVerticalSizer->AddSpacer(10);
     staticBoxSizerRadioButtons->Add(pedestrianModelButton, 0, wxALL, 5);
@@ -170,10 +182,10 @@ void KalmanFilterSetupGui::setupLeftPanel(wxPanel* mainPanel)
     leftVerticalSizer->Add(buttonsSizer, 0, wxALL | wxALIGN_CENTER, 5);
 
     restartFiltrationAfterCallibrationButton->Bind(wxEVT_BUTTON, &KalmanFilterSetupGui::OnRestartFiltration, this);
-
     confirmCallibrationButton->Bind(wxEVT_BUTTON, &KalmanFilterSetupGui::OnConfirmCallibration, this);
 
     leftPanel->SetSizer(leftVerticalSizer);
+    //leftPanel->SetSizer(measurementsTypeChooseVerticalSizer);
     leftPanel->Layout();
 }
 
@@ -200,6 +212,39 @@ void KalmanFilterSetupGui::setupRightPanel(wxPanel* mainPanel)
     fillMatQPedestrianAcc();
 
     setupSizer();
+}
+
+void KalmanFilterSetupGui::OnConfirmMeasType(wxCommandEvent& event)
+{
+    if (isCallibrationDone)
+    {
+        wxLogMessage(wxT("Nie mozna zmienic zrodla danych - filtracja w toku"));
+        return;
+    }
+    if (measurementsType == MeasurementsType::NONE)
+    {
+        wxLogMessage(wxT("Nie wybrano zrodla danych"));
+        return;
+    }
+    isMeasurementTypeChosen = true;
+
+}
+
+void KalmanFilterSetupGui::OnRadioButtonRealTimeMeasurementsClicked(wxCommandEvent& event)
+{
+    const int selectedId = event.GetId();
+    if (selectedId == realTimeMeasurementsButton->GetId())
+    {
+        measurementsType = MeasurementsType::REAL_TIME;
+    }
+    else if (selectedId == fromFileMeasurements->GetId())
+    {
+        measurementsType = MeasurementsType::FROM_FILE;
+    }
+    else
+    {
+        wxLogMessage(wxT("Nieprawidlowe zrodlo pomiarow"));
+    }
 }
 
 void KalmanFilterSetupGui::OnRadioButtonClicked(wxCommandEvent& event) 
@@ -679,9 +724,9 @@ void KalmanFilterSetupGui::createAndFillMatrixHRotationGrid()
     matrixHAzimuthGrid->SetDefaultColSize(25);
 
     kf::Matrix<DIM_Z_azimuth, DIM_X_azimuth> matH;
-    matH << 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 1,
-            1, 0, 0, 0, 0, 0;
+    matH <<
+        0, 0, 0,
+        1, 0, 0;
 
     matrixHAzimuthGrid->CreateGrid(matH.rows(), matH.cols());
 
@@ -832,18 +877,17 @@ void KalmanFilterSetupGui::initMatrices()
 
 void KalmanFilterSetupGui::initPedestrianModelMatrices()
 {
-    matRAzimuthPedestrian << 0.0001F, 0, 0,
-                                0, 0.1F, 0,
-                                0, 0, 0.1F;
+    matRAzimuthPedestrian << 
+        0.0001F, 0, 0,
+        0, 0.1F, 0,
+        0, 0, 0.1F;
 
-    double process_variance = 0.0000002F;
-    double deltaTimeMs = 5.0F;
-    matQAzimuthPedestrian << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
-        pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
-        pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
-        0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
-        0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
-        0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
+    double process_variance = 0.02F;
+    double coefficient = 5.0F;
+    matQAzimuthPedestrian <<
+        coefficient, 0.0F,
+        0.0F, coefficient;
+
 
     matQAzimuthPedestrian *= process_variance;
 
@@ -873,13 +917,11 @@ void KalmanFilterSetupGui::initRcCarModelMatrices()
                         0, 0, 0.1F;
 
     double process_variance = 0.02F;
-    double deltaTimeMs = 0.1F;
-    matQAzimuthRcCar << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
-        pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
-        pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
-        0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
-        0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
-        0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
+    double coefficient = 0.1F;
+    matQAzimuthRcCar <<
+        coefficient, 0.0F,
+        0.0F, coefficient;
+
 
     matQAzimuthRcCar *= process_variance;
 
@@ -904,18 +946,16 @@ void KalmanFilterSetupGui::initRcCarModelMatrices()
 
 void KalmanFilterSetupGui::initCarModelMatrices()
 {
-    matRAzimuthCar << 0.0001F, 0, 0,
+    matRAzimuthCar << 
+        0.0001F, 0, 0,
         0, 0.1F, 0,
         0, 0, 0.1F;
 
     double process_variance = 0.02F;
-    double deltaTimeMs = 0.1F;
-    matQAzimuthCar << pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6, 0, 0, 0,
-        pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2, 0, 0, 0,
-        pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2), 0, 0, 0,
-        0, 0, 0, pow(deltaTimeMs, 6) / 36, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 6,
-        0, 0, 0, pow(deltaTimeMs, 5) / 12, pow(deltaTimeMs, 4) / 4, pow(deltaTimeMs, 3) / 2,
-        0, 0, 0, pow(deltaTimeMs, 4) / 6, pow(deltaTimeMs, 3) / 2, pow(deltaTimeMs, 2);
+    double coefficient = 0.1F;
+    matQAzimuthCar <<
+        coefficient, 0.0F,
+        0.0F, coefficient;
 
     matQAzimuthCar *= process_variance;
 
@@ -955,7 +995,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     if (pedestrianModelButton->GetValue())
     {
         isCallibrationDone = true;
-        filterReceivedDataProcessingTimer.Start(100);
+        filterReceivedDataProcessingTimer.Start(70);
         filterReceivedGpsProcessingTimer.Start(1000);
         isRestartFiltrationNeeded = true;
         movementModel = MovementModel::PEDESTRIAN;
@@ -968,7 +1008,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     else if (rcCarModelButton->GetValue())
     {
         isCallibrationDone = true;
-        filterReceivedDataProcessingTimer.Start(100);
+        filterReceivedDataProcessingTimer.Start(70);
         filterReceivedGpsProcessingTimer.Start(1000);
         isRestartFiltrationNeeded = true;
         movementModel = MovementModel::RC_CAR;
@@ -981,7 +1021,7 @@ void KalmanFilterSetupGui::OnConfirmCallibration(wxCommandEvent& event)
     else if (carModelButton->GetValue())
     {
         isCallibrationDone = true;
-        filterReceivedDataProcessingTimer.Start(100);
+        filterReceivedDataProcessingTimer.Start(70);
         filterReceivedGpsProcessingTimer.Start(1000);
         isRestartFiltrationNeeded = true;
         movementModel = MovementModel::CAR;

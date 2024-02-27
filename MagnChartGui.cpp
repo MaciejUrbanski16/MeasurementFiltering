@@ -131,11 +131,11 @@ void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElement
 	yMagnValue->SetLabel(std::to_string(yMagn));
 	orientationValue->SetLabel(std::to_string(azimuthInDegrees));
 	double callibratedToNorth{ azimuth + biasToNorth };
-	if (azimuth + biasToNorth > 180.0)
+	if (azimuth + biasToNorth > 360.0)
 	{
 		callibratedToNorth = azimuth + biasToNorth - 360.0;
 	}
-	if (azimuth + biasToNorth < -180.0)
+	if (azimuth + biasToNorth < 0)
 	{
 		callibratedToNorth = azimuth + biasToNorth + 360.0;
 	}

@@ -23,13 +23,6 @@ namespace kf
 
         KalmanFilter()
         {
-            vecX() << 0.0F,
-                      0.0F,
-                      0.0F,
-                      0.0F,
-                      0.0F,
-                      0.0F; // macierz stanu
-
             matP() = Matrix<DIM_X, DIM_X>::Identity();
                 //<< 0.1F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, // macierz 
                 //      0.0F, 0.1F, 0.0F, 0.0F, 0.0F, 0.0F,

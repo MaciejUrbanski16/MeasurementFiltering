@@ -204,204 +204,134 @@ void MyWindow::OnSpinZAccUpdate(wxSpinEvent& event)
     rawGrawity = zAccCtrlValue;
 }
 
-void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const uint32_t deltaTimeMs, const bool isRealTimeMeasurement)
+void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const uint32_t deltaTimeMs)
 {
-//    if (measurements.size() == 10)
+    if (kalmanFilterSetupGui.getIsCallibrationDone() == false)
     {
-        //if (isFirstMeasurement)
-        //{
-        //    deltaTimeCalculator.startTimer();
-        //    isFirstMeasurement = false;
-        //    return;
-        //}
-        //const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
-        //MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
-        //    angleVelocityChartGui.getXgyroBias(),
-        //    angleVelocityChartGui.getYgyroBias(),
-        //    angleVelocityChartGui.getZgyroBias());
-        //totalTimeMs += static_cast<double>(deltaTimeMs);
- //       if (rawMeasurement.assign(measurements, deltaTimeMs, isRealTimeMeasurement))
-        {
+        magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
+            rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getYawFromMagn()*360/(2*M_PI), 1.0, totalTimeMs);
 
-            //const uint32_t totalTimeMs = deltaTimeCalculator.getTotalTimeMs();
+        TransformedAccel transformedAccel{ 0.0,0.0,0.0 };
+        updateAccChart(
+            transformedAccel,
+            rawMeasurement.getXaccMPerS2(),
+            rawMeasurement.getYaccMPerS2(),
+            rawMeasurement.getZaccMPerS2(),
+            rawMeasurement.getCompensatedAccData(),
+            std::nullopt, std::nullopt,
+            totalTimeMs, deltaTimeMs);
 
-            //const double distance = haversineConverter.calculateDistance(rawMeasurement.getLongitude(), 70.2, rawMeasurement.getLatitude(), 30.2);
-            //const auto xyPoint = haversineConverter.convertToXY_({70.234, 30.234});
-            ////rawMeasurement.setDeltaTimeMs(deltaTimeMs);
-            ////rawMeasurementsSet.push_back(rawMeasurement);
-            if (kalmanFilterSetupGui.getIsCallibrationDone() == false)
-            {
-                magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
-                    rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getYawFromMagn()*180/M_PI, 1.0, totalTimeMs);
-                //updateMagnChart(rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), 1.0, totalTimeMs);
-                TransformedAccel transformedAccel{ 0.0,0.0,0.0 };
-                updateAccChart(
-                    transformedAccel,
-                    rawMeasurement.getXaccMPerS2(),
-                    rawMeasurement.getYaccMPerS2(),
-                    rawMeasurement.getZaccMPerS2(),
-                    rawMeasurement.getCompensatedAccData(),
-                    1.0, 1.0, 0.01, 0.01,
-                    totalTimeMs, deltaTimeMs);
-                ////updateVelChart(rawMeasurement.getXvelocityMperS());
-                ////updatePositionChart(rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
-                angleVelocityChartGui.updateChart(xAngleVelocityBuffer, yAngleVelocityBuffer, zAngleVelocityBuffer, filteredZangleVelocityBuffer,
-                    rawMeasurement.getXangleVelocityDegreePerS(),
-                    rawMeasurement.getYangleVelocityDegreePerS(),
-                    rawMeasurement.getZangleVelocityDegreePerS(), 1.0, totalTimeMs);
+        angleVelocityChartGui.updateChart(xAngleVelocityBuffer, yAngleVelocityBuffer, zAngleVelocityBuffer, filteredZangleVelocityBuffer,
+            rawMeasurement.getXangleVelocityDegreePerS(),
+            rawMeasurement.getYangleVelocityDegreePerS(),
+            rawMeasurement.getZangleVelocityDegreePerS(), 1.0, totalTimeMs);
 
 
-                //jesli GPS nowe dane to policz gps basedd position i u¿yj drugiej wersji macierzy H
-                const double lon{ gpsDataConverter.getLongitude() };
-                const double lat{ gpsDataConverter.getLatitude() };
-                const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
-                updateGpsBasedPositionChart(gpsBasedPosition);
-            }
-            else
-            {
-                if (measurementCounter == 0)
-                {
-                    totalTimeMs = 0;
-                    resetChartsAfterCallibration();
-
-                }
-                measurementCounter++;
-
-                //if (kalmanFilterSetupGui.getIsFiltrationRestarted())
-                //{
-                //    kalmanFilterSetupGui.setIsFiltrationRestarted(false);
-                //    //isFirstMeasurement = true;
-                //    resetChartsAfterCallibration();
-                //    totalTimeMs = 0;
-
-                //    kalmanFilter.vecX().setZero();
-                //    kalmanFilter.matP().setZero();
-                //    kalmanFilterAzimuth.vecX().setZero();
-                //    kalmanFilterAzimuth.matP().setZero();
-                //    kalmanFilterGyro.vecX().setZero();
-                //    kalmanFilterGyro.matP().setZero();
-                //    
-                //}
-
-                const auto rollFromAcc = rawMeasurement.getRollFromAcc() * (180.0 / M_PI);
-                const auto pitchFromAcc = rawMeasurement.getPitchFromAcc() * (180.0 / M_PI);
-                const auto yawFromMagn = rawMeasurement.getAzimuth();
-                gyroCallibrator.collectDataForCallibration(rawMeasurement, rollFromAcc, pitchFromAcc, yawFromMagn);
-
-                kalmanFilters.makeAzimuthFitration(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
-                    rawMeasurement.getZangleVelocityDegreePerS(), rawMeasurement.getAzimuth(), deltaTimeMs);
-                
-                const TransformedAccel transformedAccel = accelTransform.transform(rawMeasurement);
-                const XyDistance xyDistance = accelTransform.getXyDistance(deltaTimeMs);
-
-                //experimentKfAzimuth(rawMeasurement.getXangleVelocityDegreePerS(), rawMeasurement.getYangleVelocityDegreePerS(),
-                //    rawMeasurement.getZangleVelocityDegreePerS(), rawMeasurement.getAzimuth(), deltaTimeMs);
-                positionChartGui.updateChart(rawPositionBuffer, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
-                //roll (X)
-                const double filteredAzimuth = kalmanFilters.getFilterForAzimuth().vecX()[0];
-                //roll += rawMeasurement.getXangleVelocityDegreePerS() * (deltaTimeMs / 1000.0);
-                //pitch += rawMeasurement.getYangleVelocityDegreePerS() * (deltaTimeMs / 1000.0);
-
-                kalmanFilters.makeGyroFiltration(rawMeasurement.getXangleVelocityDegreePerS(),
-                    rawMeasurement.getYangleVelocityDegreePerS(),
-                    rawMeasurement.getZangleVelocityDegreePerS(),
-                    deltaTimeMs);
-
-                roll += kalmanFilters.getFilterForGyro().vecX()[1];
-                pitch += kalmanFilters.getFilterForGyro().vecX()[3];
-                yaw += kalmanFilters.getFilterForGyro().vecX()[5];
-
-                //const double filteredXAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[3];
-                //const double filteredYAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[4];
-                const double filteredZAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[4];
-
-                rollPitchChartGui.updateChart(rawMeasurement, 
-                    rollBasedOnAccBuffer, pitchBasedOnAccBuffer, magnPointsBuffer,
-                    rollBuffer, pitchBuffer, yawBuffer,
-                    roll, pitch, yaw, totalTimeMs);
-
-                const double xAccGyroCompensation = (rawMeasurement.getXaccMPerS2() * cos(roll)) - (rawMeasurement.getZaccMPerS2() * sin(pitch));
-                const double yAccGyroCompensation = (rawMeasurement.getYaccMPerS2() * cos(pitch)) + (rawMeasurement.getZaccMPerS2() * sin(roll));
-                
-
-
-                magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
-                    rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
-                
-
-                angleVelocityChartGui.updateChart(xAngleVelocityBuffer, yAngleVelocityBuffer, zAngleVelocityBuffer, filteredZangleVelocityBuffer,
-                    rawMeasurement.getXangleVelocityDegreePerS(),
-                    rawMeasurement.getYangleVelocityDegreePerS(),
-                    rawMeasurement.getZangleVelocityDegreePerS(), filteredZAngleVel, totalTimeMs);
-                //roll pitch
-
-                std::optional<std::pair<double, double>>gpsBasedPositionOpt = std::nullopt;
-                if(currentGpsMeasurements.first == true) //nowe dane z GPSu dostepne
-                {
-                    const double lon{ gpsDataConverter.getLongitude() };
-                    const double lat{ gpsDataConverter.getLatitude() };
-                    const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
-                    gpsBasedPositionOpt = gpsBasedPosition;
-                    updateGpsBasedPositionChart(gpsBasedPosition);
-                    currentGpsMeasurements.first = false;
-                }
-
-                kalmanFilters.makePositionFiltration(gpsBasedPositionOpt, transformedAccel, rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
-
-                positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
-                    filteredAzimuth);
-
-                filteredPositionX = kalmanFilters.getFilterForPosition().vecX()(2);//PosX
-                filteredPositionY = kalmanFilters.getFilterForPosition().vecX()(5);//PosY
-                const double filteredXacc = kalmanFilters.getFilterForPosition().vecX()(0); //xAcc
-                const double filteredYacc = kalmanFilters.getFilterForPosition().vecX()(3); //yAcc
-                //const double filteredVelocityX = kalmanFilter.vecX()(1);
-                //const double filteredAccX = kalmanFilter.vecX()(1);
-                
-                //const double filteredVelocityY = kalmanFilter.vecX()(3);
-                updateAccChart(
-                    transformedAccel,
-                    rawMeasurement.getXaccMPerS2(),
-                    rawMeasurement.getYaccMPerS2(),
-                    rawMeasurement.getZaccMPerS2(),
-                    rawMeasurement.getCompensatedAccData(),
-                    filteredXacc, filteredYacc, xAccGyroCompensation, yAccGyroCompensation,
-                    totalTimeMs, deltaTimeMs);
-
-                const auto calculatedPosition{ positionUpdater.getCurrentPosition() };
-
-                updateFilteredPositionChart(filteredPositionX, filteredPositionY, calculatedPosition, totalTimeMs);
-            }
-
-
-
-            //kalmanFilterGyro.setInitialStateForGyro(rawMeasurement.getXangleVelocityDegreePerS(),
-            //    rawMeasurement.getYangleVelocityDegreePerS(),
-            //    rawMeasurement.getZangleVelocityDegreePerS());
-
-            //experimentGyroKf(rawMeasurement.getXangleVelocityDegreePerS(),
-            //    rawMeasurement.getYangleVelocityDegreePerS(),
-            //    rawMeasurement.getZangleVelocityDegreePerS(),
-            //    deltaTimeMs);
-
-            //const double calculatedPositionX = rawMeasurement.getXDistance();
-            //const double calculatedPositionY = rawMeasurement.getYDistance();
-
-
-            //updateFilteredVelocityChart(filteredVelocityX, filteredVelocityY, totalTimeMs);
-
-            //const double filteredXangle = kalmanFilterGyro.vecX()(0);
-
-            //updateFilteredAngleXVelocityChart(filteredXangle, rawMeasurement.getXangleVelocityDegreePerS(), totalTimeMs);
-
-            //
-
-            //relativePositionCalculator.calculateActualRelativePosition(rawMeasurement.getXvelocityMperS(), deltaTimeMs, rawMeasurement.getAzimuth());
-
-            //VelocityCalculator velocityCalculator;
-        }
+        //jesli GPS nowe dane to policz gps basedd position i u¿yj drugiej wersji macierzy H
+        //const double lon{ gpsDataConverter.getLongitude() };
+        //const double lat{ gpsDataConverter.getLatitude() };
+        //const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
+        //updateGpsBasedPositionChart(gpsBasedPosition);
     }
+    else
+    {
+        if (measurementCounterAfterCallibration == 0)
+        {
+            totalTimeMs = 0;
+            resetChartsAfterCallibration();
 
+        }
+        measurementCounterAfterCallibration++;
+
+        const TransformedAccel transformedAccel = accelTransform.transform(rawMeasurement);
+        const XyDistance xyDistance = accelTransform.getXyDistance(deltaTimeMs);
+
+        std::optional<GpsDistanceAngular>gpsDistanceAngular = std::nullopt;
+        if (currentGpsMeasurements.first == true) //new GPS data is available
+        {
+            const double lon{ gpsDataConverter.getLongitude() };
+            const double lat{ gpsDataConverter.getLatitude() };
+            const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
+            gpsDistanceAngular = gpsBasedPosition;
+            if (gpsBasedPosition)
+            {
+                updateGpsBasedPositionChart(gpsBasedPosition.value());
+            }
+            currentGpsMeasurements.first = false;
+        }
+
+        //kalmanFilters.makeGyroFiltration(
+        //    rawMeasurement.getXangleVelocityDegreePerS(),
+        //    rawMeasurement.getYangleVelocityDegreePerS(),
+        //    rawMeasurement.getZangleVelocityDegreePerS(),
+        //    deltaTimeMs);
+
+        kalmanFilters.makeAzimuthFitration(
+            gpsDistanceAngular,
+            rawMeasurement.getZangleVelocityDegreePerS(),
+            rawMeasurement.getAzimuth(),
+            deltaTimeMs);
+
+        const double filteredAzimuth = kalmanFilters.getFilterForAzimuth().vecX()[0];
+        const auto rollFromAcc = rawMeasurement.getRollFromAcc() * (360.0 / (2.0 *M_PI));
+        const auto pitchFromAcc = rawMeasurement.getPitchFromAcc() * (360.0 / (2.0*M_PI));
+        const auto yawFromMagn = rawMeasurement.getAzimuth();
+
+        gyroCallibrator.collectDataForCallibration(rawMeasurement, rollFromAcc, pitchFromAcc, filteredAzimuth);
+
+        positionChartGui.updateChart(rawPositionBuffer, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(), totalTimeMs);
+
+        roll += kalmanFilters.getFilterForGyro().vecX()[1];
+        pitch += kalmanFilters.getFilterForGyro().vecX()[3];
+        //yaw += kalmanFilters.getFilterForGyro().vecX()[5];
+
+        //const double filteredXAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[3];
+        //const double filteredYAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[4];
+        const double filteredZAngleVel = 0.0;// = kalmanFilters.getFilterForAzimuth().vecX()[4];
+
+        rollPitchChartGui.updateChart(rawMeasurement,
+            rollBasedOnAccBuffer, pitchBasedOnAccBuffer, magnPointsBuffer,
+            rollBuffer, pitchBuffer, yawBuffer,
+            roll, pitch, rawMeasurement.getAzimuth(), totalTimeMs);
+
+        const double xAccGyroCompensation = (rawMeasurement.getXaccMPerS2() * cos(roll)) - (rawMeasurement.getZaccMPerS2() * sin(pitch));
+        const double yAccGyroCompensation = (rawMeasurement.getYaccMPerS2() * cos(pitch)) + (rawMeasurement.getZaccMPerS2() * sin(roll));
+
+        magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
+            rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
+
+
+        angleVelocityChartGui.updateChart(xAngleVelocityBuffer, yAngleVelocityBuffer, zAngleVelocityBuffer, filteredZangleVelocityBuffer,
+            rawMeasurement.getXangleVelocityDegreePerS(),
+            rawMeasurement.getYangleVelocityDegreePerS(),
+            rawMeasurement.getZangleVelocityDegreePerS(), filteredZAngleVel, totalTimeMs);
+
+        kalmanFilters.makePositionFiltration(gpsDistanceAngular, transformedAccel, rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
+
+        positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
+            filteredAzimuth);
+
+        filteredPositionX = kalmanFilters.getFilterForPosition().vecX()(2);//PosX
+        filteredPositionY = kalmanFilters.getFilterForPosition().vecX()(5);//PosY
+        const double filteredXacc = kalmanFilters.getFilterForPosition().vecX()(0); //xAcc
+        const double filteredYacc = kalmanFilters.getFilterForPosition().vecX()(3); //yAcc
+        //const double filteredVelocityX = kalmanFilter.vecX()(1);
+        //const double filteredAccX = kalmanFilter.vecX()(1);
+
+        //const double filteredVelocityY = kalmanFilter.vecX()(3);
+        updateAccChart(
+            transformedAccel,
+            rawMeasurement.getXaccMPerS2(),
+            rawMeasurement.getYaccMPerS2(),
+            rawMeasurement.getZaccMPerS2(),
+            rawMeasurement.getCompensatedAccData(),
+            filteredXacc, filteredYacc,
+            totalTimeMs, deltaTimeMs);
+
+        const auto calculatedPosition{ positionUpdater.getCurrentPosition() };
+
+        updateFilteredPositionChart(filteredPositionX, filteredPositionY, calculatedPosition, totalTimeMs);
+    }
 }
 
 void MyWindow::OnFilterReceivedDataProcessingTimer(wxTimerEvent& event)
@@ -412,8 +342,6 @@ void MyWindow::OnFilterReceivedDataProcessingTimer(wxTimerEvent& event)
         //filter data in synchronized manner
         //check if new data available
         //set properly matrix H
-        const int16_t xMagnOffset = magnetometerCallibrator.getXoffset();
-        const int16_t yMagnOffset = magnetometerCallibrator.getYoffset();
 
         MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
             angleVelocityChartGui.getXgyroBias(),
@@ -421,20 +349,18 @@ void MyWindow::OnFilterReceivedDataProcessingTimer(wxTimerEvent& event)
             angleVelocityChartGui.getZgyroBias(), magnetometerCallibrator);
         const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
         totalTimeMs += static_cast<double>(deltaTimeMs);
-        if (currentSensorMeasurements.first && rawMeasurement.assign(currentSensorMeasurements.second, deltaTimeMs, true))
+
+        if (currentSensorMeasurements.first && rawMeasurement.assign(currentSensorMeasurements.second, deltaTimeMs, true, currentGpsMeasurements.first))
         {
-            processFiltration(rawMeasurement, deltaTimeMs, true);
+            processFiltration(rawMeasurement, deltaTimeMs);
             currentSensorMeasurements.first = false;
-            if (currentGpsMeasurements.first)
-            {
-                currentGpsMeasurements.first = false; //wait for new valid GPS data
-            }
+            currentGpsMeasurements.first = false; //wait for new valid GPS data
         }
         else
         {
             //process filtration without measurements.. - macierz H na zera
             // set correct matrix H
-            processFiltration(rawMeasurement, deltaTimeMs, true);
+            processFiltration(rawMeasurement, deltaTimeMs);
 
             const std::string errThreadEvent{ "INF timer expired - no valid measurements data available for current filtration cycle - only estimation based on previous system state" };
             appLogger.logErrThreadDataHandling(errThreadEvent);
@@ -449,7 +375,7 @@ void MyWindow::OnFilterReceivedGpsProcessingTimer(wxTimerEvent& event)
     {
         if (not gpsDataConverter.handleGpsData(currentGpsMeasurements.second))
         {
-            const std::string errThreadEvent{ "ERR timer expired - no valid GPS data available for current filtration cycle - only estimation based on previous system state" };
+            const std::string errThreadEvent{ "INF timer expired - no valid GPS data available for current filtration cycle - only estimation based on previous system state" };
             appLogger.logErrThreadDataHandling(errThreadEvent);
         }
     }
@@ -471,25 +397,26 @@ void MyWindow::OnFilterFileMeasTimer(wxTimerEvent& event)
         kalmanFilterSetupGui.setIsRestartFiltrationNeeded(false);
     }
     const std::vector<std::string>& measurements = csvMeasurementReader.readCSVrow();
-    const std::vector<std::string>& gpsData = csvMeasurementReader.readCSVrowGpsData();
+    currentSensorMeasurements.first = true;
+    currentSensorMeasurements.second = measurements;
 
-    gpsDataConverter.handleGpsData(gpsData);
-
-    const int16_t xMagnOffset = magnetometerCallibrator.getXoffset();
-    const int16_t yMagnOffset = magnetometerCallibrator.getYoffset();
-
-    MeasurementsController rawMeasurement(appLogger, rawGrawity, xBias, yBias,
-        angleVelocityChartGui.getXgyroBias(),
-        angleVelocityChartGui.getYgyroBias(),
-        angleVelocityChartGui.getZgyroBias(), magnetometerCallibrator);
-    if (rawMeasurement.assign(currentSensorMeasurements.second, 100, true))
+    const auto isGpsDataString{ measurements[measurements.size() - 1] };
+    if (isGpsDataString == "1")
     {
-        processFiltration(rawMeasurement, 100, false);
+        const std::vector<std::string>& gpsData = csvMeasurementReader.readCSVrowGpsData();
+        currentGpsMeasurements.first = true; //new GPS data ready for processing
+        currentGpsMeasurements.second = gpsData;
+        if (not gpsDataConverter.handleGpsData(currentGpsMeasurements.second))
+        {
+            const std::string errThreadEvent{ "INF - no valid GPS data available for current filtration cycle - only estimation based on previous system state" };
+            appLogger.logErrThreadDataHandling(errThreadEvent);
+        }
     }
+}
 
-    //every 100ms
-    //read new line
-    //call filtration
+void MyWindow::OnFilterFileGpsTimer(wxTimerEvent& event)
+{
+
 }
 
 //every time when sensors data received throughout WIFI
@@ -520,9 +447,9 @@ void MyWindow::OnSensorsDataThreadEvent(wxThreadEvent& event)
                     angleVelocityChartGui.getYgyroBias(),
                     angleVelocityChartGui.getZgyroBias(), magnetometerCallibrator);
                 totalTimeMs += static_cast<double>(deltaTimeMs);
-                if (rawMeasurement.assign(measurements, deltaTimeMs, true))
+                if (rawMeasurement.assign(measurements, deltaTimeMs, true, false))
                 {
-                    processFiltration(rawMeasurement, deltaTimeMs, true);
+                    processFiltration(rawMeasurement, deltaTimeMs);
                 }
             }
             else
@@ -546,6 +473,7 @@ void MyWindow::OnSensorsDataThreadEvent(wxThreadEvent& event)
     }
 }
 
+// COM port
 void MyWindow::OnGpsDataThreadEvent(wxThreadEvent& event)
 {
     GpsDataCustomizator* myEvent = dynamic_cast<GpsDataCustomizator*>(&event);
@@ -567,11 +495,7 @@ void MyWindow::OnGpsDataThreadEvent(wxThreadEvent& event)
             currentGpsMeasurements.second = measurements;
             appLogger.logGpsCsvData(measurements);
         }
-
-
         appLogger.logReceivedDataOnMainThread(measurements, " GPS");
-
-        //processFiltration(measurements, true);
     }
     else
     {
@@ -608,9 +532,9 @@ void MyWindow::OnSensorDataComThreadEvent(wxThreadEvent& event)
                     angleVelocityChartGui.getYgyroBias(),
                     angleVelocityChartGui.getZgyroBias(), magnetometerCallibrator);
                 totalTimeMs += static_cast<double>(deltaTimeMs);
-                if (rawMeasurement.assign(measurements, deltaTimeMs, false))
+                if (rawMeasurement.assign(measurements, deltaTimeMs, false, false))
                 {
-                    processFiltration(rawMeasurement, deltaTimeMs, true);
+                    processFiltration(rawMeasurement, deltaTimeMs);
                 }
             }
             else
@@ -671,8 +595,8 @@ void MyWindow::resetChartsAfterCallibration()
 
 void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
     const CompensatedAccData& compensatedAccData,
-    const double filteredXacc, const double filteredYacc,
-    const double xAccGyroCompens, const double yAccGyroCompens, const double timeMs, const uint32_t deltaTime)
+    const std::optional<double> filteredXacc, const std::optional<double> filteredYacc,
+    const double timeMs, const uint32_t deltaTime)
 {
     xAccValue->SetLabel(std::to_string(xAccMPerS2));
     yAccValue->SetLabel(std::to_string(yAccMPerS2));
@@ -685,17 +609,14 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
     yAccBuffer.AddElement(wxRealPoint(timeMs, yAccMPerS2));
     //zAccBuffer.AddElement(wxRealPoint(timeMs, zAccMPerS2));
 
-    xAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.xAcc));
-    yAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.yAcc));
+    //xAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.xAcc));
+    ///yAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.yAcc));
+    //filteredYaccBuffer.AddElement(wxRealPoint(timeMs, filteredYacc));
+
     //zAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.zAcc));
-
-
     //filteredXaccBuffer.AddElement(wxRealPoint(timeMs, filteredXacc));
-    filteredYaccBuffer.AddElement(wxRealPoint(timeMs, filteredYacc));
-
     //compensatedXAccDataBuffer.AddElement(wxRealPoint(timeMs, compensatedAccData.xAcc));
     //compensatedYAccDataBuffer.AddElement(wxRealPoint(timeMs, compensatedAccData.yAcc));
-
     //xAccWithGyroCompensation.AddElement(wxRealPoint(timeMs, xAccGyroCompens));
     //yAccWithGyroCompensation.AddElement(wxRealPoint(timeMs, yAccGyroCompens));
 
@@ -703,12 +624,13 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
     XYSimpleDataset* dataset = new XYSimpleDataset();
     dataset->AddSerie(new XYSerie(xAccBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(yAccBuffer.getBuffer()));
+
     //dataset->AddSerie(new XYSerie(zAccBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(filteredXaccBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(filteredYaccBuffer.getBuffer()));
 
-    dataset->AddSerie(new XYSerie(xAccGravityCompensationBuffer.getBuffer()));
-    dataset->AddSerie(new XYSerie(yAccGravityCompensationBuffer.getBuffer()));
+    //dataset->AddSerie(new XYSerie(xAccGravityCompensationBuffer.getBuffer()));
+    //dataset->AddSerie(new XYSerie(yAccGravityCompensationBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(zAccGravityCompensationBuffer.getBuffer()));
 
     //dataset->AddSerie(new XYSerie(xAccWithGyroCompensation.getBuffer()));
@@ -716,10 +638,13 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
 
     dataset->GetSerie(0)->SetName("raw X acceleration");
     dataset->GetSerie(1)->SetName("raw Y acceleration");
+    // dataset->GetSerie(2)->SetName("compensated X acceleration");
+    // dataset->GetSerie(3)->SetName("compensated Y acceleration");
+    // 
+    // 
     //dataset->GetSerie(2)->SetName("filtered Y acceleration");
     //dataset->GetSerie(2)->SetName("compensated X acceleration");
-    dataset->GetSerie(2)->SetName("compensated X acceleration");
-    dataset->GetSerie(3)->SetName("compensated Y acceleration");
+
     //dataset->GetSerie(4)->SetName("compensated Y acceleration");
    // dataset->GetSerie(4)->SetName("compensated Z acceleration");
 
@@ -751,17 +676,19 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
     accChartPanel->SetChart(chart);
 }
 
-void MyWindow::updateGpsBasedPositionChart(std::pair<double, double> gpsBasedPosition)
+void MyWindow::updateGpsBasedPositionChart(const GpsDistanceAngular& gpsBasedPosition)
 {
     XYPlot* plot = new XYPlot();
     XYSimpleDataset* dataset = new XYSimpleDataset();
-    gpsBasedPositionBuffer.AddElement(wxRealPoint(gpsBasedPosition.first, gpsBasedPosition.second));
+    gpsBasedPositionBuffer.AddElement(wxRealPoint(gpsBasedPosition.yPosition, gpsBasedPosition.xPosition));
     dataset->AddSerie(new XYSerie(gpsBasedPositionBuffer.getBuffer()));
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Y [m]"));
     bottomAxis->SetTitle(wxT("X [m]"));
+    leftAxis->SetFixedBounds(-300, 300);
+    bottomAxis->SetFixedBounds(-300, 300);
     plot->AddObjects(dataset, leftAxis, bottomAxis);
     Chart* chart = new Chart(plot, "GPS based position");
     gpsBasedPositionChartPanel->SetChart(chart);
@@ -963,7 +890,7 @@ void MyWindow::prepareAccChart()
     wxBoxSizer* controlPanelSizerForYAdj = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* controlPanelSizerForZAdj = new wxBoxSizer(wxHORIZONTAL);
 
-    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 600);
+    spinCtrlXacc = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -17000, 17000, 15700);
     spinCtrlXacc->SetIncrement(100);
     spinCtrlXaccMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 100);
     wxStaticText* xAccText = new wxStaticText(controlPanel, wxID_ANY, "Adjust X acc");
@@ -1148,7 +1075,7 @@ void MyWindow::prepareGui()
 
     csvMeasurementLoadPanel = new wxPanel(m_notebook);
     m_notebook->AddPage(csvMeasurementLoadPanel, "Load CSV");
-    csvMeasurementLoadGui.setup(csvMeasurementLoadPanel, &filterFileMeasTimer);
+    csvMeasurementLoadGui.setup(csvMeasurementLoadPanel);
 
     prepareAccChart();
     prepareVelChart();
@@ -1221,6 +1148,7 @@ void MyWindow::prepareGui()
     //BTconfirmSetupAndStartReception->Bind(wxEVT_BUTTON, &MyWindow::OnStartReceptionClick, this);
 
     filterFileMeasTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterFileMeasTimer, this);
+    filterFileGpsTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterFileGpsTimer, this);
     filterReceivedDataProcessingTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterReceivedDataProcessingTimer, this);
     filterReceivedGpsProcessingTimer.Bind(wxEVT_TIMER, &MyWindow::OnFilterReceivedGpsProcessingTimer, this);
 }

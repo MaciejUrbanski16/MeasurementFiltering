@@ -86,13 +86,14 @@ private:
 
     void OnApplyKFTunning(wxCommandEvent& event);
 
-    void processFiltration(MeasurementsController& rawMeasurement, const uint32_t deltaTimeMs, const bool isRealTimeMeasurement);
+    void processFiltration(MeasurementsController& rawMeasurement, const uint32_t deltaTimeMs);
 
     void OnSensorsDataThreadEvent(wxThreadEvent& event);
     void OnGpsDataThreadEvent(wxThreadEvent& event);
     void OnSensorDataComThreadEvent(wxThreadEvent& event);
 
     void OnFilterFileMeasTimer(wxTimerEvent& event);
+    void OnFilterFileGpsTimer(wxTimerEvent& event);
     void OnFilterReceivedDataProcessingTimer(wxTimerEvent& event);
     void OnFilterReceivedGpsProcessingTimer(wxTimerEvent& event);
 
@@ -100,10 +101,10 @@ private:
     void resetChartsAfterCallibration();
     void updateAccChart(const TransformedAccel& transformedAccel, const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
         const CompensatedAccData& compensatedAccData,
-        const double filteredXacc, const double filteredYacc, const double xAccGyroCompens, const double yAccGyroCompens,
+        const std::optional<double> filteredXacc, const std::optional<double> filteredYacc,
         const double timeMs, const uint32_t deltaTime);
     //void updateVelChart(const double xVelocity, const double timeMs);
-    void updateGpsBasedPositionChart(std::pair<double, double> gpsBasedPosition);
+    void updateGpsBasedPositionChart(const GpsDistanceAngular& gpsBasedPosition);
     void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
         const std::pair<double, double> calculatedPosition, const double timeMs);
     void updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const double timeMs);
@@ -130,14 +131,17 @@ private:
     double filteredPositionY{ 0.0 };
 
     wxTimer filterFileMeasTimer;
+    wxTimer filterFileGpsTimer;
     wxTimer filterReceivedDataProcessingTimer;
     wxTimer filterReceivedGpsProcessingTimer;
+    uint32_t ticksCounterToLoadGps{ 0 };
+    bool isGpsDataReceived{ false };
 
     MagnetometerCallibrator magnetometerCallibrator{};
     MagnChartGui magnChartGui{ magnetometerCallibrator };
     KalmanFilterSetupGui kalmanFilterSetupGui{ filterReceivedDataProcessingTimer, filterReceivedGpsProcessingTimer, magnChartGui };
     CsvMeasurementReader csvMeasurementReader;
-    CsvMeasurementLoadGui csvMeasurementLoadGui{ csvMeasurementReader };
+    CsvMeasurementLoadGui csvMeasurementLoadGui{ csvMeasurementReader, filterFileMeasTimer, filterFileGpsTimer };
 
     PositionChartGui positionChartGui;
 
@@ -149,6 +153,7 @@ private:
     KalmanFilters kalmanFilters{kalmanFilterSetupGui};
 
     bool isFirstMeasurement{ true };
+    uint32_t gpsDataCounter{ 0 };
 
     //frame
     wxNotebook* m_notebook = nullptr;
@@ -267,7 +272,7 @@ private:
     bool isRestartFiltrationNeeded{ false };
 
     double rawGrawity{ 16100.0 };
-    double xBias{ 600.0 };
+    double xBias{ 15700.0 };
     double yBias{ 675.0 };
 
     double totalTimeMs{ 0.0 };
@@ -293,7 +298,7 @@ private:
 
     double xAngleVelNewPoint{ 0.0 };
 
-    uint32_t measurementCounter{ 0 };
+    uint32_t measurementCounterAfterCallibration{ 0 };
 
     void prepareGui();
     void prepareAccChart();

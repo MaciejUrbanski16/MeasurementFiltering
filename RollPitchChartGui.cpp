@@ -37,14 +37,17 @@ void RollPitchChartGui::setup(wxNotebook* m_notebook)
 
 	wxBoxSizer* rollLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* pitchLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* yawLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
 	//wxBoxSizer* orientationSizer = new wxBoxSizer(wxHORIZONTAL);
 	//wxBoxSizer* checkBoxSizer = new wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* rollName = new wxStaticText(controlPanel, wxID_ANY, "Roll: ");
 	wxStaticText* pitchName = new wxStaticText(controlPanel, wxID_ANY, "Pitch: ");
+	wxStaticText* yawName = new wxStaticText(controlPanel, wxID_ANY, "Yaw: ");
 	//wxStaticText* orientationName = new wxStaticText(controlPanel, wxID_ANY, "Orientation [deg]: ");
 	rollValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	pitchValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+	yawValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	//orientationValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 
 	//rawAzimuthCheckbox = new wxCheckBox(controlPanel, wxID_ANY, wxT("Plot raw azimuth"));
@@ -62,6 +65,10 @@ void RollPitchChartGui::setup(wxNotebook* m_notebook)
 	pitchLabelsSizer->Add(pitchName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	pitchLabelsSizer->Add(pitchValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	controlPanelSizer->Add(pitchLabelsSizer, 0, wxALL, 5);
+
+	yawLabelsSizer->Add(yawName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	yawLabelsSizer->Add(yawValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	controlPanelSizer->Add(yawLabelsSizer, 0, wxALL, 5);
 
 	//orientationSizer->Add(orientationName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	//orientationSizer->Add(orientationValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
@@ -91,15 +98,16 @@ void RollPitchChartGui::updateChart(const MeasurementsController& rawMeasurement
 {
 	rollValue->SetLabel(std::to_string(rollVal));
 	pitchValue->SetLabel(std::to_string(pitchVal));
+	yawValue->SetLabel(std::to_string(yawVal));
 
 	//rollBuffer.AddElement(wxRealPoint(timeMs, rollVal));
 	//pitchBuffer.AddElement(wxRealPoint(timeMs, pitchVal));
-	rollBuffer.AddElement(wxRealPoint(timeMs, rollVal));
-	pitchBuffer.AddElement(wxRealPoint(timeMs, pitchVal));
-	yawBuffer.AddElement(wxRealPoint(timeMs, yawVal));
+	//rollBuffer.AddElement(wxRealPoint(timeMs, rollVal));
+	//pitchBuffer.AddElement(wxRealPoint(timeMs, pitchVal));
+	//yawBuffer.AddElement(wxRealPoint(timeMs, yawVal));
 
-	rollBasedOnAccBuffer.AddElement(wxRealPoint(timeMs, rawMeasurement.getRollFromAcc() * (180.0 / M_PI)));
-	pitchBasedOnAccBuffer.AddElement(wxRealPoint(timeMs, rawMeasurement.getPitchFromAcc() * (180.0 / M_PI)));
+	rollBasedOnAccBuffer.AddElement(wxRealPoint(timeMs, rawMeasurement.getRollFromAcc() * (360.0 / (2.0* M_PI))));
+	pitchBasedOnAccBuffer.AddElement(wxRealPoint(timeMs, rawMeasurement.getPitchFromAcc() * (180.0 / (2.0 * M_PI))));
 
 	XYPlot* plot = new XYPlot();
 	XYSimpleDataset* dataset = new XYSimpleDataset();
@@ -122,9 +130,9 @@ void RollPitchChartGui::updateChart(const MeasurementsController& rawMeasurement
 	NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
 	leftAxis->SetTitle(wxT("Angle"));
 	bottomAxis->SetTitle(wxT("Time [ms]"));
-	if (rollBuffer.getBuffer().size() >= 100)
+	if (rollBasedOnAccBuffer.getBuffer().size() >= 100)
 	{
-		bottomAxis->SetFixedBounds(rollBuffer.getBuffer()[0].x, rollBuffer.getBuffer()[99].x);
+		bottomAxis->SetFixedBounds(rollBasedOnAccBuffer.getBuffer()[0].x, rollBasedOnAccBuffer.getBuffer()[99].x);
 	}
 	Legend* legend = new Legend(wxTOP, wxRIGHT);
 	plot->SetLegend(legend);

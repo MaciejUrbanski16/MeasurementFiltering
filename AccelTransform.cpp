@@ -92,5 +92,5 @@ XyDistance AccelTransform::getXyDistance(const uint32_t deltaTimeMs)
 
 double AccelTransform::degreeToRad(double degrees) const
 {
-    return degrees * M_PI / 180.0;
+    return degrees * 2.0 * M_PI / 360.0;
 }

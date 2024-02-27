@@ -1,9 +1,7 @@
 #include "CsvMeasurementLoadGui.h"
 
-void CsvMeasurementLoadGui::setup(wxPanel* kalmanParamsSetupPanel, wxTimer* filterFileMeasTimer)
+void CsvMeasurementLoadGui::setup(wxPanel* kalmanParamsSetupPanel)
 {
-    m_filterFileMeasTimer = filterFileMeasTimer;
-
     wxBoxSizer* loadSensorDataSizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* loadGpsDataSizer = new wxBoxSizer(wxHORIZONTAL);
 
@@ -106,32 +104,25 @@ void CsvMeasurementLoadGui::OnStartFiltration(wxCommandEvent& event)
         return;
     }
     canFiltrationBeStarted = true;
-    //const std::string& filepath{ filePathSensorDataTextCtrl->GetValue().ToStdString() };
-    //.readCSVHeader(filepath);
-    if (m_filterFileMeasTimer)
+
+
+    const std::string& filepath{ filePathSensorDataTextCtrl->GetValue().ToStdString() };
+    if (not csvMeasurementReader.openFile(filepath))
     {
-        const std::string& filepath{ filePathSensorDataTextCtrl->GetValue().ToStdString() };
-        if (not csvMeasurementReader.openFile(filepath))
-        {
-            wxMessageBox("Plik z danymi z czujników nie zosta³ otworzony!", "Informacja", wxOK | wxICON_INFORMATION);
-            return;
-        }
-
-        const std::string& filepathForGps{ filePathGpsDataTextCtrl->GetValue().ToStdString() };
-        if (not csvMeasurementReader.openFileWithGpsData(filepathForGps))
-        {
-            wxMessageBox("Plik z danymi GPS nie zosta³ otworzony!", "Informacja", wxOK | wxICON_INFORMATION);
-            return;
-        }
-
-
-        m_filterFileMeasTimer->Start(100);
+        wxMessageBox("Plik z danymi z czujników nie zosta³ otworzony!", "Informacja", wxOK | wxICON_INFORMATION);
+        return;
     }
-    else
+
+    const std::string& filepathForGps{ filePathGpsDataTextCtrl->GetValue().ToStdString() };
+    if (not csvMeasurementReader.openFileWithGpsData(filepathForGps))
     {
-        wxMessageBox("Timer cannot be started!", "Informacja", wxOK | wxICON_INFORMATION);
+        wxMessageBox("Plik z danymi GPS nie zosta³ otworzony!", "Informacja", wxOK | wxICON_INFORMATION);
+        return;
     }
-    
+
+    filterFileMeasTimer.Start(70);
+    //filterFileGpsTimer.Start(900);
+   
 }
 
 bool CsvMeasurementLoadGui::isFileExtensionCorrect(const wxString& filePath, const wxString& extension) const

@@ -14,7 +14,7 @@
 #include <optional>
 #include "MagnChartGui.h"
 
-static constexpr size_t DIM_X_azimuth{ 6 };
+static constexpr size_t DIM_X_azimuth{ 2 };
 static constexpr size_t DIM_Z_azimuth{ 3 };
 static constexpr size_t DIM_X_gyro{ 6 };
 static constexpr size_t DIM_Z_gyro{ 3 };
@@ -27,6 +27,13 @@ enum class MovementModel
     RC_CAR,
     CAR,
     NONE
+};
+
+enum class MeasurementsType
+{
+    NONE = 0,
+    REAL_TIME,
+    FROM_FILE
 };
 
 class KalmanFilterSetupGui
@@ -94,11 +101,12 @@ private:
     void setupLeftPanel(wxPanel* mainPanel);
     void setupRightPanel(wxPanel* mainPanel);
 
-
     void OnConfirmCallibration(wxCommandEvent& event);
     void OnRestartFiltration(wxCommandEvent& event);
 
     void OnRadioButtonClicked(wxCommandEvent& event);
+    void OnRadioButtonRealTimeMeasurementsClicked(wxCommandEvent& event);
+    void OnConfirmMeasType(wxCommandEvent& event);
 
     wxTimer& filterReceivedDataProcessingTimer;
     wxTimer& filterReceivedGpsProcessingTimer;
@@ -106,6 +114,9 @@ private:
 
     wxPanel* kalmanParamsSetupPanel = nullptr;
 	wxButton* confirmCallibrationButton = nullptr;
+    wxButton* confirmMeasurementsTypeButton = nullptr;
+    bool isMeasurementTypeChosen{ false };
+
     wxButton* restartFiltrationAfterCallibrationButton = nullptr;
     wxBoxSizer* sizer = nullptr;
     wxSplitterWindow* azimuthPanelSplitter = nullptr;
@@ -113,9 +124,12 @@ private:
     wxPanel* leftPanel = nullptr;
     wxPanel* rightPanel = nullptr;
 
-    wxRadioButton* pedestrianModelButton;
-    wxRadioButton* rcCarModelButton;
-    wxRadioButton* carModelButton;
+    wxRadioButton* pedestrianModelButton = nullptr;
+    wxRadioButton* rcCarModelButton = nullptr;
+    wxRadioButton* carModelButton = nullptr;
+
+    wxRadioButton* realTimeMeasurementsButton = nullptr;
+    wxRadioButton* fromFileMeasurements = nullptr;;
 
     wxBoxSizer* rightVerticalSizer = nullptr;
 
@@ -160,6 +174,8 @@ private:
     bool isCallibrationDone = false;
     bool isRestartFiltrationNeeded = false;
     bool isFiltrationRestarted{ false };
+
+    MeasurementsType measurementsType{ MeasurementsType::NONE };
 
 
     //PoC
