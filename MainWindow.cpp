@@ -251,8 +251,11 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
         {
             const double lon{ gpsDataConverter.getLongitude() };
             const double lat{ gpsDataConverter.getLatitude() };
-            const auto gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
+            const double angle{ gpsDataConverter.getOrientation() };
+            std::optional<GpsDistanceAngular> gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
+            gpsBasedPosition.value().angle = angle;
             gpsDistanceAngular = gpsBasedPosition;
+            
             if (gpsBasedPosition)
             {
                 updateGpsBasedPositionChart(gpsBasedPosition.value());
@@ -289,6 +292,9 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
         //const double filteredYAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[4];
         const double filteredZAngleVel = 0.0;// = kalmanFilters.getFilterForAzimuth().vecX()[4];
 
+        magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
+            rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
+
         rollPitchChartGui.updateChart(rawMeasurement,
             rollBasedOnAccBuffer, pitchBasedOnAccBuffer, magnPointsBuffer,
             rollBuffer, pitchBuffer, yawBuffer,
@@ -297,8 +303,7 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
         const double xAccGyroCompensation = (rawMeasurement.getXaccMPerS2() * cos(roll)) - (rawMeasurement.getZaccMPerS2() * sin(pitch));
         const double yAccGyroCompensation = (rawMeasurement.getYaccMPerS2() * cos(pitch)) + (rawMeasurement.getZaccMPerS2() * sin(roll));
 
-        magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
-            rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
+
 
 
         angleVelocityChartGui.updateChart(xAngleVelocityBuffer, yAngleVelocityBuffer, zAngleVelocityBuffer, filteredZangleVelocityBuffer,
@@ -350,7 +355,7 @@ void MyWindow::OnFilterReceivedDataProcessingTimer(wxTimerEvent& event)
         const uint32_t deltaTimeMs = deltaTimeCalculator.getDurationInMs();
         totalTimeMs += static_cast<double>(deltaTimeMs);
 
-        if (currentSensorMeasurements.first && rawMeasurement.assign(currentSensorMeasurements.second, deltaTimeMs, true, currentGpsMeasurements.first))
+        if (currentSensorMeasurements.first && rawMeasurement.assign(currentSensorMeasurements.second, deltaTimeMs, REAL_TIME_MEASUREMENT, currentGpsMeasurements.first))
         {
             processFiltration(rawMeasurement, deltaTimeMs);
             currentSensorMeasurements.first = false;
@@ -400,6 +405,10 @@ void MyWindow::OnFilterFileMeasTimer(wxTimerEvent& event)
     currentSensorMeasurements.first = true;
     currentSensorMeasurements.second = measurements;
 
+    if (measurements.empty())
+    {
+        return;
+    }
     const auto isGpsDataString{ measurements[measurements.size() - 1] };
     if (isGpsDataString == "1")
     {
@@ -447,7 +456,7 @@ void MyWindow::OnSensorsDataThreadEvent(wxThreadEvent& event)
                     angleVelocityChartGui.getYgyroBias(),
                     angleVelocityChartGui.getZgyroBias(), magnetometerCallibrator);
                 totalTimeMs += static_cast<double>(deltaTimeMs);
-                if (rawMeasurement.assign(measurements, deltaTimeMs, true, false))
+                if (rawMeasurement.assign(measurements, deltaTimeMs, REAL_TIME_MEASUREMENT, false))
                 {
                     processFiltration(rawMeasurement, deltaTimeMs);
                 }
@@ -687,8 +696,8 @@ void MyWindow::updateGpsBasedPositionChart(const GpsDistanceAngular& gpsBasedPos
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Y [m]"));
     bottomAxis->SetTitle(wxT("X [m]"));
-    leftAxis->SetFixedBounds(-300, 300);
-    bottomAxis->SetFixedBounds(-300, 300);
+    leftAxis->SetFixedBounds(-800, 800);
+    bottomAxis->SetFixedBounds(-800, 800);
     plot->AddObjects(dataset, leftAxis, bottomAxis);
     Chart* chart = new Chart(plot, "GPS based position");
     gpsBasedPositionChartPanel->SetChart(chart);

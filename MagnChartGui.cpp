@@ -120,28 +120,28 @@ void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElement
 	const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth,
 	 const double timeMs)
 {
-	if (wasCallibrationStarted)
-	{
-		magnetometerCallibrator.collectData(xMagn, yMagn);
-	}
+	//if (wasCallibrationStarted)
+	//{
+	//	magnetometerCallibrator.collectData(xMagn, yMagn);
+	//}
 
-	const double azimuthInDegrees{ azimuth };
-	currentAzimuth = azimuth;
+	//const double azimuthInDegrees{ azimuth };
+	//currentAzimuth = azimuth;
 	xMagnValue->SetLabel(std::to_string(xMagn));
 	yMagnValue->SetLabel(std::to_string(yMagn));
-	orientationValue->SetLabel(std::to_string(azimuthInDegrees));
-	double callibratedToNorth{ azimuth + biasToNorth };
-	if (azimuth + biasToNorth > 360.0)
-	{
-		callibratedToNorth = azimuth + biasToNorth - 360.0;
-	}
-	if (azimuth + biasToNorth < 0)
-	{
-		callibratedToNorth = azimuth + biasToNorth + 360.0;
-	}
-	callibrateToNothValue->SetLabel(std::to_string(callibratedToNorth));
+	orientationValue->SetLabel(std::to_string(azimuth));
+	//double callibratedToNorth{ azimuth + biasToNorth };
+	//if (azimuth + biasToNorth > 360.0)
+	//{
+	//	callibratedToNorth = azimuth + biasToNorth - 360.0;
+	//}
+	//if (azimuth + biasToNorth < 0)
+	//{
+	//	callibratedToNorth = azimuth + biasToNorth + 360.0;
+	//}
+	//callibrateToNothValue->SetLabel(std::to_string(callibratedToNorth));
 
-	magnPointsBuffer.AddElement(wxRealPoint(timeMs, azimuthInDegrees));
+	magnPointsBuffer.AddElement(wxRealPoint(timeMs, azimuth));
 	filteredAzimuthBuffer.AddElement(wxRealPoint(timeMs, filteredAzimuth));
 
 	XYPlot* plot = new XYPlot();

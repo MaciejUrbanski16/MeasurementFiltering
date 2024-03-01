@@ -61,8 +61,8 @@ void KalmanFilters::makeAzimuthFitration(const std::optional<GpsDistanceAngular>
     kf::Matrix<DIM_Z_azimuth, DIM_Z_azimuth> matRAzimuthPedestrian;
     kf::Matrix<DIM_X_azimuth, DIM_X_azimuth> matQAzimuthPedestrian;
     matRAzimuthPedestrian << 
-        0.001F, 0, 0,
-        0, 0.01F, 0,
+        10.0F, 0, 0,
+        0, 1.0F, 0,
         0, 0, 0.1F;
 
     double process_variance = 0.00002F;

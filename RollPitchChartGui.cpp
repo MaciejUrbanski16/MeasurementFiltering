@@ -107,7 +107,7 @@ void RollPitchChartGui::updateChart(const MeasurementsController& rawMeasurement
 	//yawBuffer.AddElement(wxRealPoint(timeMs, yawVal));
 
 	rollBasedOnAccBuffer.AddElement(wxRealPoint(timeMs, rawMeasurement.getRollFromAcc() * (360.0 / (2.0* M_PI))));
-	pitchBasedOnAccBuffer.AddElement(wxRealPoint(timeMs, rawMeasurement.getPitchFromAcc() * (180.0 / (2.0 * M_PI))));
+	pitchBasedOnAccBuffer.AddElement(wxRealPoint(timeMs, rawMeasurement.getPitchFromAcc() * (360.0 / (2.0 * M_PI))));
 
 	XYPlot* plot = new XYPlot();
 	XYSimpleDataset* dataset = new XYSimpleDataset();

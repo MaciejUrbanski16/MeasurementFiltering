@@ -72,6 +72,6 @@ private:
 
     double xGyroBias{ -18000.0 };
     double yGyroBias{ 12900.0 };
-    double zGyroBias{ 15000.0 };
+    double zGyroBias{ 9000.0 };
 };
 

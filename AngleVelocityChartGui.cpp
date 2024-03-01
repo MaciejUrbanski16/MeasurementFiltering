@@ -32,7 +32,7 @@ void AngleVelocityChartGui::setup(wxNotebook* m_notebook)
     spinCtrlYangleVel->Bind(wxEVT_SPINCTRL, &AngleVelocityChartGui::OnSpinYAngleVelUpdate, this);
     spinCtrlYangleVelMultiplicator->Bind(wxEVT_SPINCTRL, &AngleVelocityChartGui::OnSpinYAnglVelIncrUpdate, this);
 
-    spinCtrlZangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, 16500);
+    spinCtrlZangleVel = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -33000, 33000, zGyroBias);
     spinCtrlZangleVel->SetIncrement(100);
     spinCtrlZangleVelMultiplicator = new wxSpinCtrl(controlPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1000, 1000, 100);
     wxStaticText* zAngleVelText = new wxStaticText(controlPanel, wxID_ANY, "Adjust Z angle velocity");

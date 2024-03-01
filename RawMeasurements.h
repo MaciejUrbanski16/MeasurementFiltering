@@ -9,7 +9,9 @@
 #include "MagnetometerCallibrator.h"
 #include "AppLogger.h"  
 #define M_PI 3.1415926
-#define EXPECTED_FRAME_SIZE 9
+
+#define EXPECTED_FRAME_SIZE 10
+#define REAL_TIME_MEASUREMENT false
 
 struct CompensatedAccData 
 {
@@ -185,18 +187,18 @@ public:
 	//degrees
 	double getAzimuth()
 	{
-		const int16_t magnBiasToNorthInDegrees{ magnetometerCallibrator.getBiasToNorth() };
-		double orientationInDegreeWithBias{ (getYawFromMagn()*360.0)/(2*M_PI) + static_cast<double>(magnBiasToNorthInDegrees)};
-		if (orientationInDegreeWithBias > 360.0)
-		{
-			orientationInDegreeWithBias = orientationInDegreeWithBias - 360.0;
-		}
-		if (orientationInDegreeWithBias < 0)
-		{
-			orientationInDegreeWithBias = orientationInDegreeWithBias + 360.0;
-		}
-		magnetometerCallibrator.setCurrentAzimuth(orientationInDegreeWithBias);
-		return orientationInDegreeWithBias;
+		//const int16_t magnBiasToNorthInDegrees{ magnetometerCallibrator.getBiasToNorth() };
+		//double orientationInDegreeWithBias{ (getYawFromMagn()*360.0)/(2*M_PI) + static_cast<double>(magnBiasToNorthInDegrees)};
+		//if (orientationInDegreeWithBias > 360.0)
+		//{
+		//	orientationInDegreeWithBias = orientationInDegreeWithBias - 360.0;
+		//}
+		//if (orientationInDegreeWithBias < 0)
+		//{
+		//	orientationInDegreeWithBias = orientationInDegreeWithBias + 360.0;
+		//}
+		//magnetometerCallibrator.setCurrentAzimuth(orientationInDegreeWithBias);
+		return orientationDegree;//without compensation!!
 	}
 	int16_t getRawXMagn() const { return xMagn; }
 	int16_t getRawYMagn() const { return yMagn; }
@@ -394,7 +396,7 @@ private:
 
 	double xAngleVelBias{ -18000.0};
 	double yAngleVelBias{ 12900.0};
-	double zAngleVelBias{15000.0};
+	double zAngleVelBias{ 9200.0 };
 
 	double correctXGyro{ 0.0 };
 	double correctYGyro{ 0.0 };
