@@ -38,16 +38,19 @@ void RollPitchChartGui::setup(wxNotebook* m_notebook)
 	wxBoxSizer* rollLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* pitchLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* yawLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* distanceLabelsSizer = new wxBoxSizer(wxHORIZONTAL);
 	//wxBoxSizer* orientationSizer = new wxBoxSizer(wxHORIZONTAL);
 	//wxBoxSizer* checkBoxSizer = new wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* rollName = new wxStaticText(controlPanel, wxID_ANY, "Roll: ");
 	wxStaticText* pitchName = new wxStaticText(controlPanel, wxID_ANY, "Pitch: ");
 	wxStaticText* yawName = new wxStaticText(controlPanel, wxID_ANY, "Yaw: ");
+	wxStaticText* distanceName = new wxStaticText(controlPanel, wxID_ANY, "Distance: ");
 	//wxStaticText* orientationName = new wxStaticText(controlPanel, wxID_ANY, "Orientation [deg]: ");
 	rollValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	pitchValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	yawValue = new wxStaticText(controlPanel, wxID_ANY, "0");
+	distanceValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 	//orientationValue = new wxStaticText(controlPanel, wxID_ANY, "0");
 
 	//rawAzimuthCheckbox = new wxCheckBox(controlPanel, wxID_ANY, wxT("Plot raw azimuth"));
@@ -69,6 +72,10 @@ void RollPitchChartGui::setup(wxNotebook* m_notebook)
 	yawLabelsSizer->Add(yawName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	yawLabelsSizer->Add(yawValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	controlPanelSizer->Add(yawLabelsSizer, 0, wxALL, 5);
+
+	distanceLabelsSizer->Add(distanceName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	distanceLabelsSizer->Add(distanceValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	controlPanelSizer->Add(distanceLabelsSizer, 0, wxALL, 5);
 
 	//orientationSizer->Add(orientationName, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 	//orientationSizer->Add(orientationValue, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
@@ -94,11 +101,14 @@ void RollPitchChartGui::setup(wxNotebook* m_notebook)
 void RollPitchChartGui::updateChart(const MeasurementsController& rawMeasurement,
 	PlotElementsBuffer& rollBasedOnAccBuffer, PlotElementsBuffer& pitchBasedOnAccBuffer, PlotElementsBuffer& magnPointsBuffer,
 	PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer, PlotElementsBuffer& yawBuffer,
-	const double rollVal, const double pitchVal, const double yawVal, const double timeMs)
+	const double rollVal, const double pitchVal, const double yawVal, const double filteredDistance, const double timeMs)
 {
-	rollValue->SetLabel(std::to_string(rollVal));
-	pitchValue->SetLabel(std::to_string(pitchVal));
+	rollValue->SetLabel(std::to_string(rawMeasurement.getRollFromAcc() * (360.0 / (2.0 * M_PI))));
+	pitchValue->SetLabel(std::to_string(rawMeasurement.getPitchFromAcc() * (360.0 / (2.0 * M_PI))));
 	yawValue->SetLabel(std::to_string(yawVal));
+
+	totalDistance += filteredDistance;
+	distanceValue->SetLabel(std::to_string(totalDistance));
 
 	//rollBuffer.AddElement(wxRealPoint(timeMs, rollVal));
 	//pitchBuffer.AddElement(wxRealPoint(timeMs, pitchVal));

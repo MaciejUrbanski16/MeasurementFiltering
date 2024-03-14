@@ -14,6 +14,7 @@ struct GpsDistanceAngular
 {
 	double xPosition{ 0.0 };
 	double yPosition{ 0.0 };
+	double velocity{ 0.0 };
 	double angle{ 0.0 };
 };
 

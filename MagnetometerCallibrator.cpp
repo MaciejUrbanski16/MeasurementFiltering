@@ -17,17 +17,17 @@ void MagnetometerCallibrator::callibrate()
 	xOffset = sumOfXMagn / numOfSamples;
 	yOffset = sumOfYMagn / numOfSamples;
 
-	Eigen::MatrixXd covarianceMatrix = magnetometerData * magnetometerData.transpose();
+	//Eigen::MatrixXd covarianceMatrix = magnetometerData * magnetometerData.transpose();
 
-	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(covarianceMatrix);
-	Eigen::VectorXd eigenvalues = solver.eigenvalues();
-	Eigen::MatrixXd eigenvectors = solver.eigenvectors();
+	//Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(covarianceMatrix);
+	//Eigen::VectorXd eigenvalues = solver.eigenvalues();
+	//Eigen::MatrixXd eigenvectors = solver.eigenvectors();
 
-	Eigen::MatrixXd selectedEigenvectors = eigenvectors.rightCols<2>();
+	//Eigen::MatrixXd selectedEigenvectors = eigenvectors.rightCols<2>();
 
-	// Budowanie macierzy skalowania
-	Eigen::VectorXd scalingFactors = eigenvalues.cwiseSqrt().cwiseInverse();
-	Eigen::MatrixXd scalingMatrix = scalingFactors.asDiagonal();
+	//// Budowanie macierzy skalowania
+	//Eigen::VectorXd scalingFactors = eigenvalues.cwiseSqrt().cwiseInverse();
+	//Eigen::MatrixXd scalingMatrix = scalingFactors.asDiagonal();
 
 
 }

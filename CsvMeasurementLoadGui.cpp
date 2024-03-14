@@ -121,6 +121,7 @@ void CsvMeasurementLoadGui::OnStartFiltration(wxCommandEvent& event)
     }
 
     filterFileMeasTimer.Start(70);
+    deltaTimeCalculator.startTimer();
     //filterFileGpsTimer.Start(900);
    
 }

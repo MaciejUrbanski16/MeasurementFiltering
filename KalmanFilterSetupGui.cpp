@@ -745,10 +745,10 @@ void KalmanFilterSetupGui::createAndFillMatrixHPositionGrid()
     matrixHPositionGrid->SetDefaultColSize(25);
 
     kf::Matrix<DIM_Z, DIM_X> matH;
-    matH << 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F,
-            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
+    matH << 1.0F, 0.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 1.0F,
+            0.0F, 0.0F, 1.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 0.0F;
 
     matrixHPositionGrid->CreateGrid(matH.rows(), matH.cols());
 
@@ -891,21 +891,21 @@ void KalmanFilterSetupGui::initPedestrianModelMatrices()
 
     matQAzimuthPedestrian *= process_variance;
 
-    matRAccPedestrian << 0.01F, 0.0F, 0.0F, 0.0F,
-                         0.0F, 0.01F, 0.0F, 0.0F,
-                         0.0F, 0.0F, 0.1F, 0.0F,
-                         0.0F, 0.0F, 0.0F, 0.1F;
+    matRAccPedestrian <<
+        0.0001F, 0.0F, 0.0F, 0.0F,
+        0.0F, 0.006F, 0.0F, 0.0F,
+        0.0F, 0.0F, 0.0001F, 0.0F,
+        0.0F, 0.0F, 0.0F, 0.006F;
 
-    double processVarianceAcc = 2000.0F;
-    double sCoefficient = 10.0F;
-    sCoefficient = sCoefficient / 50.0F;
+    double processVarianceAcc = 0.05F;
+    double sCoefficient = 0.9F;
 
-    matQAccPedestrian << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0, 0, 0,
-        pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0, 0, 0,
-        pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2), 0, 0, 0,
-        0, 0, 0, pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6,
-        0, 0, 0, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2,
-        0, 0, 0, pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2);
+
+    matQAccPedestrian <<
+        sCoefficient, 0, 0, 0,
+        0, sCoefficient, 0, 0,
+        0, 0, sCoefficient, 0,
+        0, 0, 0, sCoefficient;
 
     matQAccPedestrian *= processVarianceAcc;
 }
@@ -934,12 +934,11 @@ void KalmanFilterSetupGui::initRcCarModelMatrices()
     double sCoefficient = 100.0F;
     sCoefficient = sCoefficient / 100000.0F;
 
-    matQAccRcCar << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0, 0, 0,
-        pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0, 0, 0,
-        pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2), 0, 0, 0,
-        0, 0, 0, pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6,
-        0, 0, 0, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2,
-        0, 0, 0, pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2);
+    matQAccRcCar << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0,
+        pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0,
+        pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2), 0,
+        0, 0, 0,0;
+
 
     matQAccRcCar *= processVarianceAcc;
 }
@@ -968,12 +967,10 @@ void KalmanFilterSetupGui::initCarModelMatrices()
     double sCoefficient = 100.0F;
     sCoefficient = sCoefficient / 100000000.0F;
 
-    matQAccCar << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0, 0, 0,
-        pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0, 0, 0,
-        pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2), 0, 0, 0,
-        0, 0, 0, pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6,
-        0, 0, 0, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2,
-        0, 0, 0, pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2);
+    matQAccCar << pow(sCoefficient, 6) / 36, pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 6, 0,
+        pow(sCoefficient, 5) / 12, pow(sCoefficient, 4) / 4, pow(sCoefficient, 3) / 2, 0,
+        pow(sCoefficient, 4) / 6, pow(sCoefficient, 3) / 2, pow(sCoefficient, 2), 0,
+        0, 0, 0, pow(sCoefficient, 6) / 36;
 
     matQAccCar *= processVarianceAcc;
 }

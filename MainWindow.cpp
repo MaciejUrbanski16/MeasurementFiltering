@@ -251,10 +251,13 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
         {
             const double lon{ gpsDataConverter.getLongitude() };
             const double lat{ gpsDataConverter.getLatitude() };
+            const double velocity{ gpsDataConverter.getVelocityMperS() };
             const double angle{ gpsDataConverter.getOrientation() };
             std::optional<GpsDistanceAngular> gpsBasedPosition = haversineConverter.calculateCurrentPosition(lon, lat);
             gpsBasedPosition.value().angle = angle;
+            gpsBasedPosition.value().velocity = velocity;
             gpsDistanceAngular = gpsBasedPosition;
+
             
             if (gpsBasedPosition)
             {
@@ -292,13 +295,47 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
         //const double filteredYAngleVel = kalmanFilters.getFilterForAzimuth().vecX()[4];
         const double filteredZAngleVel = 0.0;// = kalmanFilters.getFilterForAzimuth().vecX()[4];
 
+        const bool doInrement = kalmanFilters.makePositionFiltration(rawMeasurement, gpsDistanceAngular, transformedAccel, filteredAzimuth, rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
+
+
         magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
             rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
+
+        const auto calculatedPosition{ positionUpdater.getCurrentPosition() };
+        const auto totalDistance{ positionUpdater.getTotalDistance() };
+
+        filteredPositionX += kalmanFilters.getFilterForPosition().vecX()(0);//PosX
+        filteredPositionY += kalmanFilters.getFilterForPosition().vecX()(2);//PosY
 
         rollPitchChartGui.updateChart(rawMeasurement,
             rollBasedOnAccBuffer, pitchBasedOnAccBuffer, magnPointsBuffer,
             rollBuffer, pitchBuffer, yawBuffer,
-            roll, pitch, rawMeasurement.getAzimuth(), totalTimeMs);
+            roll, pitch, rawMeasurement.getAzimuth(), totalDistance, totalTimeMs);
+
+        //const double filteredVelocity
+        actualVelocity += rawMeasurement.getActualVelocityMperSec();
+        const auto xVelocityFiltered{ kalmanFilters.getFilterForPosition().vecX()(1) };
+        const auto yVelocityFiltered{ kalmanFilters.getFilterForPosition().vecX()(3) };
+        
+        if (gpsDistanceAngular)
+        {
+            actualVelocityFromFilter += sqrt(xVelocityFiltered * xVelocityFiltered + yVelocityFiltered * yVelocityFiltered);
+
+
+        }
+        else
+        {
+            actualVelocityFromFilter += sqrt(xVelocityFiltered * xVelocityFiltered + yVelocityFiltered * yVelocityFiltered);
+        }
+        
+        const double distanceInPeriod = ((actualVelocityFromFilter + actualVelocity) / 2.0) * (deltaTimeMs / 1000.0);
+        actualDistance += distanceInPeriod;
+
+        calculatedVelocityBuffer.AddElement(wxRealPoint(totalTimeMs, actualVelocity));
+        velocityFromFilterBuffer.AddElement(wxRealPoint(totalTimeMs, actualVelocityFromFilter));
+        velocityChartGui.updateChart(calculatedVelocityBuffer, velocityFromFilterBuffer, actualVelocity, actualVelocityFromFilter, actualDistance);
+
+
 
         const double xAccGyroCompensation = (rawMeasurement.getXaccMPerS2() * cos(roll)) - (rawMeasurement.getZaccMPerS2() * sin(pitch));
         const double yAccGyroCompensation = (rawMeasurement.getYaccMPerS2() * cos(pitch)) + (rawMeasurement.getZaccMPerS2() * sin(roll));
@@ -311,15 +348,17 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
             rawMeasurement.getYangleVelocityDegreePerS(),
             rawMeasurement.getZangleVelocityDegreePerS(), filteredZAngleVel, totalTimeMs);
 
-        kalmanFilters.makePositionFiltration(gpsDistanceAngular, transformedAccel, rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
+
 
         positionUpdater.updatePosition(filteredPositionX, filteredPositionY, rawMeasurement.getXDistance(), rawMeasurement.getYDistance(),
             filteredAzimuth);
+        const std::pair<double,double> position = positionUpdater.updatePosition(distanceInPeriod, filteredAzimuth);
 
-        filteredPositionX = kalmanFilters.getFilterForPosition().vecX()(2);//PosX
-        filteredPositionY = kalmanFilters.getFilterForPosition().vecX()(5);//PosY
-        const double filteredXacc = kalmanFilters.getFilterForPosition().vecX()(0); //xAcc
-        const double filteredYacc = kalmanFilters.getFilterForPosition().vecX()(3); //yAcc
+        //filteredPositionY = positionUpdater.getTotalDistance();
+
+
+        const double filteredXacc = 0.0F;// = kalmanFilters.getFilterForPosition().vecX()(0); //xAcc
+        const double filteredYacc = 0.0F;// = kalmanFilters.getFilterForPosition().vecX()(3); //yAcc
         //const double filteredVelocityX = kalmanFilter.vecX()(1);
         //const double filteredAccX = kalmanFilter.vecX()(1);
 
@@ -333,9 +372,9 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
             filteredXacc, filteredYacc,
             totalTimeMs, deltaTimeMs);
 
-        const auto calculatedPosition{ positionUpdater.getCurrentPosition() };
 
-        updateFilteredPositionChart(filteredPositionX, filteredPositionY, calculatedPosition, totalTimeMs);
+
+        updateFilteredPositionChart(filteredPositionX, filteredPositionY, calculatedPosition, position, actualDistance, filteredAzimuth, totalTimeMs);
     }
 }
 
@@ -365,7 +404,7 @@ void MyWindow::OnFilterReceivedDataProcessingTimer(wxTimerEvent& event)
         {
             //process filtration without measurements.. - macierz H na zera
             // set correct matrix H
-            processFiltration(rawMeasurement, deltaTimeMs);
+            //processFiltration(rawMeasurement, deltaTimeMs);
 
             const std::string errThreadEvent{ "INF timer expired - no valid measurements data available for current filtration cycle - only estimation based on previous system state" };
             appLogger.logErrThreadDataHandling(errThreadEvent);
@@ -599,7 +638,10 @@ void MyWindow::resetChartsAfterCallibration()
     rawPositionBuffer.Clear();
     filteredPositionBuffer.Clear();
     calculatedPositionBuffer.Clear();
+    realPositionBuffer.Clear();
     gpsBasedPositionBuffer.Clear();
+    calculatedVelocityBuffer.Clear();
+    velocityFromFilterBuffer.Clear();
 }
 
 void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const double xAccMPerS2, const double yAccMPerS2, const double zAccMPerS2,
@@ -616,11 +658,12 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
 
     xAccBuffer.AddElement(wxRealPoint(timeMs, xAccMPerS2));
     yAccBuffer.AddElement(wxRealPoint(timeMs, yAccMPerS2));
+    filteredYaccBuffer.AddElement(wxRealPoint(timeMs, filteredYacc.value_or(-3)));
     //zAccBuffer.AddElement(wxRealPoint(timeMs, zAccMPerS2));
 
     //xAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.xAcc));
     ///yAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.yAcc));
-    //filteredYaccBuffer.AddElement(wxRealPoint(timeMs, filteredYacc));
+
 
     //zAccGravityCompensationBuffer.AddElement(wxRealPoint(timeMs, transformedAccel.zAcc));
     //filteredXaccBuffer.AddElement(wxRealPoint(timeMs, filteredXacc));
@@ -636,7 +679,7 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
 
     //dataset->AddSerie(new XYSerie(zAccBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(filteredXaccBuffer.getBuffer()));
-    //dataset->AddSerie(new XYSerie(filteredYaccBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(filteredYaccBuffer.getBuffer()));
 
     //dataset->AddSerie(new XYSerie(xAccGravityCompensationBuffer.getBuffer()));
     //dataset->AddSerie(new XYSerie(yAccGravityCompensationBuffer.getBuffer()));
@@ -647,6 +690,7 @@ void MyWindow::updateAccChart(const TransformedAccel& transformedAccel, const do
 
     dataset->GetSerie(0)->SetName("raw X acceleration");
     dataset->GetSerie(1)->SetName("raw Y acceleration");
+    dataset->GetSerie(1)->SetName("filtered Y acceleration");
     // dataset->GetSerie(2)->SetName("compensated X acceleration");
     // dataset->GetSerie(3)->SetName("compensated Y acceleration");
     // 
@@ -691,20 +735,27 @@ void MyWindow::updateGpsBasedPositionChart(const GpsDistanceAngular& gpsBasedPos
     XYSimpleDataset* dataset = new XYSimpleDataset();
     gpsBasedPositionBuffer.AddElement(wxRealPoint(gpsBasedPosition.yPosition, gpsBasedPosition.xPosition));
     dataset->AddSerie(new XYSerie(gpsBasedPositionBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(realPositionBuffer.getBuffer()));
+    dataset->GetSerie(0)->SetName("gps position");
+    dataset->GetSerie(1)->SetName("calculated position");
     dataset->SetRenderer(new XYLineRenderer());
     NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Y [m]"));
     bottomAxis->SetTitle(wxT("X [m]"));
-    leftAxis->SetFixedBounds(-800, 800);
-    bottomAxis->SetFixedBounds(-800, 800);
+    leftAxis->SetFixedBounds(-500, 500);
+    bottomAxis->SetFixedBounds(-500, 500);
     plot->AddObjects(dataset, leftAxis, bottomAxis);
+    Legend* legend = new Legend(wxTOP, wxRIGHT);
+    plot->SetLegend(legend);
     Chart* chart = new Chart(plot, "GPS based position");
     gpsBasedPositionChartPanel->SetChart(chart);
 }
 
 void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
-                                           const std::pair<double, double> calculatedPosition, const double timeMs)
+    const std::pair<double, double> calculatedPosition,
+    const std::pair<double, double> position,
+    const double actualDistance, const double filteredAzimuth, const double timeMs)
 {
     //xAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, xAngleVel));
     //yAngleVelocityPoints.push_back(wxRealPoint(xAngleVelNewPoint, yAngleVel));
@@ -713,10 +764,13 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
 
     currentFilteredXPosition += filteredPositionX;
     currentFilteredYPosition += filteredPositionY;
+    currentXposition += position.first;
+    currentYposition += position.second;
 
     //filteredPositionPoints.push_back(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
-    filteredPositionBuffer.AddElement(wxRealPoint(currentFilteredXPosition, currentFilteredYPosition));
+    filteredPositionBuffer.AddElement(wxRealPoint(currentFilteredYPosition, currentFilteredXPosition));
     calculatedPositionBuffer.AddElement(wxRealPoint(calculatedPosition.first, calculatedPosition.second));
+    realPositionBuffer.AddElement(wxRealPoint(currentXposition, currentYposition));
 
 
     XYPlot* plot = new XYPlot();
@@ -726,11 +780,13 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
     dataset->AddSerie(new XYSerie(filteredPositionBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(rawPositionBuffer.getBuffer()));
     dataset->AddSerie(new XYSerie(calculatedPositionBuffer.getBuffer()));
+    dataset->AddSerie(new XYSerie(realPositionBuffer.getBuffer()));
 
     dataset->GetSerie(0)->SetName("filtered position");
     //dataset->GetSerie(1)->SetName("calculated position");
     dataset->GetSerie(1)->SetName("raw position");
     dataset->GetSerie(2)->SetName("calculated position");
+    dataset->GetSerie(3)->SetName("real position");
 
     //dataset->AddSerie(new XYSerie(yAngleVelocityPoints));
     //dataset->AddSerie(new XYSerie(zAngleVelocityPoints));
@@ -739,6 +795,8 @@ void MyWindow::updateFilteredPositionChart(const double filteredPositionX, const
     NumberAxis* bottomAxis = new NumberAxis(AXIS_BOTTOM);
     leftAxis->SetTitle(wxT("Filtered Y position [m]"));
     bottomAxis->SetTitle(wxT("Filtered X position [m]"));
+    leftAxis->SetFixedBounds(-500, 500);
+    bottomAxis->SetFixedBounds(-500, 500);
     //if (rawPositionBuffer.getBuffer()[0].x < filteredPositionBuffer.getBuffer()[0].x && rawPositionBuffer.getBuffer().size() >= 100)
     //{
     //    bottomAxis->SetFixedBounds(rawPositionBuffer.getBuffer()[0].x, rawPositionBuffer.getBuffer()[99].x);
@@ -1092,6 +1150,7 @@ void MyWindow::prepareGui()
     prepareGpsBasedPositionChart();
     angleVelocityChartGui.setup(m_notebook);
     rollPitchChartGui.setup(m_notebook);
+    velocityChartGui.setup(m_notebook);
     prepareFilteredPositionChart();
     prepareFilteredVelocityChart();
     prepareFilteredAngleXVelocityChart();

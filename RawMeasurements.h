@@ -156,6 +156,7 @@ public:
 
 	double getXvelocityMperS() const { return xVelocity; }
 	double getYvelocityMperS() const { return yVelocity; }
+	double getActualVelocityMperSec() const { return actualVelocity; }
 
 	double getXDistance() const { return xDistance; }
 	double getYDistance() const { return yDistance; }
@@ -261,6 +262,7 @@ private:
 		const double timeIntervalSec = static_cast<double>(deltaTimeMs)/1000;
 		xVelocity =  xAccMPerS2 * timeIntervalSec;
 		yVelocity =  yAccMPerS2 * timeIntervalSec;
+		actualVelocity = actualVelocity + yVelocity;
 
 		previousXvelocity = xVelocity;
 		previousYvelocity = yVelocity;
@@ -383,6 +385,7 @@ private:
 	double previousYvelocity{ 0.0 };
 	double xVelocity{ 0.0 };
 	double yVelocity{ 0.0 };
+	double actualVelocity{ 0.0 };
 
 	double xDistance{ 0.0 };
 	double yDistance{ 0.0 };

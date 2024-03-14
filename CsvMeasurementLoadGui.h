@@ -6,12 +6,13 @@
 #include <wx/grid.h>
 #include <wx/sizer.h>
 #include "CsvMeasurementReader.h"
+#include "DeltaTimeCalculator.h"
 
 class CsvMeasurementLoadGui
 {
 public:
-	CsvMeasurementLoadGui(CsvMeasurementReader& csvMeasurementReader, wxTimer& filterFileMeasTimer, wxTimer& filterFileGpsTimer) :
-		csvMeasurementReader(csvMeasurementReader), filterFileMeasTimer(filterFileMeasTimer), filterFileGpsTimer(filterFileGpsTimer)
+	CsvMeasurementLoadGui(CsvMeasurementReader& csvMeasurementReader, wxTimer& filterFileMeasTimer, wxTimer& filterFileGpsTimer, DeltaTimeCalculator& deltaTimeCalculator) :
+		csvMeasurementReader(csvMeasurementReader), filterFileMeasTimer(filterFileMeasTimer), filterFileGpsTimer(filterFileGpsTimer), deltaTimeCalculator(deltaTimeCalculator)
 	{}
 
 	void setup(wxPanel* kalmanParamsSetupPanel);
@@ -34,6 +35,7 @@ private:
 	wxTimer& filterFileMeasTimer;
 	wxTimer& filterFileGpsTimer;
 	CsvMeasurementReader& csvMeasurementReader;
+	DeltaTimeCalculator& deltaTimeCalculator;
 
 	bool sensorDataPathGiven{ false };
 	bool gpsDataPathGiven{ false };

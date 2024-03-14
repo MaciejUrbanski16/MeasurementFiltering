@@ -49,6 +49,7 @@
 #include "MagnChartGui.h"
 #include "AngleVelocityChartGui.h"
 #include "RollPitchChartGui.h"
+#include "VelocityChartGui.h"
 #include "AccelTransform.h"
 #include "GyroCallibrator.h"
 #include "KalmanFilters.h"
@@ -106,7 +107,8 @@ private:
     //void updateVelChart(const double xVelocity, const double timeMs);
     void updateGpsBasedPositionChart(const GpsDistanceAngular& gpsBasedPosition);
     void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
-        const std::pair<double, double> calculatedPosition, const double timeMs);
+        const std::pair<double, double> calculatedPosition,
+        const std::pair<double, double> position, const double actualDistance, const double filteredAzimuth, const double timeMs);
     void updateFilteredAngleXVelocityChart(const double filteredXangle, const double measuredXangle, const double timeMs);
     void updateFilteredVelocityChart(const double filteredVelocityX, const double filteredVelocityY, const double timeMs);
 
@@ -141,16 +143,17 @@ private:
     MagnChartGui magnChartGui{ magnetometerCallibrator };
     KalmanFilterSetupGui kalmanFilterSetupGui{ filterReceivedDataProcessingTimer, filterReceivedGpsProcessingTimer, magnChartGui };
     CsvMeasurementReader csvMeasurementReader;
-    CsvMeasurementLoadGui csvMeasurementLoadGui{ csvMeasurementReader, filterFileMeasTimer, filterFileGpsTimer };
+    CsvMeasurementLoadGui csvMeasurementLoadGui{ csvMeasurementReader, filterFileMeasTimer, filterFileGpsTimer, deltaTimeCalculator };
 
     PositionChartGui positionChartGui;
 
     AngleVelocityChartGui angleVelocityChartGui;
     RollPitchChartGui rollPitchChartGui;
+    VelocityChartGui velocityChartGui;
 
     bool isDataReceptionStarted{ false };
     wxVector <wxRealPoint> magnPoints;
-    KalmanFilters kalmanFilters{kalmanFilterSetupGui};
+    KalmanFilters kalmanFilters{ kalmanFilterSetupGui };
 
     bool isFirstMeasurement{ true };
     uint32_t gpsDataCounter{ 0 };
@@ -166,7 +169,7 @@ private:
     wxChartPanel* gpsBasedPositionChartPanel = nullptr;
     wxChartPanel* accChartPanel = nullptr;
     wxChartPanel* velChartPanel = nullptr;
-    
+
 
     wxChartPanel* filteredPositionChartPanel = nullptr;
     wxChartPanel* filteredVelocityChartPanel = nullptr;
@@ -202,10 +205,11 @@ private:
     wxVector <wxRealPoint> filteredVelocityPoints;
     wxVector <wxRealPoint> filteredPositionPoints;
 
-    PlotElementsBuffer rawPositionBuffer{ 300 };
-    PlotElementsBuffer filteredPositionBuffer{ 300 };
-    PlotElementsBuffer calculatedPositionBuffer{ 300 };
+    PlotElementsBuffer rawPositionBuffer{ 600 };
+    PlotElementsBuffer filteredPositionBuffer{ 600 };
+    PlotElementsBuffer calculatedPositionBuffer{ 600 };
     PlotElementsBuffer gpsBasedPositionBuffer{ 300 };
+    PlotElementsBuffer realPositionBuffer{ 600 };
 
     PlotElementsBuffer magnPointsBuffer;
     PlotElementsBuffer filteredAzimuthBuffer;
@@ -238,10 +242,17 @@ private:
     PlotElementsBuffer rollBasedOnAccBuffer;
     PlotElementsBuffer pitchBasedOnAccBuffer;
 
+    PlotElementsBuffer calculatedVelocityBuffer;
+    PlotElementsBuffer velocityFromFilterBuffer;
+
     double roll{ 0.0 };
     double pitch{ 0.0 };
     double yaw{ 0.0 };
-    
+
+    double actualVelocity{ 0.0 };
+    double actualVelocityFromFilter{ 0.0 };
+    double actualDistance{ 0.0 };
+
 
     wxVector <wxRealPoint> filteredXangleVelocity;
     wxVector <wxRealPoint> measuredXangleVelocity;
@@ -281,6 +292,8 @@ private:
 
     double currentFilteredXPosition{ 0.0 };
     double currentFilteredYPosition{ 0.0 };
+    double currentXposition{ 0.0 };
+    double currentYposition{ 0.0 };
     
 
     double currentXangleFiltered{ 0.0 };

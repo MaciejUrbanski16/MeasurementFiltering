@@ -120,10 +120,10 @@ void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElement
 	const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth,
 	 const double timeMs)
 {
-	//if (wasCallibrationStarted)
-	//{
-	//	magnetometerCallibrator.collectData(xMagn, yMagn);
-	//}
+	if (wasCallibrationStarted)
+	{
+		magnetometerCallibrator.collectData(xMagn, yMagn);
+	}
 
 	//const double azimuthInDegrees{ azimuth };
 	//currentAzimuth = azimuth;

@@ -27,16 +27,18 @@ public:
 	void setup(wxNotebook* m_notebook/*, MyWindow* window*/);
 	void updateChart(const MeasurementsController& rawMeasurement, PlotElementsBuffer& rollBasedonAccBuffer, PlotElementsBuffer& pitchBasedonAccBuffer, PlotElementsBuffer& magnPointsBuffer,
 		PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer, PlotElementsBuffer& yawBuffer,
-		const double rollVal, const double pitchVal, const double yawVal,
+		const double rollVal, const double pitchVal, const double yawVal, const double filteredDistance,
 		const double timeMs);
 
 private:
 	wxStaticText* rollValue = nullptr;
 	wxStaticText* pitchValue = nullptr;
 	wxStaticText* yawValue = nullptr;
+	wxStaticText* distanceValue = nullptr;
 
 	wxChartPanel* rollPitchChartPanel = nullptr;
 	wxSplitterWindow* rollPitchPanelSplitter = nullptr;
 	wxBoxSizer* sizerRollPitchPlot = nullptr;
+	double totalDistance{ 0.0 };
 };
 

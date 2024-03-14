@@ -3,6 +3,7 @@
 #include "AccelTransform.h"
 #include "AppLogger.h"
 #include "HaversineConverter.h"
+#include "RawMeasurements.h"
 #include "kalman_filter/kalman_filter.h"
 #include <optional>
 
@@ -11,8 +12,8 @@ class KalmanFilters
 public:
     KalmanFilters(KalmanFilterSetupGui& kalmanFilterSetupGui) : kalmanFilterSetupGui(kalmanFilterSetupGui){}
 
-    void makePositionFiltration(const std::optional<GpsDistanceAngular> gpsBasedPosition, const TransformedAccel& transformedAccel,
-                                const double Xacc, const double Yacc, uint32_t deltaTimeUint);
+    bool makePositionFiltration(const MeasurementsController& rawMeasurement, const std::optional<GpsDistanceAngular> gpsBasedPosition, const TransformedAccel& transformedAccel,
+        const double filteredAzimuth, const double Xacc, const double Yacc, uint32_t deltaTimeUint);
     void makeAzimuthFitration(const std::optional<GpsDistanceAngular> gpsBasedPosition, 
                               const double zAngleVelocityDegPerSec, const double azimuthFromMagn, const uint32_t deltaTime);
     void makeGyroFiltration(const double xAngleVelocityDegPerSec, const double yAngleVelocityDegPerSec,

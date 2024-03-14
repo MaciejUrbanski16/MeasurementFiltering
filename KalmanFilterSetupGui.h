@@ -18,7 +18,7 @@ static constexpr size_t DIM_X_azimuth{ 2 };
 static constexpr size_t DIM_Z_azimuth{ 3 };
 static constexpr size_t DIM_X_gyro{ 6 };
 static constexpr size_t DIM_Z_gyro{ 3 };
-static constexpr size_t DIM_X{ 6 };
+static constexpr size_t DIM_X{ 4 };
 static constexpr size_t DIM_Z{ 4 };
 
 enum class MovementModel
