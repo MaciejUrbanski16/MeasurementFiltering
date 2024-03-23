@@ -10,7 +10,7 @@
 #include "AppLogger.h"  
 #define M_PI 3.1415926
 
-#define EXPECTED_FRAME_SIZE 10
+#define EXPECTED_FRAME_SIZE 11
 #define REAL_TIME_MEASUREMENT false
 
 struct CompensatedAccData 
@@ -82,7 +82,7 @@ public:
 			//const auto isMagnetometr = isMagn(measurements[6]);
 			if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) &&
 				isNumber(measurements[3]) && isNumber(measurements[4]) && isNumber(measurements[5]) &&
-				isNumber(measurements[6]) && isNumber(measurements[7]))
+				isNumber(measurements[6]) && isNumber(measurements[7]) && isNumber(measurements[9]))
 
 			{
 				xAcc = std::stoi(measurements[0]);
@@ -95,6 +95,8 @@ public:
 
 				xMagn = std::stoi(measurements[6]);
 				yMagn = std::stoi(measurements[7]);
+				expectedOrientation = std::stoi(measurements[9]);
+
 				if (isRealTimeMeasurement)
 				{
 					zMagn = std::stoi(measurements[8]);
@@ -186,6 +188,7 @@ public:
 
 	double getExpectedPositionX() const { return expectedPositionX; }
 	double getExpectedPositionY() const { return expectedPositionY; }
+	double getExpectedOrientation() const { return expectedOrientation; }
 
 	//radians
 	double getRollFromAcc() const
@@ -387,6 +390,7 @@ private:
 
 	double expectedPositionX{ 0.0 };
 	double expectedPositionY{ 0.0 };
+	double expectedOrientation{ 0.0 };
 
 	double longitude{ 0.0 };
 	double latitude{ 0.0 };

@@ -23,7 +23,7 @@ public:
         buffer_.clear();
     }
 
-    wxVector <wxRealPoint> getBuffer() { return buffer_; }
+    wxVector <wxRealPoint> getBuffer() const { return buffer_; }
 
 private:
     void IncrementIndex(size_t& index) const {

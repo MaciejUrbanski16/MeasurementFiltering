@@ -116,7 +116,7 @@ void MagnChartGui::setup(wxNotebook* m_notebook /*, MyWindow* window*/)
 }
 
 void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElementsBuffer& filteredAzimuthBuffer,
-	PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer,
+	PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer, const PlotElementsBuffer& expectedOrientationBuffer,
 	const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth,
 	 const double timeMs)
 {
@@ -156,18 +156,24 @@ void MagnChartGui::updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElement
 	{
 		dataset->AddSerie(new XYSerie(magnPointsBuffer.getBuffer()));
 		dataset->AddSerie(new XYSerie(filteredAzimuthBuffer.getBuffer()));
+		dataset->AddSerie(new XYSerie(expectedOrientationBuffer.getBuffer()));
 		dataset->GetSerie(0)->SetName("Raw azimuth");
 		dataset->GetSerie(1)->SetName("Filtered azimuth");
+		dataset->GetSerie(2)->SetName("Expected azimuth");
 	}
 	else if (plotFilteredAzimuth and not plotRawAzimuth)
 	{
 		dataset->AddSerie(new XYSerie(filteredAzimuthBuffer.getBuffer()));
+		dataset->AddSerie(new XYSerie(expectedOrientationBuffer.getBuffer()));
 		dataset->GetSerie(0)->SetName("Filtered azimuth");
+		dataset->GetSerie(1)->SetName("Expected azimuth");
 	}
 	else if(not plotFilteredAzimuth and plotRawAzimuth)
 	{
 		dataset->AddSerie(new XYSerie(magnPointsBuffer.getBuffer()));
+		dataset->AddSerie(new XYSerie(expectedOrientationBuffer.getBuffer()));
 		dataset->GetSerie(0)->SetName("Raw azimuth");
+		dataset->GetSerie(1)->SetName("Expected azimuth");
 	}
 
 	//dataset->AddSerie(new XYSerie(accPoints));

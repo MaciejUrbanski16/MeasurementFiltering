@@ -114,6 +114,10 @@ std::vector<std::string> CsvMeasurementReader::readCSVrow(char delimiter)
             {
                 row.push_back(cell);
             }
+            if (cellNr == 19)
+            {
+                row.push_back(cell);
+            }
             cellNr++;
         }
 

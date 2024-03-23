@@ -208,7 +208,7 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
 {
     if (kalmanFilterSetupGui.getIsCallibrationDone() == false)
     {
-        magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
+        magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer, expectedOrientationBuffer,
             rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getYawFromMagn()*360/(2*M_PI), 1.0, totalTimeMs);
 
         TransformedAccel transformedAccel{ 0.0,0.0,0.0 };
@@ -302,8 +302,8 @@ void MyWindow::processFiltration(MeasurementsController& rawMeasurement, const u
 
         const bool doInrement = kalmanFilters.makePositionFiltration(rawMeasurement, gpsDistanceAngular, transformedAccel, filteredAzimuth, rawMeasurement.getXaccMPerS2(), rawMeasurement.getYaccMPerS2(), deltaTimeMs);
 
-
-        magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer,
+        expectedOrientationBuffer.AddElement(wxRealPoint(totalTimeMs, rawMeasurement.getExpectedOrientation()));
+        magnChartGui.updateChart(magnPointsBuffer, filteredAzimuthBuffer, rollBuffer, pitchBuffer, expectedOrientationBuffer,
             rawMeasurement.getRawXMagn(), rawMeasurement.getRawYMagn(), rawMeasurement.getAzimuth(), filteredAzimuth, totalTimeMs);
 
         const auto calculatedPosition{ positionUpdater.getCurrentPosition() };

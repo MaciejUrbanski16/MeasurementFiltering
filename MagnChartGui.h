@@ -27,7 +27,7 @@ public:
 	MagnChartGui(MagnetometerCallibrator& magnetometerCallibrator) : magnetometerCallibrator(magnetometerCallibrator){}
 	void setup(wxNotebook* m_notebook/*, MyWindow* window*/);
 	void updateChart(PlotElementsBuffer& magnPointsBuffer, PlotElementsBuffer& filteredAzimuthBuffer,
-		PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer,
+		PlotElementsBuffer& rollBuffer, PlotElementsBuffer& pitchBuffer, const PlotElementsBuffer& expectedOrientationBuffer,
 		 const int16_t xMagn, const int16_t yMagn, const double azimuth, const double filteredAzimuth,
 		 const double timeMs);
 	bool checkIfMagnCalibrationDone() const { return wasMagnCallibrationDone; }

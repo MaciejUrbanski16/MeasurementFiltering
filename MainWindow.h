@@ -255,7 +255,9 @@ private:
 
     PlotElementsBuffer calculatedVelocityBuffer;
     PlotElementsBuffer velocityFromFilterBuffer;
+
     PlotElementsBuffer expectedGpsPositionBuffer;
+    PlotElementsBuffer expectedOrientationBuffer;
 
     double roll{ 0.0 };
     double pitch{ 0.0 };
