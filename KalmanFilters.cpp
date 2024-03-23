@@ -16,12 +16,14 @@ bool KalmanFilters::makePositionFiltration(
     */
 
 
-    const double deltaTimeMs = static_cast<double>(deltaTimeUint) / 1000.0;
-    A << 
-        1.0F, deltaTimeMs, 0.0F, 0.0F,
-        0.0F, 1.0F, 0.0F, 0.0F,
-        0.0F, 0.0F, 1.0F, deltaTimeMs,
-        0.0F, 0.0F, 0.0F, 1.0F;
+    double deltaTimeMs = static_cast<double>(deltaTimeUint) / 1000.0;
+    A <<
+        1.0F, 0.0F, deltaTimeMs, 0.0F, 0.5F * deltaTimeMs * deltaTimeMs, 0.0F,
+        0.0F, 1.0F, 0.0F, deltaTimeMs, 0.0F, 0.5F * deltaTimeMs * deltaTimeMs,
+        0.0F, 0.0F, 1.0F, 0.0F, deltaTimeMs, 0.0F,
+        0.0F, 0.0F, 0.0F, 1.0F, 0.0F, deltaTimeMs,
+        0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F,
+        0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F;
 
 
     //const auto matRFromGui{ kalmanFilterSetupGui.getMatRacc() };
@@ -31,6 +33,7 @@ bool KalmanFilters::makePositionFiltration(
 
     const auto matR{ kalmanFilterSetupGui.getMatRacc() };
     const auto matQ{ kalmanFilterSetupGui.getMatQacc() };
+    //kalmanFilterForPosition.predictLKF(A, matQ.value());
 
     kalmanFilterForPosition.predictLKF(A, matQ.value());
 
@@ -40,30 +43,41 @@ bool KalmanFilters::makePositionFiltration(
     if (gpsBasedPosition)
     {
         const double velocity = gpsBasedPosition.value().velocity;
-        const double xVelocity{ velocity * sin(filteredAzimuth) };
-        const double yVelocity{ velocity * cos(filteredAzimuth) };
+        const double xVelocity{ velocity * cos(filteredAzimuth) };
+        const double yVelocity{ velocity * sin(filteredAzimuth) };
+        const double xPosition{ gpsBasedPosition.value().xPosition };
+        const double yPosition{ gpsBasedPosition.value().yPosition };
+        
 
-                //xpos xvel ypos  yvel
-        matH << 0.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z sensorów to zero
-                0.0F, 0.0F, 0.0F, 0.0F,
-                0.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z GPS to zero
-                0.0F, 0.0F, 0.0F, 0.0F; //
+        //xpos ypos xvel  yvel  xacc yacc 
+        matH <<
+            1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z sensorów to zero
+            0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z GPS to zero
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F;//
 
-        vecZ << 0.0F, xVelocity, 0.0F, yVelocity;
+        vecZ << xPosition, yPosition, 0.0F, 0.0F, 0.0F, 0.0F;
+
+
     }
     else
     {
         doIncrement = true;
         const double velocity{ rawMeasurement.getYvelocityMperS() };
-        const double xVelocity{ velocity * sin(filteredAzimuth) };
-        const double yVelocity{ velocity * cos(filteredAzimuth) };
+        const double xVelocity{ velocity * cos(filteredAzimuth) };
+        const double yVelocity{ velocity * sin(filteredAzimuth) };
 
-    //            //xpos xvel ypos  yvel
-        matH << 0.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z sensorów to zero
-                0.0F, 1.0F, 0.0F, 0.0F,
-                0.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z GPS to zero
-                0.0F, 0.0F, 0.0F, 1.0F; //
-        vecZ << 0.0F, xVelocity, 0.0F, yVelocity;
+    //            //xpos ypos xvel  yvel  xacc yacc 
+        matH << 
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, //gdy brak danych z sensorów to zero
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
+            0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F,//gdy brak danych z GPS to zero
+            0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,//
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,//
+            0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F;//
+        vecZ << 0.0F, 0.0F, xVelocity, yVelocity, 0.0F, 0.0F;
     }
 
     kalmanFilterForPosition.setMatH(matH);

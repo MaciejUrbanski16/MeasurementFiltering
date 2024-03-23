@@ -42,11 +42,11 @@ namespace kf
         {
             if (not isInitialized)
             {
-                vecX() <<
-                          xVel,
-                          xDist,
-                          yVel,
-                          yDist; // macierz stanu
+                //vecX() <<
+                //          xVel,
+                //          xDist,
+                //          yVel,
+                //          yDist; // macierz stanu
 
                 isInitialized = true;
             }

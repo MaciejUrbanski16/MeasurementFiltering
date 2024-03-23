@@ -16,6 +16,8 @@ struct GpsDistanceAngular
 	double yPosition{ 0.0 };
 	double velocity{ 0.0 };
 	double angle{ 0.0 };
+	double expectedXposition{ 0.0 };
+	double expectedYposition{ 0.0 };
 };
 
 class HaversineConverter

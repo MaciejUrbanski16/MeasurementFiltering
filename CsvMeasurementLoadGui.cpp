@@ -4,6 +4,7 @@ void CsvMeasurementLoadGui::setup(wxPanel* kalmanParamsSetupPanel)
 {
     wxBoxSizer* loadSensorDataSizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* loadGpsDataSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* loadExpectedPositionDataSizer = new wxBoxSizer(wxHORIZONTAL);
 
     wxBoxSizer* controlPanelSizer = new wxBoxSizer(wxVERTICAL);
 
@@ -15,8 +16,14 @@ void CsvMeasurementLoadGui::setup(wxPanel* kalmanParamsSetupPanel)
     loadGpsDataFromFileButton->SetMinSize(wxSize(350, -1));
     loadGpsDataFromFileButton->Bind(wxEVT_BUTTON, &CsvMeasurementLoadGui::OnLoadGpsData, this);
 
+    //loadExpectedPositionDataFromFileButton = new wxButton(kalmanParamsSetupPanel, wxID_ANY, "Load expected position data");
+    //loadExpectedPositionDataFromFileButton->SetMinSize(wxSize(350, -1));
+    //loadExpectedPositionDataFromFileButton->Bind(wxEVT_BUTTON, &CsvMeasurementLoadGui::OnLoadExpectedPositionData, this);
+
     filePathSensorDataTextCtrl = new wxTextCtrl(kalmanParamsSetupPanel, wxID_ANY, wxT(""), wxPoint(100, 10), wxSize(500, 30), wxTE_READONLY);
     filePathGpsDataTextCtrl = new wxTextCtrl(kalmanParamsSetupPanel, wxID_ANY, wxT(""), wxPoint(100, 100), wxSize(500, 30), wxTE_READONLY);
+    //fileExpectedPositionDataTextCtrl = new wxTextCtrl(kalmanParamsSetupPanel, wxID_ANY, wxT(""), wxPoint(100, 100), wxSize(500, 30), wxTE_READONLY);
+
 
     startFiltrationButton = new wxButton(kalmanParamsSetupPanel, wxID_ANY, "Start filtration");
     startFiltrationButton->SetMinSize(wxSize(300, 120));
@@ -28,9 +35,13 @@ void CsvMeasurementLoadGui::setup(wxPanel* kalmanParamsSetupPanel)
     loadGpsDataSizer->Add(loadGpsDataFromFileButton, 0, wxALIGN_CENTER_VERTICAL, 5);
     loadGpsDataSizer->Add(filePathGpsDataTextCtrl, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 
+    //loadExpectedPositionDataSizer->Add(loadExpectedPositionDataFromFileButton, 0, wxALIGN_CENTER_VERTICAL, 5);
+    //loadExpectedPositionDataSizer->Add(fileExpectedPositionDataTextCtrl, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
     controlPanelSizer->AddSpacer(40);
     controlPanelSizer->Add(loadSensorDataSizer, 0, wxALL | wxALIGN_CENTER, 5);
     controlPanelSizer->Add(loadGpsDataSizer, 0, wxALL | wxALIGN_CENTER, 5);
+    //controlPanelSizer->Add(loadExpectedPositionDataSizer, 0, wxALL | wxALIGN_CENTER, 5);
     controlPanelSizer->AddSpacer(120);
     controlPanelSizer->Add(startFiltrationButton, 0, wxALL | wxALIGN_CENTER, 5);
 
@@ -47,7 +58,7 @@ void CsvMeasurementLoadGui::OnLoadSensorData(wxCommandEvent& event)
     if (openFileDialog->ShowModal() == wxID_OK) 
     {
         wxString filePath = openFileDialog->GetPath();
-        if (isFileExtensionCorrect(filePath, wxT("txt")))
+        if (isFileExtensionCorrect(filePath, wxT("txt")) or isFileExtensionCorrect(filePath, wxT("csv")))
         {
             filePathSensorDataTextCtrl->SetValue(filePath);
             //wxMessageBox("The path for sensor data has CORRECT extension - should be .csv", "Informacja", wxOK | wxICON_INFORMATION);
@@ -55,7 +66,7 @@ void CsvMeasurementLoadGui::OnLoadSensorData(wxCommandEvent& event)
         }
         else
         {
-            wxMessageBox("The path for sensor data has incorrect extension - should be .csv", "Informacja", wxOK | wxICON_INFORMATION);
+            wxMessageBox("The path for sensor data has incorrect extension - should be .csv or .txt", "Informacja", wxOK | wxICON_INFORMATION);
         }       
     }
 }
@@ -65,7 +76,7 @@ void CsvMeasurementLoadGui::OnLoadGpsData(wxCommandEvent& event)
     if (openFileDialog->ShowModal() == wxID_OK)
     {
         wxString filePath = openFileDialog->GetPath();
-        if (isFileExtensionCorrect(filePath, wxT("txt")))
+        if (isFileExtensionCorrect(filePath, wxT("txt")) or isFileExtensionCorrect(filePath, wxT("csv")))
         {
             filePathGpsDataTextCtrl->SetValue(filePath);
             //wxMessageBox("The path for GPS data has CORRECT extension - should be .csv", "Informacja", wxOK | wxICON_INFORMATION);
@@ -75,6 +86,23 @@ void CsvMeasurementLoadGui::OnLoadGpsData(wxCommandEvent& event)
             wxMessageBox("The path for GPS data has incorrect extension - should be .csv", "Informacja", wxOK | wxICON_INFORMATION);
         }  
     }
+}
+
+void CsvMeasurementLoadGui::OnLoadExpectedPositionData(wxCommandEvent& event)
+{
+    //if (openFileDialog->ShowModal() == wxID_OK)
+    //{
+    //    wxString filePath = openFileDialog->GetPath();
+    //    if (isFileExtensionCorrect(filePath, wxT("txt")))
+    //    {
+    //        fileExpectedPositionDataTextCtrl->SetValue(filePath);
+    //        //wxMessageBox("The path for GPS data has CORRECT extension - should be .csv", "Informacja", wxOK | wxICON_INFORMATION);
+    //    }
+    //    else
+    //    {
+    //        wxMessageBox("The path for expected position data has incorrect extension - should be .txt", "Informacja", wxOK | wxICON_INFORMATION);
+    //    }
+    //}
 }
 
 void CsvMeasurementLoadGui::OnStartFiltration(wxCommandEvent& event)
@@ -98,6 +126,11 @@ void CsvMeasurementLoadGui::OnStartFiltration(wxCommandEvent& event)
     {
         gpsDataPathGiven = true;
     }
+    //if (fileExpectedPositionDataTextCtrl->IsEmpty())
+    //{
+    //    wxMessageBox("The path for expected position data was not given", "Informacja", wxOK | wxICON_INFORMATION);
+    //    return;
+    //}
     if (canFiltrationBeStarted)
     {
         wxMessageBox("The filtration has already been started", "Informacja", wxOK | wxICON_INFORMATION);
@@ -119,6 +152,14 @@ void CsvMeasurementLoadGui::OnStartFiltration(wxCommandEvent& event)
         wxMessageBox("Plik z danymi GPS nie zosta³ otworzony!", "Informacja", wxOK | wxICON_INFORMATION);
         return;
     }
+
+    //TODO zrobic odczyt pozycji dla trzech modeli ruchu
+    //const std::string filePathForExpectedPositionData{ fileExpectedPositionDataTextCtrl->GetValue().ToStdString() };
+    //if (not csvMeasurementReader.openFileWithExpectedPositionData(filePathForExpectedPositionData))
+    //{
+    //    wxMessageBox("Plik z oczekiwanymi danymi pozycji nie zosta³ otworzony!", "Informacja", wxOK | wxICON_INFORMATION);
+    //    return;
+    //}
 
     filterFileMeasTimer.Start(70);
     deltaTimeCalculator.startTimer();

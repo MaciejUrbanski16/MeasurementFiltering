@@ -59,6 +59,12 @@
 
 using namespace std;
 
+struct ExpectedPosition
+{
+    double expectedX{ 0.0 };
+    double expectedY{ 0.0 };
+};
+
 class MyWindow : public wxFrame
 {
 public:
@@ -105,7 +111,7 @@ private:
         const std::optional<double> filteredXacc, const std::optional<double> filteredYacc,
         const double timeMs, const uint32_t deltaTime);
     //void updateVelChart(const double xVelocity, const double timeMs);
-    void updateGpsBasedPositionChart(const GpsDistanceAngular& gpsBasedPosition);
+    void updateGpsBasedPositionChart(const std::optional<GpsDistanceAngular> gpsBasedPosition);
     void updateFilteredPositionChart(const double filteredPositionX, const double filteredPositionY,
         const std::pair<double, double> calculatedPosition,
         const std::pair<double, double> position, const double actualDistance, const double filteredAzimuth, const double timeMs);
@@ -114,6 +120,7 @@ private:
 
     void updateMatQGrid();
 
+    std::vector<std::string> expectedPositionAsStrings{};
     std::pair<bool, std::vector<std::string>> currentSensorMeasurements{ true, std::vector<std::string>{} };
     std::pair<bool, std::vector<std::string>> currentGpsMeasurements{ false, std::vector<std::string>{} };
 
@@ -138,6 +145,8 @@ private:
     wxTimer filterReceivedGpsProcessingTimer;
     uint32_t ticksCounterToLoadGps{ 0 };
     bool isGpsDataReceived{ false };
+
+    ExpectedPosition expectedPosition{ 0.0,0.0 };
 
     MagnetometerCallibrator magnetometerCallibrator{};
     MagnChartGui magnChartGui{ magnetometerCallibrator };
@@ -235,6 +244,8 @@ private:
 
     PlotElementsBuffer filteredXAngleVelocityBuffer;
 
+    PlotElementsBuffer expectedPositionBuffer;
+
     PlotElementsBuffer rollBuffer;
     PlotElementsBuffer pitchBuffer;
     PlotElementsBuffer yawBuffer;
@@ -244,6 +255,7 @@ private:
 
     PlotElementsBuffer calculatedVelocityBuffer;
     PlotElementsBuffer velocityFromFilterBuffer;
+    PlotElementsBuffer expectedGpsPositionBuffer;
 
     double roll{ 0.0 };
     double pitch{ 0.0 };

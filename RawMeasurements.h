@@ -52,8 +52,31 @@ public:
 		//assign(measurements);
 	}
 
-	bool assign(const std::vector<std::string>& measurements, const uint32_t deltaTimeMs, const bool isRealTimeMeasurement, const bool isGpsComing)
+	bool assign(const std::vector<std::string>& measurements, const std::vector<std::string>& expectedPosition, const uint32_t deltaTimeMs, const bool isRealTimeMeasurement, const bool isGpsComing)
 	{
+		if (expectedPosition.size() == 3)
+		{
+			try
+			{
+				expectedPositionX = std::stod(expectedPosition[1]);
+				expectedPositionY = std::stod(expectedPosition[2]);
+			}
+			catch (const std::invalid_argument& ia)
+			{
+				const std::string errMeasConversion{ "ERR when measurement conversion expected position from string to double - some measurement is not double!!" };
+				appLogger.logErrMeasurementConversion(errMeasConversion);
+			}
+			catch (const std::out_of_range& oor)
+			{
+				const std::string errMeasConversion{ "ERR when measurement conversion expected position from string to double - some measurement is out of range!!" };
+				appLogger.logErrMeasurementConversion(errMeasConversion);
+			}
+			catch (const std::exception& e)
+			{
+				const std::string errMeasConversion{ "ERR when measurement conversion expected position from string to double!!" };
+				appLogger.logErrMeasurementConversion(errMeasConversion);
+			}
+		}
 		if (measurements.size() == EXPECTED_FRAME_SIZE)
 		{
 			//const auto isMagnetometr = isMagn(measurements[6]);
@@ -161,6 +184,9 @@ public:
 	double getXDistance() const { return xDistance; }
 	double getYDistance() const { return yDistance; }
 
+	double getExpectedPositionX() const { return expectedPositionX; }
+	double getExpectedPositionY() const { return expectedPositionY; }
+
 	//radians
 	double getRollFromAcc() const
 	{
@@ -261,7 +287,7 @@ private:
 	{
 		const double timeIntervalSec = static_cast<double>(deltaTimeMs)/1000;
 		xVelocity =  xAccMPerS2 * timeIntervalSec;
-		yVelocity =  yAccMPerS2 * timeIntervalSec;
+		yVelocity +=  yAccMPerS2 * timeIntervalSec;
 		actualVelocity = actualVelocity + yVelocity;
 
 		previousXvelocity = xVelocity;
@@ -358,6 +384,9 @@ private:
 
 	int16_t xMagnOffset{ 0 };
 	int16_t yMagnOffset{ 0 };
+
+	double expectedPositionX{ 0.0 };
+	double expectedPositionY{ 0.0 };
 
 	double longitude{ 0.0 };
 	double latitude{ 0.0 };

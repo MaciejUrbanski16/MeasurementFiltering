@@ -45,6 +45,28 @@ bool CsvMeasurementReader::openFileWithGpsData(const std::string filePath)
     return true;
 }
 
+bool CsvMeasurementReader::openFileWithExpectedPositionData(const std::string filePath)
+{
+    fileExpectedPositionData.open(filePath);
+    if (!fileExpectedPositionData.is_open())
+    {
+        return false;
+    }
+
+    std::string line;
+    if (std::getline(fileExpectedPositionData, line))
+    {
+        std::stringstream ss(line);
+        std::string header;
+        while (std::getline(ss, header, ','))
+        {
+            headersExpectedPositionData.push_back(header);
+        }
+    }
+
+    return true;
+}
+
 CsvMeasurementReader::~CsvMeasurementReader()
 {
     if (fileMeasurementsData.is_open())
@@ -54,6 +76,10 @@ CsvMeasurementReader::~CsvMeasurementReader()
     if (fileGpsData.is_open())
     {
         fileGpsData.close();
+    }
+    if (fileExpectedPositionData.is_open())
+    {
+        fileExpectedPositionData.close();
     }
 }
 
@@ -113,7 +139,36 @@ std::vector<std::string> CsvMeasurementReader::readCSVrowGpsData(char delimiter)
 
         while (std::getline(ss, cell, delimiter))
         {
-            if (cellNr >= 1 && cellNr < 6)
+            if (cellNr >= 1 && cellNr < 8)
+            {
+                //int16_t value = std::stoi(cell);
+                row.push_back(cell);
+            }
+            cellNr++;
+        }
+    }
+    return row;
+}
+
+std::vector<std::string> CsvMeasurementReader::readCSVExpectedPositionData(char delimiter)
+{
+    std::vector<std::string> row;
+    std::string line;
+
+    if (!fileExpectedPositionData.is_open())
+    {
+        return row;
+    }
+
+    if (std::getline(fileExpectedPositionData, line))
+    {
+        std::stringstream ss(line);
+        std::string cell;
+        int cellNr{ 0 };
+
+        while (std::getline(ss, cell, delimiter))
+        {
+            if (cellNr >= 1 && cellNr < 3)
             {
                 //int16_t value = std::stoi(cell);
                 row.push_back(cell);
@@ -128,6 +183,9 @@ void CsvMeasurementReader::setReadMeasurementFromBegining()
 {
     fileMeasurementsData.clear();
     fileMeasurementsData.seekg(0, std::ios::beg);
+
+    fileExpectedPositionData.clear();
+    fileExpectedPositionData.seekg(0, std::ios::beg);
 }
 
 void CsvMeasurementReader::setReadGpsDataFromBegining()

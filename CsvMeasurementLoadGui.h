@@ -20,16 +20,19 @@ public:
 private:
 	void OnLoadSensorData(wxCommandEvent& event);
 	void OnLoadGpsData(wxCommandEvent& event);
+	void OnLoadExpectedPositionData(wxCommandEvent& event);
 	void OnStartFiltration(wxCommandEvent& event);
 
 	bool isFileExtensionCorrect(const wxString& filePath, const wxString& extension) const;
 
 	wxButton* loadSensorsDataFromFileButton = nullptr;
 	wxButton* loadGpsDataFromFileButton = nullptr;
+	wxButton* loadExpectedPositionDataFromFileButton = nullptr;
 	wxButton* startFiltrationButton = nullptr;
 
 	wxTextCtrl* filePathSensorDataTextCtrl = nullptr;
 	wxTextCtrl* filePathGpsDataTextCtrl = nullptr;
+	wxTextCtrl* fileExpectedPositionDataTextCtrl = nullptr;
 	wxFileDialog* openFileDialog = nullptr;
 
 	wxTimer& filterFileMeasTimer;

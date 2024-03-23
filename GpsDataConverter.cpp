@@ -1,22 +1,47 @@
 #include "GpsDataConverter.h"
 
-bool GpsDataConverter::handleGpsData(const std::vector<std::string>& measurements)
+bool GpsDataConverter::handleGpsData(const std::vector<std::string>& measurements, bool withExpectedPosition)
 {
-	if (measurements.size() >= 4)
+	if (not withExpectedPosition)
 	{
-					//latitude					  //longitude					//degree			//velocity					//satellites	
-		if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) && isNumber(measurements[3])  )
+		if (measurements.size() >= 4)
 		{
-			isNewGpsData = true;
-			latitude = std::stod(measurements[0]);
-			longitude = std::stod(measurements[1]);
-			gpsOrientationDegree = std::stod(measurements[2]);
-			velocityKmph = std::stod(measurements[3]);
-			//satellites = std::stoi(measurements[4]);
-			return true;
+			//latitude					  //longitude					//degree			//velocity					//satellites	
+			if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) && isNumber(measurements[3]))
+			{
+				isNewGpsData = true;
+				latitude = std::stod(measurements[0]);
+				longitude = std::stod(measurements[1]);
+				gpsOrientationDegree = std::stod(measurements[2]);
+				velocityKmph = std::stod(measurements[3]);
+				//satellites = std::stoi(measurements[4]);
+				return true;
+			}
+			return false;
 		}
-		return false;
 	}
+	else
+	{
+		if (measurements.size() >= 6)
+		{
+			//latitude					  //longitude					//degree			//velocity					//satellites	
+			if (isNumber(measurements[0]) && isNumber(measurements[1]) && isNumber(measurements[2]) &&
+				isNumber(measurements[3]) && isNumber(measurements[5])&& isNumber(measurements[6]))
+			{
+				isNewGpsData = true;
+				latitude = std::stod(measurements[0]);
+				longitude = std::stod(measurements[1]);
+				gpsOrientationDegree = std::stod(measurements[2]);
+				velocityKmph = std::stod(measurements[3]);
+				//satellites = std::stoi(measurements[4]);
+				expectedPositionX =  std::stod(measurements[5]);
+				expectedPositionY =  std::stod(measurements[6]);
+				return true;
+			}
+			return false;
+		}
+	}
+
 	//return false;
 }
 
